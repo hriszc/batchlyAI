@@ -1,0 +1,132 @@
+import { SiGithub, SiGoogle } from "@icons-pack/react-simple-icons";
+import { useMutation } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { LoaderCircleIcon } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+
+import { SignInSocialButton } from "@/components/sign-in-social-button";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { authClient } from "@/lib/auth/auth-client";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
+
+export const Route = createFileRoute("/_guest/login")({
+  component: LoginForm,
+});
+
+function LoginForm() {
+  const { redirectUrl } = Route.useRouteContext();
+  const { t } = useLanguage();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const { mutate: emailLoginMutate, isPending } = useMutation({
+    mutationFn: async (data: { email: string; password: string }) => {
+      const result = await authClient.signIn.email({
+        ...data,
+        callbackURL: redirectUrl,
+      });
+      if (
+        result &&
+        typeof result === "object" &&
+        "error" in result &&
+        (result as { error: unknown }).error
+      ) {
+        const err = (result as { error: { message?: string } }).error;
+        throw new Error(err.message || "Sign in failed");
+      }
+      return result;
+    },
+    onError: (error) => {
+      const msg = error.message || "An error occurred while signing in.";
+      setErrorMessage(msg);
+      toast.error(msg);
+    },
+  });
+
+  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (isPending) return;
+    setErrorMessage(null);
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    if (!email || !password) return;
+
+    emailLoginMutate({ email, password });
+  };
+
+  return (
+    <div className="flex flex-col gap-6">
+      <form onSubmit={handleSubmit}>
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col items-center gap-2">
+            <Link to="/" className="flex flex-col items-center gap-2 font-medium">
+              <span className="text-2xl font-semibold tracking-[-0.028em]">BatchlyAI</span>
+            </Link>
+            <h1 className="text-xl font-bold">{t("loginTitle")}</h1>
+          </div>
+          <div className="flex flex-col gap-5">
+            <div className="grid gap-2">
+              <Label htmlFor="email">{t("emailLabel")}</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder={t("emailPlaceholder")}
+                readOnly={isPending}
+                required
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="password">{t("passwordLabel")}</Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                placeholder={t("passwordPlaceholder")}
+                readOnly={isPending}
+                required
+              />
+            </div>
+            {errorMessage && (
+              <div className="rounded-md bg-destructive/15 px-4 py-2 text-sm text-destructive">
+                {errorMessage}
+              </div>
+            )}
+            <Button type="submit" className="mt-2 w-full" size="lg" disabled={isPending}>
+              {isPending && <LoaderCircleIcon className="animate-spin" />}
+              {isPending ? t("loggingIn") : t("loginButton")}
+            </Button>
+          </div>
+          <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
+            <span className="relative z-10 bg-background px-2 text-muted-foreground">{t("orDivider")}</span>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <SignInSocialButton
+              provider="github"
+              callbackURL={redirectUrl}
+              icon={<SiGithub className="size-4" />}
+            />
+            <SignInSocialButton
+              provider="google"
+              callbackURL={redirectUrl}
+              disabled={true}
+              icon={<SiGoogle className="size-4" />}
+            />
+          </div>
+        </div>
+      </form>
+
+      <div className="text-center text-sm">
+        {t("noAccount")}{" "}
+        <Link to="/signup" className="underline underline-offset-4">
+          {t("signUpLink")}
+        </Link>
+      </div>
+    </div>
+  );
+}

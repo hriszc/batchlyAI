@@ -1,0 +1,33 @@
+name = "batchlyai"
+compatibility_date = "2026-05-04"
+compatibility_flags = ["nodejs_compat"]
+main = ".output/server/index.mjs"
+
+# Warm-up: Use an external cron service (e.g. cron-job.org) to
+# GET https://batchlyai.com/api/auth-test every 5 minutes.
+# This keeps the Worker warm and avoids cold-start CPU spikes (50ms+).
+
+[assets]
+binding = "ASSETS"
+directory = ".output/public"
+
+[[d1_databases]]
+binding = "batchlyai_db"
+database_name = "batchlyai-db"
+database_id = "0f1f63d2-eea4-4801-ae73-c56560096a21"
+
+[[kv_namespaces]]
+binding = "batchlyai_kv"
+id = "bfcff2adc31c4f4292f758c72ca9386b"
+
+[[r2_buckets]]
+binding = "batchlyai_r2"
+bucket_name = "batchlyai-uploads"
+
+# Secrets: use `wrangler secret put <KEY>` to set each
+#   GRSAI_API_KEY
+#   REPLICATE_API_KEY
+#   R2_ENDPOINT
+#   R2_BUCKET
+[vars]
+VITE_BASE_URL = "https://batchlyai.com"
