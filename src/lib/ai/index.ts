@@ -7,7 +7,12 @@ interface ImageGenerationParams {
   model?: string;
 }
 
-const DRAW_API_HOST = "https://grsaiapi.com/v1/draw/completions";
+// Cloudflare AI Gateway — all AI API calls route through here for caching, retries, analytics
+const AI_GATEWAY =
+  "https://gateway.ai.cloudflare.com/v1/b06ef09426453ac00c27f343d05a0a23/batchlyai-gateway";
+const DEEPSEEK_HOST = `${AI_GATEWAY}/deepseek/v1/chat/completions`;
+const REPLICATE_API_BASE = `${AI_GATEWAY}/replicate`;
+const DRAW_API_HOST = "https://grsaiapi.com/v1/draw/completions"; // GRS AI: custom provider, not in gateway yet
 
 export interface GrsaiCreateResult {
   id: string;
@@ -105,7 +110,7 @@ export async function createReplicatePredictions({
 
   const predictions = await Promise.all(
     Array.from({ length: n }, () =>
-      fetch("https://api.replicate.com/v1/predictions", {
+      fetch(`${REPLICATE_API_BASE}/v1/predictions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -143,7 +148,7 @@ export async function pollReplicatePrediction(predictionId: string): Promise<Pol
   const key = env.REPLICATE_API_KEY;
   if (!key) throw new Error("REPLICATE_API_KEY is not configured");
 
-  const resp = await fetch(`https://api.replicate.com/v1/predictions/${predictionId}`, {
+  const resp = await fetch(`${REPLICATE_API_BASE}/v1/predictions/${predictionId}`, {
     headers: { Authorization: `Bearer ${key}` },
   });
 
@@ -165,8 +170,6 @@ export async function pollReplicatePrediction(predictionId: string): Promise<Pol
   }
   return { status: prediction.status, urls: null, error: null };
 }
-
-const DEEPSEEK_HOST = "https://api.deepseek.com/v1/chat/completions";
 
 function getDeepseekKey(): string {
   const key = env.DEEPSEEK_API_KEY;
