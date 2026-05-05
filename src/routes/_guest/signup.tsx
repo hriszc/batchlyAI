@@ -30,12 +30,7 @@ function SignupForm() {
   }, []);
 
   const { mutate: signupMutate, isPending } = useMutation({
-    mutationFn: async (data: {
-      name: string;
-      email: string;
-      password: string;
-      ref: string;
-    }) => {
+    mutationFn: async (data: { name: string; email: string; password: string; ref: string }) => {
       const result = await authClient.signUp.email({
         name: data.name,
         email: data.email,

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+
 import type { GeneratedResult, VariableGroup } from "./types";
 
 interface ShareScreenshotProps {
@@ -83,6 +84,7 @@ export function ShareScreenshot({
       if (cancelled || !cardRef.current) return;
 
       try {
+        // @ts-expect-error - html2canvas has no types
         const { default: html2canvas } = await import("html2canvas");
         const canvas = await html2canvas(cardRef.current, {
           scale: 2,
@@ -91,7 +93,7 @@ export function ShareScreenshot({
           allowTaint: false,
         });
 
-        canvas.toBlob((blob) => {
+        canvas.toBlob((blob: Blob | null) => {
           if (!blob || cancelled) return;
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
@@ -120,7 +122,7 @@ export function ShareScreenshot({
     return (
       <div className="fixed top-0 left-0 z-[9999] flex h-full w-full items-center justify-center bg-black/40 backdrop-blur-sm">
         <div className="rounded-2xl bg-card p-8 text-center shadow-lg">
-          <div className="mb-3 h-8 w-8 animate-spin rounded-full border-2 border-[#0071e3] border-t-transparent mx-auto" />
+          <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-[#0071e3] border-t-transparent" />
           <p className="text-sm text-foreground">{t("shareLoading")}</p>
         </div>
       </div>
@@ -128,39 +130,33 @@ export function ShareScreenshot({
   }
 
   return (
-    <div className="fixed top-0 left-0 z-[-1] opacity-0 pointer-events-none">
-      <div
-        ref={cardRef}
-        style={{ width: 820 }}
-        className="bg-white font-sans"
-      >
+    <div className="pointer-events-none fixed top-0 left-0 z-[-1] opacity-0">
+      <div ref={cardRef} style={{ width: 820 }} className="bg-white font-sans">
         {/* Header */}
         <div className="flex items-center gap-3 border-b px-10 py-6">
-          <img
-            src="/logo-light.png"
-            alt="BatchlyAI"
-            className="h-10 w-auto"
-          />
+          <img src="/logo-light.png" alt="BatchlyAI" className="h-10 w-auto" />
           <span className="text-sm text-gray-400">batchlyai.com</span>
         </div>
 
         {/* Prompt */}
         <div className="px-10 py-6">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+          <h3 className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
             {language === "zh" ? "提示词模板" : "Prompt Template"}
           </h3>
           <p className="mb-4 text-base leading-relaxed text-gray-800">{promptTemplate}</p>
 
           {variableGroups.filter((g) => g.values.length > 0).length > 0 && (
             <div>
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+              <h3 className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
                 {language === "zh" ? "变量组合" : "Variable Groups"}
               </h3>
               {variableGroups
                 .filter((g) => g.values.length > 0)
                 .map((g, i) => (
                   <div key={g.id} className="mb-1 text-sm text-gray-600">
-                    <span className="font-medium text-gray-800">{language === "zh" ? `变量组 ${i + 1}` : `Group ${i + 1}`}:</span>{" "}
+                    <span className="font-medium text-gray-800">
+                      {language === "zh" ? `变量组 ${i + 1}` : `Group ${i + 1}`}:
+                    </span>{" "}
                     {g.values.join(", ")}
                   </div>
                 ))}
@@ -170,7 +166,7 @@ export function ShareScreenshot({
 
         {/* Results */}
         <div className="px-10 pb-10">
-          <h3 className="mb-4 text-xs font-semibold uppercase tracking-wide text-gray-400">
+          <h3 className="mb-4 text-xs font-semibold tracking-wide text-gray-400 uppercase">
             {language === "zh" ? `生成结果 · ${results.length} 张` : `Results · ${results.length}`}
           </h3>
           <div className="space-y-8">

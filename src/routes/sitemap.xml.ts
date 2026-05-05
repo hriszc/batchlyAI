@@ -16,15 +16,17 @@ export const Route = createFileRoute("/sitemap/xml")({
           '<?xml version="1.0" encoding="UTF-8"?>',
           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"',
           '  xmlns:xhtml="http://www.w3.org/1999/xhtml">',
-          ...urls.map((u) => [
-            "  <url>",
-            `    <loc>${u.loc}</loc>`,
-            `    <priority>${u.priority}</priority>`,
-            `    <changefreq>${u.changefreq}</changefreq>`,
-            `    <xhtml:link rel="alternate" hreflang="en" href="${origin}/" />`,
-            `    <xhtml:link rel="alternate" hreflang="zh-CN" href="${origin}/cn" />`,
-            "  </url>",
-          ]).flat(),
+          ...urls
+            .map((u) => [
+              "  <url>",
+              `    <loc>${u.loc}</loc>`,
+              `    <priority>${u.priority}</priority>`,
+              `    <changefreq>${u.changefreq}</changefreq>`,
+              `    <xhtml:link rel="alternate" hreflang="en" href="${origin}/" />`,
+              `    <xhtml:link rel="alternate" hreflang="zh-CN" href="${origin}/cn" />`,
+              "  </url>",
+            ])
+            .flat(),
           "</urlset>",
         ].join("\n");
 

@@ -1,8 +1,8 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
-import { user as userTable } from "@/lib/db/schema";
 import { createTestDb, applyMigrations, seedUser } from "#test/db-setup";
+import { user as userTable } from "@/lib/db/schema";
 
 const mockConstructEventAsync = vi.fn();
 let testDb: ReturnType<typeof createTestDb>;
@@ -25,15 +25,15 @@ vi.mock("@/lib/db", () => ({
 
 import { handleWebhook } from "@/routes/api/stripe/webhook";
 
-function makeRequest(overrides: {
-  body?: string;
-  signature?: string;
-} = {}): Request {
+function makeRequest(
+  overrides: {
+    body?: string;
+    signature?: string;
+  } = {},
+): Request {
   return {
     text: () => Promise.resolve(overrides.body ?? "{}"),
-    headers: new Headers(
-      overrides.signature ? { "stripe-signature": overrides.signature } : {},
-    ),
+    headers: new Headers(overrides.signature ? { "stripe-signature": overrides.signature } : {}),
   } as unknown as Request;
 }
 
@@ -76,14 +76,14 @@ describe("handleWebhook", () => {
     delete (globalThis as Record<string, unknown>).__env__;
     const resp = await handleWebhook(makeRequest());
     expect(resp.status).toBe(501);
-    expect((await resp.json() as Record<string, unknown>).error).toBe("DB unavailable");
+    expect(((await resp.json()) as Record<string, unknown>).error).toBe("DB unavailable");
   });
 
   it("returns 400 when signature verification fails", async () => {
     mockConstructEventAsync.mockRejectedValue(new Error("Invalid signature"));
     const resp = await handleWebhook(makeRequest({ signature: "bad_sig" }));
     expect(resp.status).toBe(400);
-    expect((await resp.json() as Record<string, unknown>).error).toBe("Invalid signature");
+    expect(((await resp.json()) as Record<string, unknown>).error).toBe("Invalid signature");
   });
 
   it("returns 400 when checkout session has no userId in metadata", async () => {
@@ -97,22 +97,34 @@ describe("handleWebhook", () => {
 
   it("credits user and inserts purchase record on valid checkout.session.completed", async () => {
     seedUser(testDb, { id: "test-user-001", credits: 100 });
-    mockConstructEventAsync.mockResolvedValue(makeSessionEvent({ amountTotal: 1000, customerId: null }));
+    mockConstructEventAsync.mockResolvedValue(
+      makeSessionEvent({ amountTotal: 1000, customerId: null }),
+    );
 
     const resp = await handleWebhook(makeRequest({ signature: "sig" }));
     expect(resp.status).toBe(200);
 
-    const row = testDb.select({ credits: userTable.credits }).from(userTable).where(eq(userTable.id, "test-user-001")).get();
+    const row = testDb
+      .select({ credits: userTable.credits })
+      .from(userTable)
+      .where(eq(userTable.id, "test-user-001"))
+      .get();
     // $10 = 1000 amount_total; 1000/100 * 100 = 1000 credits
     expect(row?.credits).toBe(1100);
   });
 
   it("handles different amount_total correctly", async () => {
     seedUser(testDb, { id: "test-user-001", credits: 0 });
-    mockConstructEventAsync.mockResolvedValue(makeSessionEvent({ amountTotal: 500, customerId: null }));
+    mockConstructEventAsync.mockResolvedValue(
+      makeSessionEvent({ amountTotal: 500, customerId: null }),
+    );
 
     await handleWebhook(makeRequest({ signature: "sig" }));
-    const row = testDb.select({ credits: userTable.credits }).from(userTable).where(eq(userTable.id, "test-user-001")).get();
+    const row = testDb
+      .select({ credits: userTable.credits })
+      .from(userTable)
+      .where(eq(userTable.id, "test-user-001"))
+      .get();
     expect(row?.credits).toBe(500);
   });
 
@@ -130,7 +142,11 @@ describe("handleWebhook", () => {
     };
     mockConstructEventAsync.mockResolvedValue(event);
     await handleWebhook(makeRequest({ signature: "sig" }));
-    const row = testDb.select({ credits: userTable.credits }).from(userTable).where(eq(userTable.id, "test-user-001")).get();
+    const row = testDb
+      .select({ credits: userTable.credits })
+      .from(userTable)
+      .where(eq(userTable.id, "test-user-001"))
+      .get();
     expect(row?.credits).toBe(1000);
   });
 
@@ -139,21 +155,35 @@ describe("handleWebhook", () => {
     mockConstructEventAsync.mockResolvedValue(makeSessionEvent({ customerId: "cus_live_123" }));
 
     await handleWebhook(makeRequest({ signature: "sig" }));
-    const row = testDb.select({ stripeCustomerId: userTable.stripeCustomerId }).from(userTable).where(eq(userTable.id, "test-user-001")).get();
+    const row = testDb
+      .select({ stripeCustomerId: userTable.stripeCustomerId })
+      .from(userTable)
+      .where(eq(userTable.id, "test-user-001"))
+      .get();
     expect(row?.stripeCustomerId).toBe("cus_live_123");
   });
 
   it("is idempotent — duplicate event returns 200", async () => {
     seedUser(testDb, { id: "test-user-001", credits: 50 });
-    mockConstructEventAsync.mockResolvedValue(makeSessionEvent({ id: "cs_dup_001", amountTotal: 1000, customerId: null }));
+    mockConstructEventAsync.mockResolvedValue(
+      makeSessionEvent({ id: "cs_dup_001", amountTotal: 1000, customerId: null }),
+    );
 
     await handleWebhook(makeRequest({ signature: "sig" }));
-    const credits1 = testDb.select({ credits: userTable.credits }).from(userTable).where(eq(userTable.id, "test-user-001")).get();
+    const credits1 = testDb
+      .select({ credits: userTable.credits })
+      .from(userTable)
+      .where(eq(userTable.id, "test-user-001"))
+      .get();
 
     const resp = await handleWebhook(makeRequest({ signature: "sig" }));
     expect(resp.status).toBe(200);
 
-    const credits2 = testDb.select({ credits: userTable.credits }).from(userTable).where(eq(userTable.id, "test-user-001")).get();
+    const credits2 = testDb
+      .select({ credits: userTable.credits })
+      .from(userTable)
+      .where(eq(userTable.id, "test-user-001"))
+      .get();
     expect(credits2?.credits).toBe(credits1?.credits);
   });
 
@@ -163,9 +193,13 @@ describe("handleWebhook", () => {
 
     const resp = await handleWebhook(makeRequest({ signature: "sig" }));
     expect(resp.status).toBe(200);
-    expect((await resp.json() as Record<string, unknown>).received).toBe(true);
+    expect(((await resp.json()) as Record<string, unknown>).received).toBe(true);
 
-    const row = testDb.select({ credits: userTable.credits }).from(userTable).where(eq(userTable.id, "test-user-001")).get();
+    const row = testDb
+      .select({ credits: userTable.credits })
+      .from(userTable)
+      .where(eq(userTable.id, "test-user-001"))
+      .get();
     expect(row?.credits).toBe(10);
   });
 });

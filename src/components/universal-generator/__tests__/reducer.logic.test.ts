@@ -177,6 +177,8 @@ describe("reducer", () => {
             id: "old",
             combination: { variables: {}, prompt: "" },
             imageUrl: null,
+            textContent: null,
+            watermark: false,
             status: "complete",
           },
         ],
@@ -196,6 +198,8 @@ describe("reducer", () => {
           id: "r1",
           combination: { variables: { var_0: "a" }, prompt: "test" },
           imageUrl: "http://img.com/1.png",
+          textContent: null,
+          watermark: false,
           status: "complete" as const,
         },
       ];

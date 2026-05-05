@@ -59,7 +59,6 @@ export const Route = createFileRoute("/api/auth/$")({
   },
 });
 
-<<<<<<< HEAD
 export function getApiMethod(auth: NonNullable<ReturnType<typeof createAuth>>, path: string) {
   switch (path) {
     case "sign-up/email":
@@ -81,7 +80,6 @@ export function getApiMethod(auth: NonNullable<ReturnType<typeof createAuth>>, p
     case "send-verification-email":
       return { method: auth.api.sendVerificationEmail };
     default: {
-      // OAuth callback: /callback/:provider
       const callbackMatch = path.match(/^callback\/(.+)$/);
       if (callbackMatch) {
         return { method: auth.api.callbackOAuth, params: { id: callbackMatch[1] } };
@@ -91,58 +89,6 @@ export function getApiMethod(auth: NonNullable<ReturnType<typeof createAuth>>, p
   }
 }
 
-async function callApi(
-  auth: NonNullable<ReturnType<typeof createAuth>>,
-  path: string,
-  request: Request,
-  _method: string,
-) {
-  const resolved = getApiMethod(auth, path);
-  if (!resolved) {
-    return jsonResponse({ error: `Unknown auth path: ${path}` }, 404);
-  }
-
-  const { method: apiMethod, params } = resolved;
-
-  // Rate limit sensitive endpoints
-  const SENSITIVE_PATHS = ["sign-in/email", "sign-up/email", "forget-password", "reset-password"];
-  if (SENSITIVE_PATHS.includes(path)) {
-    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-    const { allowed } = checkRateLimit(`${path}:${ip}`, 10, 60);
-    if (!allowed) {
-      return jsonResponse({ error: "Too many requests" }, 429);
-    }
-  }
-
-  try {
-    let body: Record<string, unknown> | undefined;
-    if (request.method === "POST") {
-      try {
-        body = (await request.json()) as Record<string, unknown>;
-      } catch {
-        // no body
-      }
-    }
-
-    const result = await apiMethod.call(auth.api, {
-      body,
-      headers: request.headers,
-      request,
-      ...(params ? { params } : {}),
-      asResponse: true,
-    });
-
-    if (result instanceof Response) return result;
-
-    return jsonResponse(result, 200);
-  } catch (err) {
-    console.error(`[auth] ${path} error:`, err);
-    return jsonResponse({ error: "Internal server error" }, 500);
-  }
-}
-
-=======
->>>>>>> 6f69f9d (Remove Free-plan workarounds after upgrading to Workers Paid)
 function dbUnavailable() {
   return jsonResponse({ error: "Database not available" }, 501);
 }

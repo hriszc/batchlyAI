@@ -1,9 +1,9 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
-import { SettingsBar } from "@/components/SettingsBar";
 import { renderWithProviders } from "#test/test-utils";
+import { SettingsBar } from "@/components/SettingsBar";
 
 const mockUseSession = vi.fn();
 
@@ -24,10 +24,13 @@ vi.mock("@tanstack/react-router", () => ({
 describe("SettingsBar", () => {
   beforeEach(() => {
     mockUseSession.mockReturnValue({ data: null });
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ url: "https://checkout.stripe.com/c/test" }),
-    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ url: "https://checkout.stripe.com/c/test" }),
+      }),
+    );
   });
 
   afterEach(() => {
@@ -111,9 +114,12 @@ describe("SettingsBar", () => {
     mockUseSession.mockReturnValue({
       data: { user: { name: "Error User", email: "err@test.com", credits: 1 } },
     });
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-      json: () => Promise.resolve({ error: "Stripe error" }),
-    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        json: () => Promise.resolve({ error: "Stripe error" }),
+      }),
+    );
 
     renderWithProviders(<SettingsBar />);
 

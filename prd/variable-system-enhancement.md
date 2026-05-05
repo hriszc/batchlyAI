@@ -6,10 +6,10 @@
 
 ## 变更记录
 
-| 日期 | 版本 | 变更内容 |
-|------|------|---------|
+| 日期       | 版本 | 变更内容                                                                    |
+| ---------- | ---- | --------------------------------------------------------------------------- |
 | 2026-05-05 | v1.0 | 初始版本。AI 变量展开 (`{*...*}`)、变量预设库、范围快捷语法、实时预览增强。 |
-| 2026-05-05 | v1.1 | 去掉变量预设库（§2）和范围快捷语法（§3），聚焦核心 `{*...*}` AI 展开功能。 |
+| 2026-05-05 | v1.1 | 去掉变量预设库（§2）和范围快捷语法（§3），聚焦核心 `{*...*}` AI 展开功能。  |
 
 ---
 
@@ -18,6 +18,7 @@
 BatchlyAI 的核心交互是用户在 prompt 中使用 `{{var1, var2, var3}}` 语法定义多变量，系统自动生成所有组合。这个语法目前是**纯手动**的——用户必须自己想出所有变量值并手动输入。
 
 **痛点**：
+
 - 用户想用"三种颜色"但懒得想具体哪三种 → 随便写 `{{red, blue, green}}`
 - 用户想用"著名画家"但忘记了名字 → 打开 Google 搜索
 - 用户不知道有哪些角度/光影可选 → 只写一两个，错过了探索空间
@@ -55,13 +56,13 @@ interpolatePrompt(template, combination)  // 替换 {{...}} 为具体值
 
 ### 1.2 示例
 
-| 输入 | AI 展开结果 |
-|------|-----------|
-| `A {*three colors*} background` | `A {{red, yellow, blue}} background` |
-| `In the style of {*famous artists*}` | `In the style of {{Picasso, Van Gogh, Monet, Dali, Warhol}}` |
-| `{*summer vibes*} scene` | `{{beach sunset, tropical beach, pool party, ice cream}} scene` |
-| `A {*3 luxury car brands*} on the road` | `A {{Porsche, Ferrari, Lamborghini}} on the road` |
-| `{*cold color palette*} lighting` | `{{ice blue, mint green, lavender, silver}} lighting` |
+| 输入                                    | AI 展开结果                                                     |
+| --------------------------------------- | --------------------------------------------------------------- |
+| `A {*three colors*} background`         | `A {{red, yellow, blue}} background`                            |
+| `In the style of {*famous artists*}`    | `In the style of {{Picasso, Van Gogh, Monet, Dali, Warhol}}`    |
+| `{*summer vibes*} scene`                | `{{beach sunset, tropical beach, pool party, ice cream}} scene` |
+| `A {*3 luxury car brands*} on the road` | `A {{Porsche, Ferrari, Lamborghini}} on the road`               |
+| `{*cold color palette*} lighting`       | `{{ice blue, mint green, lavender, silver}} lighting`           |
 
 ### 1.3 与 `{{...}}` 混用
 
@@ -158,22 +159,22 @@ Assistant: red, yellow, blue
 
 ### 3.1 Phase 1：第 1 周 | 核心功能
 
-| 任务 | 涉及文件 | 工期 |
-|------|---------|------|
+| 任务                                            | 涉及文件                              | 工期   |
+| ----------------------------------------------- | ------------------------------------- | ------ |
 | `extractVariableGroups` 扩展支持 `{*...*}` 解析 | `utils.ts` — 新增 `expandAiVariables` | 0.5 天 |
-| `expandAiVariables` 实现（LLM 调用 + KV 缓存） | 新路由 `/api/expand-vars.ts` | 2 天 |
-| Expand 按钮 + 交互（展开/撤销/重试） | `GeneratorCard.tsx` | 1 天 |
-| 实时组合数预览增强 | `GeneratorCard.tsx` | 0.5 天 |
+| `expandAiVariables` 实现（LLM 调用 + KV 缓存）  | 新路由 `/api/expand-vars.ts`          | 2 天   |
+| Expand 按钮 + 交互（展开/撤销/重试）            | `GeneratorCard.tsx`                   | 1 天   |
+| 实时组合数预览增强                              | `GeneratorCard.tsx`                   | 0.5 天 |
 
 **交付物**：`{*...*}` AI 展开可用。
 
 ### 3.2 Phase 2：第 2 周 | 打磨
 
-| 任务 | 涉及文件 | 工期 |
-|------|---------|------|
-| KV 缓存预热（预计算 100 个常见描述） | 脚本 | 0.5 天 |
-| AI 展开结果质量调优（few-shot prompt tuning） | `expand-vars.ts` | 1 天 |
-| 单元测试 | `utils.logic.test.ts` + 新测试 | 1 天 |
+| 任务                                          | 涉及文件                       | 工期   |
+| --------------------------------------------- | ------------------------------ | ------ |
+| KV 缓存预热（预计算 100 个常见描述）          | 脚本                           | 0.5 天 |
+| AI 展开结果质量调优（few-shot prompt tuning） | `expand-vars.ts`               | 1 天   |
+| 单元测试                                      | `utils.logic.test.ts` + 新测试 | 1 天   |
 
 ---
 

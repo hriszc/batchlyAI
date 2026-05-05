@@ -37,6 +37,8 @@ export function createResult(overrides?: Partial<GeneratedResult>): GeneratedRes
       prompt: "A cat in a forest",
     },
     imageUrl: "https://example.com/image.png",
+    textContent: null,
+    watermark: false,
     status: "complete",
     ...overrides,
   };

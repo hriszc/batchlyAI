@@ -13,6 +13,8 @@ const completeResult: GeneratedResult = {
     prompt: "A cat in a forest",
   },
   imageUrl: "https://example.com/image.png",
+  textContent: null,
+  watermark: false,
   status: "complete",
 };
 
@@ -23,6 +25,8 @@ const errorResult: GeneratedResult = {
     prompt: "A dog on a beach",
   },
   imageUrl: null,
+  textContent: null,
+  watermark: false,
   status: "error",
 };
 
@@ -33,6 +37,8 @@ const pendingResult: GeneratedResult = {
     prompt: "A bird in the sky",
   },
   imageUrl: null,
+  textContent: null,
+  watermark: false,
   status: "pending",
 };
 
@@ -75,6 +81,8 @@ describe("ResultCard", () => {
         prompt: "A simple prompt",
       },
       imageUrl: null,
+      textContent: null,
+      watermark: false,
       status: "complete",
     };
     renderWithProviders(<ResultCard result={noVarsResult} />);

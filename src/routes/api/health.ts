@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { jsonResponse } from "@/lib/api-helpers";
 
-export const Route = createFileRoute("/api/health")({
+export const Route = createFileRoute("/api/health" as any)({
   server: {
     handlers: {
       GET: async () => {

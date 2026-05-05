@@ -51,14 +51,14 @@ describe("handleCheckout", () => {
     mockGetSession.mockResolvedValue(null);
     const resp = await handleCheckout(makeRequest({ body: {} }));
     expect(resp.status).toBe(401);
-    expect((await resp.json() as Record<string, unknown>).error).toBe("Unauthorized");
+    expect(((await resp.json()) as Record<string, unknown>).error).toBe("Unauthorized");
   });
 
   it("returns 200 with checkout URL for authenticated user (default USD)", async () => {
     mockGetSession.mockResolvedValue({ user: { id: "u1", email: "u@test.com" } });
     const resp = await handleCheckout(makeRequest({ body: { currency: "usd" } }));
     expect(resp.status).toBe(200);
-    const data = await resp.json() as { url: string };
+    const data = (await resp.json()) as { url: string };
     expect(data.url).toBe("https://checkout.stripe.com/c/test");
   });
 
@@ -87,7 +87,9 @@ describe("handleCheckout", () => {
     const req = makeRequest() as unknown as Request & { json: () => never };
     // Override json to throw
     Object.defineProperty(req, "json", {
-      value: () => { throw new Error("no body"); },
+      value: () => {
+        throw new Error("no body");
+      },
     });
     await handleCheckout(req);
     expect(mockCheckoutCreate).toHaveBeenCalledWith(
@@ -120,7 +122,9 @@ describe("handleCheckout", () => {
 
   it("includes success_url and cancel_url with origin", async () => {
     mockGetSession.mockResolvedValue({ user: { id: "u1", email: "u@test.com" } });
-    await handleCheckout(makeRequest({ url: "https://batchlyai.com/api/stripe/checkout", body: {} }));
+    await handleCheckout(
+      makeRequest({ url: "https://batchlyai.com/api/stripe/checkout", body: {} }),
+    );
     expect(mockCheckoutCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         success_url: "https://batchlyai.com/?purchase=success",
@@ -134,6 +138,6 @@ describe("handleCheckout", () => {
     mockCheckoutCreate.mockRejectedValue(new Error("Stripe failure"));
     const resp = await handleCheckout(makeRequest({ body: {} }));
     expect(resp.status).toBe(500);
-    expect((await resp.json() as Record<string, unknown>).error).toBe("Stripe failure");
+    expect(((await resp.json()) as Record<string, unknown>).error).toBe("Stripe failure");
   });
 });

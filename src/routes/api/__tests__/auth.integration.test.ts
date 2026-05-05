@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-import { getApiMethod } from "../auth/$";
 import { checkRateLimit } from "@/lib/rate-limit";
+
+import { getApiMethod } from "../auth/$";
 
 // We can't fully instantiate Better Auth in tests, but we can verify the routing table.
 // Test the API_MAP mapping logic directly.

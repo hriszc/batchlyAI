@@ -60,7 +60,7 @@ describe("handlePortal", () => {
     mockGetSession.mockResolvedValue({ user: { id: "u1" } });
     const resp = await handlePortal(makeRequest());
     expect(resp.status).toBe(404);
-    expect((await resp.json() as Record<string, unknown>).error).toBe("No Stripe customer found");
+    expect(((await resp.json()) as Record<string, unknown>).error).toBe("No Stripe customer found");
   });
 
   it("returns 200 with portal URL when user has stripeCustomerId", async () => {
@@ -68,7 +68,7 @@ describe("handlePortal", () => {
     mockGetSession.mockResolvedValue({ user: { id: "u1" } });
     const resp = await handlePortal(makeRequest());
     expect(resp.status).toBe(200);
-    const data = await resp.json() as { url: string };
+    const data = (await resp.json()) as { url: string };
     expect(data.url).toBe("https://billing.stripe.com/p/test");
   });
 
@@ -95,6 +95,6 @@ describe("handlePortal", () => {
     mockPortalCreate.mockRejectedValue(new Error("Stripe failure"));
     const resp = await handlePortal(makeRequest());
     expect(resp.status).toBe(500);
-    expect((await resp.json() as Record<string, unknown>).error).toBe("Stripe failure");
+    expect(((await resp.json()) as Record<string, unknown>).error).toBe("Stripe failure");
   });
 });

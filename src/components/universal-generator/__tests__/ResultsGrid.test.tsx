@@ -11,12 +11,16 @@ const sampleResults: GeneratedResult[] = [
     id: "r1",
     combination: { variables: { var_0: "cat" }, prompt: "A cat" },
     imageUrl: "https://example.com/cat.png",
+    textContent: null,
+    watermark: false,
     status: "complete",
   },
   {
     id: "r2",
     combination: { variables: { var_0: "dog" }, prompt: "A dog" },
     imageUrl: null,
+    textContent: null,
+    watermark: false,
     status: "error",
   },
 ];
