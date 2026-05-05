@@ -109,7 +109,7 @@ export function SettingsBar() {
       await navigator.clipboard.writeText(referralStats.shareUrl);
       toast.success("Referral link copied!");
     }
-  }, [referralStats]);
+  }, [referralStats?.shareUrl]);
 
   const handleBuyCredits = async () => {
     try {

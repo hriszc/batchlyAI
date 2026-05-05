@@ -68,3 +68,4 @@ export const referralRelations = relations(referral, ({ one }) => ({
     relationName: "referee",
   }),
 }));
+

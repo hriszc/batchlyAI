@@ -7,7 +7,6 @@ import type { GeneratedResult } from "./types";
 interface ResultsGridProps {
   results: GeneratedResult[];
   isGenerating: boolean;
-  onShare?: () => void;
 }
 
 function SkeletonCard() {
@@ -39,9 +38,7 @@ export function ResultsGrid({ results, isGenerating }: ResultsGridProps) {
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {isGenerating
           ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
-          : results.map((result) => (
-              <ResultCard key={result.id} result={result} showWatermark={showWatermark} />
-            ))}
+          : results.map((result) => <ResultCard key={result.id} result={result} showWatermark={showWatermark} />)}
       </div>
     </div>
   );
