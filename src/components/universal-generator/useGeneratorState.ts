@@ -1,7 +1,8 @@
-import { useReducer, useCallback, useRef } from "react";
+import { useReducer, useCallback, useRef, useEffect } from "react";
+
+import { DEFAULT_MODEL, MODELS } from "./models";
 import type { GeneratorState, GeneratorAction, GroupId, PromptCombination } from "./types";
 import { extractVariableGroups, computePromptCombinations } from "./utils";
-import { DEFAULT_MODEL, MODELS } from "./models";
 
 function generateResultId(): string {
   return `result_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -51,9 +52,7 @@ export function reducer(state: GeneratorState, action: GeneratorAction): Generat
       return {
         ...state,
         variableGroups: state.variableGroups.map((g) =>
-          g.id === action.payload.groupId
-            ? { ...g, values: [...g.values, ""] }
-            : g,
+          g.id === action.payload.groupId ? { ...g, values: [...g.values, ""] } : g,
         ),
       };
 
@@ -145,26 +144,41 @@ async function pollForResults(
       if (!json.results) continue;
 
       const allDone = json.results.every(
-        (r) => r.status === "succeeded" || r.status === "failed" || r.status === "canceled" || r.status === "error",
+        (r) =>
+          r.status === "succeeded" ||
+          r.status === "failed" ||
+          r.status === "canceled" ||
+          r.status === "error",
       );
 
       if (allDone) {
-        return json.results.flatMap((r) => {
-          if (r.status === "succeeded" && r.urls) {
-            return r.urls.map((url) => ({
-              id: generateResultId(),
-              combination,
-              imageUrl: url,
-              status: "complete" as const,
-            }));
-          }
-          return {
-            id: generateResultId(),
-            combination,
-            imageUrl: null,
-            status: "error" as const,
-          };
-        });
+        return json.results.flatMap(
+          (
+            r,
+          ): {
+            id: string;
+            combination: PromptCombination;
+            imageUrl: string | null;
+            status: "complete" | "error";
+          }[] => {
+            if (r.status === "succeeded" && r.urls) {
+              return r.urls.map((url) => ({
+                id: generateResultId(),
+                combination,
+                imageUrl: url,
+                status: "complete" as const,
+              }));
+            }
+            return [
+              {
+                id: generateResultId(),
+                combination,
+                imageUrl: null,
+                status: "error" as const,
+              },
+            ];
+          },
+        );
       }
     } catch {
       // Keep polling on transient errors
@@ -186,7 +200,9 @@ export function useGeneratorState() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stateRef = useRef(state);
-  stateRef.current = state;
+  useEffect(() => {
+    stateRef.current = state;
+  });
 
   const setPromptTemplate = useCallback((value: string) => {
     dispatch({ type: "SET_PROMPT_TEMPLATE", payload: value });
@@ -299,11 +315,7 @@ export function useGeneratorState() {
             // Async response — poll for results
             if (json.predictionIds?.length && json.async) {
               const modelType = json.modelType || "replicate";
-              return await pollForResults(
-                json.predictionIds,
-                modelType,
-                combination,
-              );
+              return await pollForResults(json.predictionIds, modelType, combination);
             }
 
             return [];

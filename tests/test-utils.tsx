@@ -1,7 +1,8 @@
-import { render, type RenderOptions } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { LanguageProvider } from "@/lib/i18n/LanguageContext";
+import { render, type RenderOptions } from "@testing-library/react";
 import type { ReactElement } from "react";
+
+import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 
 export function createTestQueryClient() {
   return new QueryClient({
@@ -35,9 +36,7 @@ export function renderWithProviders(
   function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>
-        <LanguageProvider>
-          {children}
-        </LanguageProvider>
+        <LanguageProvider>{children}</LanguageProvider>
       </QueryClientProvider>
     );
   }

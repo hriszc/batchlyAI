@@ -1,8 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
 import { eq } from "drizzle-orm";
-import { handleGenerate, CREDIT_COST } from "../generate";
-import { createTestDb, applyMigrations, seedUser } from "../../../../tests/db-setup";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
 import { user as userTable } from "@/lib/db/schema/auth.schema";
+
+import { createTestDb, applyMigrations, seedUser } from "../../../../tests/db-setup";
+import { handleGenerate, CREDIT_COST } from "../generate";
 
 function makeRequest(body: Record<string, unknown>): Request {
   return {
@@ -115,9 +117,9 @@ describe("handleGenerate", () => {
 
   // --- Model-specific behavior ---
   it("z-image-fast returns async prediction IDs", async () => {
-    const mockReplicate = vi.fn().mockResolvedValue([
-      { id: "pred-001", status: "starting", urls: { get: "", cancel: "" } },
-    ]);
+    const mockReplicate = vi
+      .fn()
+      .mockResolvedValue([{ id: "pred-001", status: "starting", urls: { get: "", cancel: "" } }]);
 
     const resp = await handleGenerate({
       request: makeRequest({ prompt: "test", n: 2, model: "z-image-fast" }),

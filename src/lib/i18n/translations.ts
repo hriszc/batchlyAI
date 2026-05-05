@@ -1,7 +1,8 @@
 export const translations = {
   en: {
     siteTitle: "BatchlyAI",
-    siteDescription: "Universal AI Generator — batch generate all combinations from multi-variable prompts",
+    siteDescription:
+      "Universal AI Generator — batch generate all combinations from multi-variable prompts",
     promptPlaceholder:
       "Use {{vars}} for batch generation, e.g.: A {{cat, dog}} in {{forest, beach}}, golden hour lighting",
     inspire: "Inspire me",

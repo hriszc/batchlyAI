@@ -64,7 +64,12 @@ export const Route = createFileRoute("/api/generate-status")({
                     return { id, status: "succeeded", urls: data.urls, error: null };
                   }
                   if (data.status === "failed") {
-                    return { id, status: "failed", urls: null, error: data.error || "Generation failed" };
+                    return {
+                      id,
+                      status: "failed",
+                      urls: null,
+                      error: data.error || "Generation failed",
+                    };
                   }
                   return { id, status: "processing", urls: null, error: null };
                 } catch {
@@ -73,10 +78,10 @@ export const Route = createFileRoute("/api/generate-status")({
               }),
             );
 
-            return new Response(
-              JSON.stringify({ results }),
-              { status: 200, headers: { "Content-Type": "application/json" } },
-            );
+            return new Response(JSON.stringify({ results }), {
+              status: 200,
+              headers: { "Content-Type": "application/json" },
+            });
           }
 
           // Replicate type (default)

@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+
+import type { VariableGroup } from "../types";
 import {
   extractVariableGroups,
   computeCombinations,
@@ -6,7 +8,6 @@ import {
   computePromptCombinations,
   getCombinationCount,
 } from "../utils";
-import type { VariableGroup } from "../types";
 
 // ============================================================
 // extractVariableGroups
@@ -21,9 +22,7 @@ describe("extractVariableGroups", () => {
   });
 
   it("extracts a single variable", () => {
-    expect(extractVariableGroups("{{cat}}")).toEqual([
-      { id: "var_0", values: ["cat"] },
-    ]);
+    expect(extractVariableGroups("{{cat}}")).toEqual([{ id: "var_0", values: ["cat"] }]);
   });
 
   it("extracts multiple values in one group", () => {
@@ -33,9 +32,7 @@ describe("extractVariableGroups", () => {
   });
 
   it("extracts multiple groups", () => {
-    expect(
-      extractVariableGroups("A {{cat, dog}} in {{forest, beach}}"),
-    ).toEqual([
+    expect(extractVariableGroups("A {{cat, dog}} in {{forest, beach}}")).toEqual([
       { id: "var_0", values: ["cat", "dog"] },
       { id: "var_1", values: ["forest", "beach"] },
     ]);
@@ -80,11 +77,10 @@ describe("extractVariableGroups", () => {
   });
 
   it("handles template with text before and after variables", () => {
-    expect(extractVariableGroups("A {{red, blue}} car in {{day, night}} time"))
-      .toEqual([
-        { id: "var_0", values: ["red", "blue"] },
-        { id: "var_1", values: ["day", "night"] },
-      ]);
+    expect(extractVariableGroups("A {{red, blue}} car in {{day, night}} time")).toEqual([
+      { id: "var_0", values: ["red", "blue"] },
+      { id: "var_1", values: ["day", "night"] },
+    ]);
   });
 
   it("increments group IDs sequentially", () => {
@@ -96,15 +92,11 @@ describe("extractVariableGroups", () => {
   });
 
   it("handles single value group", () => {
-    expect(extractVariableGroups("{{solo}}")).toEqual([
-      { id: "var_0", values: ["solo"] },
-    ]);
+    expect(extractVariableGroups("{{solo}}")).toEqual([{ id: "var_0", values: ["solo"] }]);
   });
 
   it("handles template with only variables and no surrounding text", () => {
-    expect(extractVariableGroups("{{a, b}}")).toEqual([
-      { id: "var_0", values: ["a", "b"] },
-    ]);
+    expect(extractVariableGroups("{{a, b}}")).toEqual([{ id: "var_0", values: ["a", "b"] }]);
   });
 });
 
@@ -122,11 +114,7 @@ describe("computeCombinations", () => {
 
   it("returns combinations for single group", () => {
     const groups: VariableGroup[] = [{ id: "var_0", values: ["a", "b", "c"] }];
-    expect(computeCombinations(groups)).toEqual([
-      { var_0: "a" },
-      { var_0: "b" },
-      { var_0: "c" },
-    ]);
+    expect(computeCombinations(groups)).toEqual([{ var_0: "a" }, { var_0: "b" }, { var_0: "c" }]);
   });
 
   it("computes Cartesian product of two groups", () => {
@@ -170,9 +158,7 @@ describe("computeCombinations", () => {
       { id: "var_1", values: [] },
       { id: "var_2", values: ["b"] },
     ];
-    expect(computeCombinations(groups)).toEqual([
-      { var_0: "a", var_1: "b" },
-    ]);
+    expect(computeCombinations(groups)).toEqual([{ var_0: "a", var_1: "b" }]);
   });
 });
 
@@ -200,9 +186,7 @@ describe("interpolatePrompt", () => {
   });
 
   it("ignores extra keys in variables map", () => {
-    expect(
-      interpolatePrompt("{{a}}", { var_0: "hello", var_1: "world" }),
-    ).toBe("hello");
+    expect(interpolatePrompt("{{a}}", { var_0: "hello", var_1: "world" })).toBe("hello");
   });
 
   it("returns template unchanged when no variables match", () => {
@@ -252,9 +236,7 @@ describe("getCombinationCount", () => {
   });
 
   it("returns count for single group", () => {
-    expect(
-      getCombinationCount([{ id: "var_0", values: ["a", "b", "c"] }]),
-    ).toBe(3);
+    expect(getCombinationCount([{ id: "var_0", values: ["a", "b", "c"] }])).toBe(3);
   });
 
   it("returns product of group sizes", () => {

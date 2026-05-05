@@ -97,7 +97,6 @@
   "lint-staged": {
     "*": "oxfmt --no-error-on-unmatched-pattern"
   },
-  "generator": "create-mugnavo",
   "pnpm": {
     "onlyBuiltDependencies": [
       "better-sqlite3",
@@ -105,5 +104,6 @@
       "workerd",
       "sharp"
     ]
-  }
+  },
+  "generator": "create-mugnavo"
 }

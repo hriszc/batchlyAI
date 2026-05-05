@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { createAuth } from "@/lib/auth/auth";
 import { env } from "@/env/server";
+import { createAuth } from "@/lib/auth/auth";
 
 export const Route = createFileRoute("/api/debug")({
   server: {
@@ -9,7 +9,8 @@ export const Route = createFileRoute("/api/debug")({
       GET: async () => {
         const results: Record<string, unknown> = {};
 
-        results.platformEnvExists = typeof (globalThis as Record<string, unknown>).__env__ !== "undefined";
+        results.platformEnvExists =
+          typeof (globalThis as Record<string, unknown>).__env__ !== "undefined";
 
         try {
           results.env_BASE_URL = env.VITE_BASE_URL;

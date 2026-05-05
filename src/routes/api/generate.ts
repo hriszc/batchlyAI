@@ -69,36 +69,20 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
     const maxCost = costPerUnit * n;
 
     // Check prompt cache first
-    const cachedUrls = await getCachedFn(
-      body.prompt,
-      model,
-      body.aspectRatio || "1:1",
-      n,
-    );
+    const cachedUrls = await getCachedFn(body.prompt, model, body.aspectRatio || "1:1", n);
     if (cachedUrls) {
-      return jsonResponse(
-        { urls: cachedUrls, creditsRemaining: null, cached: true },
-        200,
-      );
+      return jsonResponse({ urls: cachedUrls, creditsRemaining: null, cached: true }, 200);
     }
 
     // Atomically check and deduct credits before generation
     const [deducted] = await db
       .update(userTable)
       .set({ credits: sql`${userTable.credits} - ${maxCost}` })
-      .where(
-        and(
-          eq(userTable.id, userId),
-          gte(userTable.credits, maxCost),
-        ),
-      )
+      .where(and(eq(userTable.id, userId), gte(userTable.credits, maxCost)))
       .returning({ credits: userTable.credits });
 
     if (!deducted) {
-      return jsonResponse(
-        { error: "Insufficient credits", required: maxCost },
-        402,
-      );
+      return jsonResponse({ error: "Insufficient credits", required: maxCost }, 402);
     }
 
     // All generation is now async

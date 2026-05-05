@@ -1,13 +1,11 @@
+import { DEFAULT_MODEL } from "@/components/universal-generator/models";
 import type {
   GeneratorState,
   VariableGroup,
   GeneratedResult,
 } from "@/components/universal-generator/types";
-import { DEFAULT_MODEL } from "@/components/universal-generator/models";
 
-export function createVariableGroup(
-  overrides?: Partial<VariableGroup>,
-): VariableGroup {
+export function createVariableGroup(overrides?: Partial<VariableGroup>): VariableGroup {
   return {
     id: "var_0",
     values: ["cat", "dog"],
@@ -15,9 +13,7 @@ export function createVariableGroup(
   };
 }
 
-export function createGeneratorState(
-  overrides?: Partial<GeneratorState>,
-): GeneratorState {
+export function createGeneratorState(overrides?: Partial<GeneratorState>): GeneratorState {
   return {
     promptTemplate: "",
     variableGroups: [],
@@ -33,9 +29,7 @@ export function createGeneratorState(
   };
 }
 
-export function createResult(
-  overrides?: Partial<GeneratedResult>,
-): GeneratedResult {
+export function createResult(overrides?: Partial<GeneratedResult>): GeneratedResult {
   return {
     id: "result_test_001",
     combination: {

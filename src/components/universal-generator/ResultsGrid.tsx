@@ -1,6 +1,7 @@
-import type { GeneratedResult } from "./types";
-import { ResultCard } from "./ResultCard";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+
+import { ResultCard } from "./ResultCard";
+import type { GeneratedResult } from "./types";
 
 interface ResultsGridProps {
   results: GeneratedResult[];
@@ -9,11 +10,11 @@ interface ResultsGridProps {
 
 function SkeletonCard() {
   return (
-    <div className="bg-card rounded-[8px] overflow-hidden border animate-pulse">
+    <div className="animate-pulse overflow-hidden rounded-[8px] border bg-card">
       <div className="aspect-square bg-muted" />
-      <div className="px-4 pt-4 pb-4 space-y-2">
-        <div className="h-4 bg-muted-foreground/10 rounded w-3/4" />
-        <div className="h-3 bg-muted-foreground/5 rounded w-1/2" />
+      <div className="space-y-2 px-4 pt-4 pb-4">
+        <div className="h-4 w-3/4 rounded bg-muted-foreground/10" />
+        <div className="h-3 w-1/2 rounded bg-muted-foreground/5" />
       </div>
     </div>
   );
@@ -26,18 +27,14 @@ export function ResultsGrid({ results, isGenerating }: ResultsGridProps) {
 
   return (
     <div className="mt-8">
-      <h2 className="text-foreground text-[28px] sm:text-[32px] md:text-[40px] font-semibold leading-[1.10] text-center mb-6">
+      <h2 className="mb-6 text-center text-[28px] leading-[1.10] font-semibold text-foreground sm:text-[32px] md:text-[40px]">
         {t("results")}
       </h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {isGenerating
-          ? Array.from({ length: 6 }).map((_, i) => (
-              <SkeletonCard key={i} />
-            ))
-          : results.map((result) => (
-              <ResultCard key={result.id} result={result} />
-            ))}
+          ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+          : results.map((result) => <ResultCard key={result.id} result={result} />)}
       </div>
     </div>
   );

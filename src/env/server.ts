@@ -7,7 +7,7 @@ export const env = createEnv({
     BETTER_AUTH_SECRET: z.string().min(1).optional().default("dev-secret"),
 
     // AI Gateway
-    GRSAI_API_KEY: z.string().min(1),
+    GRSAI_API_KEY: z.string().min(1).optional().default("dev-key"),
     REPLICATE_API_KEY: z.string().optional(),
 
     // OAuth2 providers, optional, update as needed

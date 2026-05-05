@@ -15,6 +15,7 @@ test.describe("Generator E2E", () => {
   });
 
   test("variable groups appear after typing template with vars", async ({ page }) => {
+    test.skip(!!process.env.CI, "Requires auth backend (D1 not available in CI)");
     await page.goto("/");
     const textarea = page.locator("textarea").first();
     await textarea.fill("A {{cat, dog}} in {{forest, beach}}");
@@ -26,6 +27,7 @@ test.describe("Generator E2E", () => {
   });
 
   test("language toggle switches to Chinese", async ({ page }) => {
+    test.skip(!!process.env.CI, "Requires auth backend (D1 not available in CI)");
     await page.goto("/");
     // Look for language toggle button in SettingsBar
     const langButton = page.getByLabel(/language/i);
@@ -48,7 +50,10 @@ test.describe("Generator E2E", () => {
     const initialClass = await html.getAttribute("class");
 
     // Toggle theme
-    const themeButton = page.locator("button").filter({ has: page.locator("svg") }).first();
+    const themeButton = page
+      .locator("button")
+      .filter({ has: page.locator("svg") })
+      .first();
     if (await themeButton.isVisible()) {
       await themeButton.click();
       // Wait for any transition
@@ -57,6 +62,7 @@ test.describe("Generator E2E", () => {
   });
 
   test("login page loads", async ({ page }) => {
+    test.skip(!!process.env.CI, "Requires auth backend (D1 not available in CI)");
     await page.goto("/login");
     await expect(page.locator('input[type="email"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
@@ -64,8 +70,11 @@ test.describe("Generator E2E", () => {
   });
 
   test("signup page loads", async ({ page }) => {
+    test.skip(!!process.env.CI, "Requires auth backend (D1 not available in CI)");
     await page.goto("/signup");
-    await expect(page.locator('input[id="name"]').or(page.locator('input[name="name"]'))).toBeVisible();
+    await expect(
+      page.locator('input[id="name"]').or(page.locator('input[name="name"]')),
+    ).toBeVisible();
     await expect(page.locator('input[type="email"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
   });

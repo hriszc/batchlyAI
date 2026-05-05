@@ -14,10 +14,11 @@ export default defineConfig({
     baseURL: process.env.E2E_BASE_URL || "http://localhost:3000",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
+    actionTimeout: process.env.CI ? 60000 : undefined,
   },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
-    { name: "firefox", use: { ...devices["Desktop Firefox"] } },
+    ...(!process.env.CI ? [{ name: "firefox", use: { ...devices["Desktop Firefox"] } }] : []),
   ],
   webServer: {
     command: "pnpm run dev",

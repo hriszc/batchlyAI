@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+
 import { cn } from "../utils";
 
 describe("cn", () => {
@@ -11,9 +12,7 @@ describe("cn", () => {
   });
 
   it("handles conditional classes", () => {
-    expect(cn("base", true && "active", false && "hidden")).toBe(
-      "base active",
-    );
+    expect(cn("base", true && "active", false && "hidden")).toBe("base active");
   });
 
   it("resolves tailwind conflicts (later wins)", () => {

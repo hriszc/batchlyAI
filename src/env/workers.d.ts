@@ -25,7 +25,11 @@ declare interface KVNamespace {
   get(key: string, type: "json"): Promise<unknown>;
   get(key: string, type: "arrayBuffer"): Promise<ArrayBuffer>;
   get(key: string, type: "stream"): Promise<ReadableStream>;
-  put(key: string, value: string | ArrayBuffer | ReadableStream, options?: KVNamespacePutOptions): Promise<void>;
+  put(
+    key: string,
+    value: string | ArrayBuffer | ReadableStream,
+    options?: KVNamespacePutOptions,
+  ): Promise<void>;
   delete(key: string): Promise<void>;
   list(options?: KVNamespaceListOptions): Promise<KVNamespaceListResult>;
 }
