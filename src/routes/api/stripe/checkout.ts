@@ -34,7 +34,7 @@ export async function handleCheckout(request: Request): Promise<Response> {
       quantity = Math.floor(body.quantity);
     }
   } catch {
-    // no body or invalid JSON, defaults to usd, qty 1
+    // no body or invalid JSON, default to usd + quantity 1
   }
 
   const priceId = currency === "cny" ? env.STRIPE_PRICE_ID_CNY : env.STRIPE_PRICE_ID_USD;
@@ -51,13 +51,6 @@ export async function handleCheckout(request: Request): Promise<Response> {
       ],
       customer_email: userEmail,
       metadata: { userId },
-      payment_intent_data: {
-        description: "BatchlyAI Credits",
-        metadata: { userId },
-      },
-      custom_text: {
-        submit: { message: `Purchase ${quantity * 1000} credits` },
-      },
       success_url: `${origin}/?purchase=success`,
       cancel_url: `${origin}/?purchase=canceled`,
     });
