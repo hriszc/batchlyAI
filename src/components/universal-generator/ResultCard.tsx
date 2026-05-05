@@ -18,6 +18,10 @@ export function ResultCard({ result }: ResultCardProps) {
             alt={combination.prompt}
             className="h-full w-full object-cover"
           />
+        ) : result.textContent ? (
+          <p className="line-clamp-6 px-4 text-center text-sm leading-relaxed text-foreground/80">
+            {result.textContent}
+          </p>
         ) : result.status === "error" ? (
           <div className="flex flex-col items-center gap-1 text-muted-foreground/40">
             <AlertCircleIcon className="size-8" />

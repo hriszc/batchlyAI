@@ -19,6 +19,7 @@ export interface GeneratedResult {
   id: string;
   combination: PromptCombination;
   imageUrl: string | null;
+  textContent: string | null;
   status: "pending" | "generating" | "complete" | "error";
 }
 

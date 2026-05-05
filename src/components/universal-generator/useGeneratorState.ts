@@ -159,6 +159,7 @@ async function pollForResults(
             id: string;
             combination: PromptCombination;
             imageUrl: string | null;
+            textContent: string | null;
             status: "complete" | "error";
           }[] => {
             if (r.status === "succeeded" && r.urls) {
@@ -166,6 +167,7 @@ async function pollForResults(
                 id: generateResultId(),
                 combination,
                 imageUrl: url,
+                textContent: null,
                 status: "complete" as const,
               }));
             }
@@ -174,6 +176,7 @@ async function pollForResults(
                 id: generateResultId(),
                 combination,
                 imageUrl: null,
+                textContent: null,
                 status: "error" as const,
               },
             ];
@@ -191,6 +194,7 @@ async function pollForResults(
       id: generateResultId(),
       combination,
       imageUrl: null,
+      textContent: null,
       status: "error" as const,
     },
   ];
@@ -302,6 +306,7 @@ export function useGeneratorState() {
                 id: generateResultId(),
                 combination,
                 imageUrl: null,
+                textContent: null,
                 status: "error" as const,
               };
             }
@@ -316,6 +321,7 @@ export function useGeneratorState() {
                 id: generateResultId(),
                 combination,
                 imageUrl: url,
+                textContent: null,
                 status: "complete" as const,
               }));
             }
@@ -333,6 +339,7 @@ export function useGeneratorState() {
                 id: generateResultId(),
                 combination,
                 imageUrl: null,
+                textContent: null,
                 status: "error" as const,
               },
             ];
@@ -354,15 +361,65 @@ export function useGeneratorState() {
           dispatch({ type: "SET_ERROR", payload: String(err) });
         });
     } else {
-      setTimeout(() => {
-        const results = combinations.map((combination) => ({
-          id: generateResultId(),
-          combination,
-          imageUrl: null,
-          status: "complete" as const,
-        }));
-        dispatch({ type: "FINISH_GENERATING", payload: results });
-      }, 1500);
+      // Text generation via DeepSeek
+      Promise.all(
+        combinations.map(async (combination) => {
+          try {
+            const resp = await fetch("/api/generate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                prompt: combination.prompt,
+                n: 1,
+                model: currentState.model,
+              }),
+            });
+            const json = (await resp.json()) as {
+              texts?: string[];
+              urls?: string[];
+              error?: string;
+              creditsRemaining?: number;
+            };
+
+            if (!resp.ok || json.error) {
+              return {
+                id: generateResultId(),
+                combination,
+                imageUrl: null,
+                textContent: null,
+                status: "error" as const,
+              };
+            }
+
+            if (json.creditsRemaining != null) {
+              dispatch({ type: "SET_CREDITS_REMAINING", payload: json.creditsRemaining });
+            }
+
+            return (json.texts || json.urls || []).map((text) => ({
+              id: generateResultId(),
+              combination,
+              imageUrl: null,
+              textContent: json.texts ? text : null,
+              status: "complete" as const,
+            }));
+          } catch {
+            return [
+              {
+                id: generateResultId(),
+                combination,
+                imageUrl: null,
+                textContent: null,
+                status: "error" as const,
+              },
+            ];
+          }
+        }),
+      ).then((resultGroups) => {
+        dispatch({
+          type: "FINISH_GENERATING",
+          payload: resultGroups.flat(),
+        });
+      });
     }
   }, []);
 

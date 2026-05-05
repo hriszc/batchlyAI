@@ -7,7 +7,7 @@ export const env = createEnv({
     BETTER_AUTH_SECRET: z.string().min(1).optional().default("dev-secret"),
 
     // AI Gateway
-    ANTHROPIC_API_KEY: z.string().optional(),
+    DEEPSEEK_API_KEY: z.string().optional(),
     GRSAI_API_KEY: z.string().min(1).optional().default("dev-key"),
     REPLICATE_API_KEY: z.string().optional(),
 

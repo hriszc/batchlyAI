@@ -3,7 +3,7 @@ export interface ModelInfo {
   label: string;
   category: "image" | "video" | "text";
   tier: "fast" | "pro";
-  provider: "replicate" | "grsai" | "simulated";
+  provider: "replicate" | "grsai" | "deepseek" | "simulated";
   providerModel: string;
   /** Credits per unit (per image, per generation, per second of video) */
   creditCost: number;
@@ -51,8 +51,8 @@ export const MODELS: ModelInfo[] = [
     label: "Text Turbo",
     category: "text",
     tier: "fast",
-    provider: "simulated",
-    providerModel: "",
+    provider: "deepseek",
+    providerModel: "deepseek-chat",
     creditCost: 5,
   },
   {
@@ -60,8 +60,8 @@ export const MODELS: ModelInfo[] = [
     label: "Text Pro",
     category: "text",
     tier: "pro",
-    provider: "simulated",
-    providerModel: "",
+    provider: "deepseek",
+    providerModel: "deepseek-reasoner",
     creditCost: 10,
   },
 ];
