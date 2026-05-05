@@ -3,6 +3,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth/auth-client";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 interface SocialLoginButtonProps {
   provider: string;
@@ -11,11 +12,16 @@ interface SocialLoginButtonProps {
   callbackURL: string;
 }
 
+const providerLabels: Record<string, string> = {
+  github: "GitHub",
+  google: "Google",
+};
+
 export function SignInSocialButton(props: SocialLoginButtonProps) {
   const providerLabel =
-    props.provider === "github"
-      ? "GitHub"
-      : props.provider.charAt(0).toUpperCase() + props.provider.slice(1);
+    providerLabels[props.provider] ??
+    (props.provider.charAt(0).toUpperCase() + props.provider.slice(1));
+  const { t } = useLanguage();
 
   const mutation = useMutation({
     mutationFn: async () =>
@@ -41,7 +47,7 @@ export function SignInSocialButton(props: SocialLoginButtonProps) {
       onClick={() => mutation.mutate()}
     >
       {props.icon}
-      Login with {providerLabel}
+      {t("loginWith", { provider: providerLabel })}
     </Button>
   );
 }

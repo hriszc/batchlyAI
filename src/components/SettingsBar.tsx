@@ -57,10 +57,10 @@ export function SettingsBar() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        toast.error(data.error || "Failed to start checkout");
+        toast.error(data.error || t("checkoutFailed"));
       }
     } catch {
-      toast.error("Failed to start checkout");
+      toast.error(t("checkoutFailed"));
     }
   };
 
@@ -89,7 +89,7 @@ export function SettingsBar() {
           <button
             onClick={handleSignOut}
             className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-muted/80 text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
-            aria-label="Sign out"
+            aria-label={t("signOut")}
           >
             <LogOutIcon className="size-3" />
           </button>
@@ -100,20 +100,20 @@ export function SettingsBar() {
           className="inline-flex h-8 items-center justify-center gap-1.5 rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
         >
           <LogInIcon className="size-3" />
-          Login
+          {t("loginNav")}
         </Link>
       )}
       <button
         onClick={() => setLanguage(language === "en" ? "zh" : "en")}
         className="inline-flex h-8 items-center justify-center rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
-        aria-label={`Switch to ${language === "en" ? "Chinese" : "English"}`}
+        aria-label={t("switchLang")}
       >
         {language === "en" ? "CN" : "EN"}
       </button>
       <button
         onClick={toggleTheme}
         className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-muted/80 text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
-        aria-label={`Switch to ${resolved === "dark" ? "light" : "dark"} mode`}
+        aria-label={t("switchTheme")}
       >
         {resolved === "dark" ? <SunIcon className="size-3.5" /> : <MoonIcon className="size-3.5" />}
       </button>

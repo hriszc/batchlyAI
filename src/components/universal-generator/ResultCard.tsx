@@ -1,5 +1,6 @@
 import { ImageIcon, AlertCircleIcon } from "lucide-react";
 
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 import type { GeneratedResult } from "./types";
 
 interface ResultCardProps {
@@ -8,6 +9,7 @@ interface ResultCardProps {
 
 export function ResultCard({ result }: ResultCardProps) {
   const { combination } = result;
+  const { t } = useLanguage();
 
   return (
     <div className="overflow-hidden rounded-[8px] border bg-card shadow-sm">
@@ -21,7 +23,7 @@ export function ResultCard({ result }: ResultCardProps) {
         ) : result.status === "error" ? (
           <div className="flex flex-col items-center gap-1 text-muted-foreground/40">
             <AlertCircleIcon className="size-8" />
-            <span className="text-xs">Failed</span>
+            <span className="text-xs">{t("resultFailed")}</span>
           </div>
         ) : (
           <ImageIcon className="size-8 text-muted-foreground/30" />
