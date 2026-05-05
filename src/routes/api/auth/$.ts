@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 
@@ -28,10 +29,7 @@ export const Route = createFileRoute("/api/auth/$")({
           const ip = request.headers.get("CF-Connecting-IP") || "unknown";
           const { allowed } = checkRateLimit(`${path}:${ip}`, 10, 60);
           if (!allowed) {
-            return new Response(JSON.stringify({ error: "Too many requests" }), {
-              status: 429,
-              headers: { "Content-Type": "application/json" },
-            });
+            return jsonResponse({ error: "Too many requests" }, 429);
           }
         }
 
@@ -42,8 +40,5 @@ export const Route = createFileRoute("/api/auth/$")({
 });
 
 function dbUnavailable() {
-  return new Response(JSON.stringify({ error: "Database not available" }), {
-    status: 501,
-    headers: { "Content-Type": "application/json" },
-  });
+  return jsonResponse({ error: "Database not available" }, 501);
 }

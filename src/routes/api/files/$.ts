@@ -26,7 +26,15 @@ export const Route = createFileRoute("/api/files/$")({
           const headers = new Headers();
           obj.writeHttpMetadata(headers);
           headers.set("Cache-Control", "public, max-age=86400");
-          headers.set("Access-Control-Allow-Origin", "*");
+
+          const origin = request.headers.get("Origin");
+          if (origin) {
+            const allowedOrigins = ["https://batchlyai.com", "http://localhost:3000"];
+            if (allowedOrigins.some((allowed) => origin.startsWith(allowed))) {
+              headers.set("Access-Control-Allow-Origin", origin);
+            }
+          }
+
           return new Response(obj.body, { headers });
         } catch {
           return new Response("Error reading file", { status: 500 });

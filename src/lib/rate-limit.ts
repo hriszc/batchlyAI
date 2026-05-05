@@ -1,6 +1,20 @@
-// Simple in-memory rate limiter.
-// Per Worker instance (not global), adequate for Free plan abuse prevention.
-// Lazy cleanup: expired entries are evicted on each check.
+/**
+ * In-memory rate limiter -- per Worker isolate, NOT globally consistent.
+ *
+ * LIMITATION: On Cloudflare Workers, each isolate maintains its own Map.
+ * Rate limits may be higher than configured under high traffic (requests
+ * spread across isolates). For production use with strict rate limiting:
+ *
+ *   - Cloudflare WAF Rate Limiting Rules (recommended): Dashboard > Security > WAF
+ *   - Durable Objects for global state
+ *   - Cloudflare KV with atomic increments for approximate limits
+ *
+ * For the current deployment scale, this per-isolate limiter provides
+ * adequate abuse prevention combined with the credit-based system.
+ *
+ * Lazy cleanup: expired entries are evicted on each check, and a full sweep
+ * runs every 30 seconds to prevent unbounded memory growth.
+ */
 
 interface Bucket {
   count: number;

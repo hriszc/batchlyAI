@@ -45,8 +45,9 @@ describe("handleGenerate", () => {
       grsaiFn: vi.fn(),
     } as any);
     expect(resp.status).toBe(400);
-    const body = (await resp.json()) as { error: string };
-    expect(body.error).toBe("Missing prompt");
+    const body = (await resp.json()) as { error: string; details: Record<string, unknown> };
+    expect(body.error).toBe("Invalid request");
+    expect(body.details).toBeDefined();
   });
 
   // --- Credit check ---
@@ -163,22 +164,16 @@ describe("handleGenerate", () => {
     expect(CREDIT_COST["z-video-pro"]).toBe(80);
   });
 
-  it("defaults to 20 credits for unknown model", async () => {
+  it("rejects unknown model with validation error", async () => {
     const mockGrsai = vi.fn().mockResolvedValue([makePrediction("grs-001")]);
-    // Start with just enough for default cost
-    const lowUser = seedUser(db, {
-      id: "unknown-model-user",
-      credits: 19,
-      email: "unknown@test.com",
-    });
-
     const resp = await handleGenerate({
-      request: makeRequest({ prompt: "test", n: 1, model: "unknown-model" }),
+      request: makeRequest({ prompt: "test", model: "unknown-model" }),
       db,
-      userId: lowUser,
+      userId,
       grsaiFn: mockGrsai,
     } as any);
-    // Should fail because unknown model costs 20 (default)
-    expect(resp.status).toBe(402);
+    expect(resp.status).toBe(400);
+    const body = (await resp.json()) as { error: string };
+    expect(body.error).toBe("Invalid request");
   });
 });

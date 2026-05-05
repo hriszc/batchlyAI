@@ -64,6 +64,8 @@ interface ReplicatePrediction {
   urls: { get: string; cancel: string };
 }
 
+// All image generation uses async prediction flow (create + poll via webhook/status endpoint).
+// Server-side busy-wait polling is incompatible with Cloudflare Workers CPU/timeout limits.
 interface ReplicateCreateResult {
   id: string;
   status: string;

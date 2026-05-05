@@ -1,4 +1,4 @@
-import { ImageIcon, AlertCircleIcon } from "lucide-react";
+import { ImageIcon, AlertCircleIcon, Loader2Icon } from "lucide-react";
 
 import type { GeneratedResult } from "./types";
 
@@ -23,6 +23,8 @@ export function ResultCard({ result }: ResultCardProps) {
             <AlertCircleIcon className="size-8" />
             <span className="text-xs">Failed</span>
           </div>
+        ) : result.status === "generating" ? (
+          <Loader2Icon className="size-8 animate-spin text-muted-foreground/40" />
         ) : (
           <ImageIcon className="size-8 text-muted-foreground/30" />
         )}
