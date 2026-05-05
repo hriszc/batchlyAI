@@ -4,10 +4,10 @@ import * as z from "zod";
 export const env = createEnv({
   server: {
     VITE_BASE_URL: z.string().url().default("http://localhost:3000"),
-    BETTER_AUTH_SECRET: z.string().min(32),
+    BETTER_AUTH_SECRET: z.string().min(1).default("dev-secret-placeholder-batchlyai-2024"),
 
     // AI Gateway
-    GRSAI_API_KEY: z.string().min(1),
+    GRSAI_API_KEY: z.string().min(1).optional().default(""),
     REPLICATE_API_KEY: z.string().optional(),
 
     // OAuth2 providers, optional, update as needed

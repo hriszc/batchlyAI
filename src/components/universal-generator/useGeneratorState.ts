@@ -1,4 +1,4 @@
-import { useReducer, useCallback, useRef } from "react";
+import { useReducer, useCallback, useEffect, useRef } from "react";
 import type { GeneratorState, GeneratorAction, GroupId } from "./types";
 import { extractVariableGroups, computePromptCombinations } from "./utils";
 import { DEFAULT_MODEL, MODELS } from "./models";
@@ -122,7 +122,7 @@ export function useGeneratorState() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stateRef = useRef(state);
-  stateRef.current = state;
+  useEffect(() => { stateRef.current = state; }, [state]);
 
   const setPromptTemplate = useCallback((value: string) => {
     dispatch({ type: "SET_PROMPT_TEMPLATE", payload: value });
