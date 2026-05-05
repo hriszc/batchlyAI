@@ -6,6 +6,7 @@ import { createAuth } from "@/lib/auth/auth";
 import { getCachedResult, setCachedResult } from "@/lib/cache/prompt-cache";
 import { getDb } from "@/lib/db";
 import { user as userTable } from "@/lib/db/schema/auth.schema";
+import { generateRequestSchema } from "@/lib/validation/schemas";
 
 export const CREDIT_COST: Record<string, number> = {
   "z-image-fast": 10,
@@ -55,19 +56,15 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
   } = ctx;
 
   try {
-    const body = (await request.json()) as {
-      prompt: string;
-      aspectRatio?: string;
-      n?: number;
-      model?: string;
-    };
-
-    if (!body.prompt) {
-      return jsonResponse({ error: "Missing prompt" }, 400);
+    const raw = await request.json();
+    const parsed = generateRequestSchema.safeParse(raw);
+    if (!parsed.success) {
+      return jsonResponse({ error: "Invalid request", details: parsed.error.flatten() }, 400);
     }
+    const body = parsed.data;
 
-    const model = body.model || "z-image-pro";
-    const n = body.n ?? 1;
+    const model = body.model;
+    const n = body.n;
     const costPerUnit = CREDIT_COST[model] ?? 20;
     const maxCost = costPerUnit * n;
     const watermark = !ctx.stripeCustomerId;

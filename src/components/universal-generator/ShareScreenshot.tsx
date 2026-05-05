@@ -84,7 +84,6 @@ export function ShareScreenshot({
       if (cancelled || !cardRef.current) return;
 
       try {
-        // @ts-expect-error - html2canvas has no types
         const { default: html2canvas } = await import("html2canvas");
         const canvas = await html2canvas(cardRef.current, {
           scale: 2,

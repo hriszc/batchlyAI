@@ -61,3 +61,4 @@ declare interface KVNamespaceListKey {
   expiration?: number;
   metadata?: Record<string, unknown>;
 }
+declare module "html2canvas";
