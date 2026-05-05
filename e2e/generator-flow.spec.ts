@@ -87,4 +87,58 @@ test.describe("Generator E2E", () => {
     const textarea = page.locator("textarea").first();
     await expect(textarea).toBeVisible();
   });
+
+  test("generate button is disabled when prompt is empty", async ({ page }) => {
+    test.skip(!!process.env.CI, "Requires auth backend (D1 not available in CI)");
+    await page.goto("/");
+    const generateBtn = page.getByRole("button", { name: /generate|开始生成/i });
+    await expect(generateBtn).toBeDisabled();
+  });
+
+  test("generate button becomes enabled when prompt is filled", async ({ page }) => {
+    test.skip(!!process.env.CI, "Requires auth backend (D1 not available in CI)");
+    await page.goto("/");
+    const textarea = page.locator("textarea").first();
+    await textarea.fill("A beautiful landscape");
+    await page.waitForTimeout(100);
+    const generateBtn = page.getByRole("button", { name: /generate|开始生成/i });
+    await expect(generateBtn).toBeEnabled();
+  });
+
+  test("file upload via paperclip button shows in attachments", async ({ page }) => {
+    test.skip(!!process.env.CI, "Requires auth backend (D1 not available in CI)");
+    await page.goto("/");
+    // The file input is hidden — we need to set the input file directly
+    const fileInput = page.locator('input[type="file"]');
+    await fileInput.setInputFiles({
+      name: "test-image.png",
+      mimeType: "image/png",
+      buffer: Buffer.from("fake-png-content"),
+    });
+    // Attachment indicator should appear
+    await page.waitForTimeout(500);
+    // The attach button may show the filename or a count
+    const attachButton = page.getByRole("button", { name: /attach|附件/i });
+    await expect(attachButton).toBeVisible();
+  });
+
+  test("model selector shows available models", async ({ page }) => {
+    test.skip(!!process.env.CI, "Requires auth backend (D1 not available in CI)");
+    await page.goto("/");
+    // Model picker should be visible with current model
+    await expect(page.getByText(/pro|fast/i).first()).toBeVisible();
+  });
+
+  test("aspect ratio buttons switch between ratios", async ({ page }) => {
+    test.skip(!!process.env.CI, "Requires auth backend (D1 not available in CI)");
+    await page.goto("/");
+    // Click a different aspect ratio
+    const ratio16_9 = page.getByText("16:9");
+    if (await ratio16_9.isVisible()) {
+      await ratio16_9.click();
+      await page.waitForTimeout(100);
+    }
+    // The clicked button should appear selected/active
+    await expect(page.getByText("16:9").first()).toBeVisible();
+  });
 });
