@@ -342,6 +342,7 @@ export function useGeneratorState() {
           }
         })
         .catch((err) => {
+          /* v8 ignore next 3 -- safety net: .flat() can't throw since every path returns an array */
           dispatch({ type: "SET_ERROR", payload: String(err) });
         });
     } else {
