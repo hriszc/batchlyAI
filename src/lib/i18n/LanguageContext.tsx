@@ -23,11 +23,11 @@ function detectBrowserLanguage(): Language {
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>("en");
-  const [mounted, setMounted] = useState(false);
+  const [_mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("language") as Language | null;
-    setLanguageState(stored === "en" || stored === "zh" ? stored : detectBrowserLanguage());
+    void setLanguageState(stored === "en" || stored === "zh" ? stored : detectBrowserLanguage());
     setMounted(true);
   }, []);
 

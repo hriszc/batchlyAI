@@ -271,7 +271,7 @@ export function useGeneratorState() {
       let creditsRemaining: number | null = null;
       let isWatermarked = false;
 
-      Promise.all(
+      void Promise.all(
         combinations.map(async (combination) => {
           try {
             const resp = await fetch("/api/generate", {
@@ -372,7 +372,7 @@ export function useGeneratorState() {
       });
     } else {
       // Text generation via DeepSeek
-      Promise.all(
+      void Promise.all(
         combinations.map(async (combination) => {
           try {
             const resp = await fetch("/api/generate", {

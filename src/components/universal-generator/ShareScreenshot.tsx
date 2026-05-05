@@ -68,7 +68,7 @@ export function ShareScreenshot({
 
     // Wait for all images in the card to load
     const images = cardRef.current.querySelectorAll("img");
-    Promise.all(
+    void Promise.all(
       Array.from(images).map(
         (img) =>
           new Promise<void>((resolve) => {

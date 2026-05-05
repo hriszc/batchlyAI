@@ -69,7 +69,7 @@ export function SettingsBar() {
 
   useEffect(() => {
     if (!session?.user) return;
-    fetch("/api/referral/stats")
+    void fetch("/api/referral/stats")
       .then((r) => r.json())
       .then((data: ReferralStats & { error?: string }) => {
         if (!data.error) setReferralStats(data);
