@@ -81,7 +81,7 @@ describe("SettingsBar", () => {
       expect.objectContaining({
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currency: "usd" }),
+        body: JSON.stringify({ currency: "usd", quantity: 1 }),
       }),
     );
   });
@@ -104,7 +104,7 @@ describe("SettingsBar", () => {
     expect(mockFetch).toHaveBeenCalledWith(
       "/api/stripe/checkout",
       expect.objectContaining({
-        body: JSON.stringify({ currency: "cny" }),
+        body: JSON.stringify({ currency: "cny", quantity: 1 }),
       }),
     );
   });

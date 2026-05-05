@@ -26,11 +26,15 @@ export async function handleCheckout(request: Request): Promise<Response> {
   const origin = new URL(request.url).origin;
 
   let currency = "usd";
+  let quantity = 1;
   try {
     const body = await request.json();
     if (body.currency === "cny") currency = "cny";
+    if (typeof body.quantity === "number" && body.quantity >= 1 && body.quantity <= 100) {
+      quantity = Math.floor(body.quantity);
+    }
   } catch {
-    // no body or invalid JSON, default to usd
+    // no body or invalid JSON, defaults to usd, qty 1
   }
 
   const priceId = currency === "cny" ? env.STRIPE_PRICE_ID_CNY : env.STRIPE_PRICE_ID_USD;
@@ -42,11 +46,18 @@ export async function handleCheckout(request: Request): Promise<Response> {
       line_items: [
         {
           price: priceId,
-          quantity: 1,
+          quantity,
         },
       ],
       customer_email: userEmail,
       metadata: { userId },
+      payment_intent_data: {
+        description: "BatchlyAI Credits",
+        metadata: { userId },
+      },
+      custom_text: {
+        submit: { message: `Purchase ${quantity * 1000} credits` },
+      },
       success_url: `${origin}/?purchase=success`,
       cancel_url: `${origin}/?purchase=canceled`,
     });
