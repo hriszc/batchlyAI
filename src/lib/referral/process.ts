@@ -46,10 +46,7 @@ export async function processReferralAfterSignup(
   const db = getDb(binding);
 
   // Look up referrer by code
-  const [codeRecord] = await db
-    .select()
-    .from(referralCode)
-    .where(eq(referralCode.code, refCode));
+  const [codeRecord] = await db.select().from(referralCode).where(eq(referralCode.code, refCode));
   if (!codeRecord) return;
 
   const referrerId = codeRecord.userId;
@@ -61,8 +58,7 @@ export async function processReferralAfterSignup(
     .where(eq(userTable.id, referrerId));
   if (!referrer) return;
 
-  const isSelfReferral =
-    referrer.email.toLowerCase() === userEmail.toLowerCase();
+  const isSelfReferral = referrer.email.toLowerCase() === userEmail.toLowerCase();
 
   // Check if referee already referred (UNIQUE constraint)
   const [existing] = await db
@@ -72,9 +68,7 @@ export async function processReferralAfterSignup(
   if (existing) return;
 
   // Daily cap
-  const todayStart = Math.floor(
-    new Date(new Date().setHours(0, 0, 0, 0)).getTime() / 1000,
-  );
+  const todayStart = Math.floor(new Date(new Date().setHours(0, 0, 0, 0)).getTime() / 1000);
   const todayEnd = todayStart + 86400;
   const [todayCount] = await db
     .select({

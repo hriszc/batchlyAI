@@ -84,10 +84,7 @@ export const Route = createFileRoute("/api/templates")({
           variableGroups: JSON.parse(r.variableGroups),
         }));
 
-        return jsonResponse(
-          { templates: parsed, total: countResult?.total ?? 0 },
-          200,
-        );
+        return jsonResponse({ templates: parsed, total: countResult?.total ?? 0 }, 200);
       },
       POST: async ({ request }) => {
         const auth = createAuth();
@@ -160,10 +157,7 @@ export const Route = createFileRoute("/api/templates")({
         });
 
         const origin = new URL(request.url).origin;
-        return jsonResponse(
-          { id, slug, url: `${origin}/templates/${slug}` },
-          201,
-        );
+        return jsonResponse({ id, slug, url: `${origin}/templates/${slug}` }, 201);
       },
     },
   },

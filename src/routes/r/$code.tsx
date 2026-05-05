@@ -13,9 +13,7 @@ function getD1Binding(): D1Database | undefined {
 
 function redirectToSignup(origin: string, refCode?: string) {
   const headers = new Headers();
-  const targetUrl = refCode
-    ? `${origin}/signup?ref=${refCode}`
-    : `${origin}/signup`;
+  const targetUrl = refCode ? `${origin}/signup?ref=${refCode}` : `${origin}/signup`;
 
   if (refCode) {
     headers.set(
@@ -42,10 +40,7 @@ export const Route = createFileRoute("/r/$code")({
         }
 
         const db = getDb(binding);
-        const [record] = await db
-          .select()
-          .from(referralCode)
-          .where(eq(referralCode.code, code));
+        const [record] = await db.select().from(referralCode).where(eq(referralCode.code, code));
 
         if (!record) {
           return redirectToSignup(new URL(request.url).origin);
