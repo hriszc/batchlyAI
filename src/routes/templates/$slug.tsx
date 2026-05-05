@@ -18,7 +18,10 @@ export const Route = createFileRoute("/templates/$slug")({
     const binding = getD1Binding();
     if (!binding) return null;
     const db = drizzle(binding, { schema, casing: "snake_case" });
-    const [row] = await db.select().from(schema.template).where(eq(schema.template.slug, slug));
+    const [row] = await db
+      .select()
+      .from(schema.template)
+      .where(eq(schema.template.slug, slug));
     if (!row) return null;
     return {
       ...row,
@@ -50,10 +53,7 @@ export const Route = createFileRoute("/templates/$slug")({
               description: loaderData.description,
               step: [
                 { "@type": "HowToStep", text: "Open the template in BatchlyAI" },
-                {
-                  "@type": "HowToStep",
-                  text: `Generate images using the prompt: ${loaderData.promptTemplate}`,
-                },
+                { "@type": "HowToStep", text: `Generate images using the prompt: ${loaderData.promptTemplate}` },
               ],
             }),
           },
@@ -132,7 +132,11 @@ function TemplateDetailPage() {
         {data.previewImageUrl && (
           <div className="lg:w-80">
             <div className="overflow-hidden rounded-lg border bg-card">
-              <img src={data.previewImageUrl} alt={data.name} className="w-full object-cover" />
+              <img
+                src={data.previewImageUrl}
+                alt={data.name}
+                className="w-full object-cover"
+              />
             </div>
           </div>
         )}

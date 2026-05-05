@@ -32,7 +32,11 @@ export const Route = createFileRoute("/api/share")({
           aspectRatio?: string;
         };
 
-        if (!body.promptTemplate || !body.variableGroups || !body.resultImageUrls?.length) {
+        if (
+          !body.promptTemplate ||
+          !body.variableGroups ||
+          !body.resultImageUrls?.length
+        ) {
           return jsonResponse(
             { error: "Missing required fields: promptTemplate, variableGroups, resultImageUrls" },
             400,
@@ -58,7 +62,10 @@ export const Route = createFileRoute("/api/share")({
         });
 
         const origin = new URL(request.url).origin;
-        return jsonResponse({ shareId, shareUrl: `${origin}/g/${shareId}` }, 200);
+        return jsonResponse(
+          { shareId, shareUrl: `${origin}/g/${shareId}` },
+          200,
+        );
       },
     },
   },
