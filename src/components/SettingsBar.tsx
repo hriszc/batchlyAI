@@ -1,6 +1,15 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { SunIcon, MoonIcon, LogInIcon, LogOutIcon, UserIcon, PlusIcon } from "lucide-react";
-import { useEffect } from "react";
+import {
+  SunIcon,
+  MoonIcon,
+  LogInIcon,
+  LogOutIcon,
+  UserIcon,
+  PlusIcon,
+  Share2Icon,
+  GiftIcon,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { useTheme } from "@/components/theme-provider";
@@ -46,6 +55,62 @@ export function SettingsBar() {
     void navigate({ to: "/" });
   };
 
+  // Referral stats
+  interface ReferralStats {
+    tier: string;
+    totalReferrals: number;
+    totalCreditsEarned: number;
+    commissionTotal: number;
+    referralCode: string | null;
+    shareUrl: string | null;
+  }
+  const [referralStats, setReferralStats] = useState<ReferralStats | null>(null);
+  const [referralLoading, setReferralLoading] = useState(false);
+
+  useEffect(() => {
+    if (!session?.user) return;
+    fetch("/api/referral/stats")
+      .then((r) => r.json())
+      .then((data: ReferralStats & { error?: string }) => {
+        if (!data.error) setReferralStats(data);
+      })
+      .catch(() => {});
+  }, [session?.user]);
+
+  const handleGenerateReferralCode = useCallback(async () => {
+    setReferralLoading(true);
+    try {
+      const resp = await fetch("/api/referral/generate-code", { method: "POST" });
+      const data = (await resp.json()) as {
+        code?: string;
+        shareUrl?: string;
+        error?: string;
+      };
+      if (data.code) {
+        // Re-fetch stats
+        const statsResp = await fetch("/api/referral/stats");
+        const statsData = (await statsResp.json()) as ReferralStats & {
+          error?: string;
+        };
+        if (!statsData.error) setReferralStats(statsData);
+        toast.success("Referral link created!");
+      } else {
+        toast.error(data.error || "Failed to create referral link");
+      }
+    } catch {
+      toast.error("Failed to create referral link");
+    } finally {
+      setReferralLoading(false);
+    }
+  }, []);
+
+  const handleCopyReferralLink = useCallback(async () => {
+    if (referralStats?.shareUrl) {
+      await navigator.clipboard.writeText(referralStats.shareUrl);
+      toast.success("Referral link copied!");
+    }
+  }, [referralStats?.shareUrl]);
+
   const handleBuyCredits = async () => {
     try {
       const resp = await fetch("/api/stripe/checkout", {
@@ -76,6 +141,45 @@ export function SettingsBar() {
             <PlusIcon className="size-3" />
             {t("buyCredits")}
           </button>
+
+          {/* Referral Section */}
+          {referralStats?.referralCode ? (
+            <>
+              <button
+                onClick={handleCopyReferralLink}
+                title="Copy referral link"
+                className="inline-flex h-8 items-center justify-center gap-1 rounded-full bg-green-500/15 px-2.5 text-xs font-medium text-green-600 backdrop-blur-sm transition-colors hover:bg-green-500/25"
+              >
+                <Share2Icon className="size-3" />
+                {referralStats.totalReferrals > 0
+                  ? `${referralStats.totalReferrals} invites`
+                  : "Copy Referral Link"}
+              </button>
+              {referralStats.tier !== "none" && (
+                <span className="inline-flex h-8 items-center justify-center rounded-full bg-amber-500/15 px-2 text-xs font-semibold text-amber-600 backdrop-blur-sm">
+                  {referralStats.tier}
+                </span>
+              )}
+              {referralStats.totalCreditsEarned > 0 && (
+                <span className="inline-flex h-8 items-center justify-center gap-0.5 rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground backdrop-blur-sm">
+                  <span className="font-semibold text-green-600">
+                    +{referralStats.totalCreditsEarned}
+                  </span>
+                  earned
+                </span>
+              )}
+            </>
+          ) : (
+            <button
+              onClick={handleGenerateReferralCode}
+              disabled={referralLoading}
+              className="inline-flex h-8 items-center justify-center gap-1 rounded-full bg-purple-500/15 px-2.5 text-xs font-medium text-purple-600 backdrop-blur-sm transition-colors hover:bg-purple-500/25 disabled:opacity-50"
+            >
+              <GiftIcon className="size-3" />
+              {referralLoading ? "..." : "Get Referral Link"}
+            </button>
+          )}
+
           <span className="inline-flex h-8 items-center justify-center gap-1 rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground backdrop-blur-sm">
             <span className="font-semibold text-[#0071e3]">
               {((session.user as Record<string, unknown>).credits as number) ?? 0}

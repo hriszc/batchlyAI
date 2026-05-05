@@ -46,6 +46,26 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
       { rel: "stylesheet", href: appCss },
     ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          name: "BatchlyAI",
+          description:
+            "Universal AI Generator — batch generate all combinations from multi-variable prompts",
+          url: "https://batchlyai.com",
+          applicationCategory: "Multimedia",
+          operatingSystem: "Web",
+          offers: {
+            "@type": "Offer",
+            price: "0",
+            priceCurrency: "USD",
+          },
+        }),
+      },
+    ],
   }),
   shellComponent: RootDocument,
 });

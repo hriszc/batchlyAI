@@ -39,6 +39,14 @@ export function createAuth(d1Binding?: D1Database) {
             type: "number",
             defaultValue: 10,
           },
+          referralTier: {
+            type: "string",
+            defaultValue: "none",
+          },
+          totalReferrals: {
+            type: "number",
+            defaultValue: 0,
+          },
         },
       },
       session: {

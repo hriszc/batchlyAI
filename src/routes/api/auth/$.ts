@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { processReferralAfterSignup } from "@/lib/referral/process";
 
 export const Route = createFileRoute("/api/auth/$")({
   server: {
@@ -36,7 +37,23 @@ export const Route = createFileRoute("/api/auth/$")({
           }
         }
 
-        return auth.handler(request);
+        const response = await auth.handler(request);
+
+        // Post-signup referral processing
+        if (path === "sign-up/email" && response.ok) {
+          try {
+            const cloned = response.clone();
+            const body = (await cloned.json()) as {
+              user?: { id: string; email: string };
+            };
+            await processReferralAfterSignup(request, body);
+          } catch {
+            // Non-fatal: don't break signup if referral processing fails
+            console.error("[auth] Referral processing error");
+          }
+        }
+
+        return response;
       },
     },
   },
