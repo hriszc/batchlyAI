@@ -40,7 +40,7 @@ function SignupForm() {
         throw new Error(err.message || "Sign up failed");
       }
       queryClient.removeQueries({ queryKey: authQueryOptions().queryKey });
-      navigate({ to: redirectUrl });
+      void navigate({ to: redirectUrl });
       return result;
     },
     onError: (error) => {
