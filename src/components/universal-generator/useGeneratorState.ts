@@ -451,7 +451,10 @@ export function useGeneratorState() {
       const resp = await fetch("/api/upload-url", {
         method: "POST",
         body: file,
-        headers: { "X-File-Name": encodeURIComponent(file.name) },
+        headers: {
+          "X-File-Name": encodeURIComponent(file.name),
+          "Content-Type": file.type || "application/octet-stream",
+        },
       });
 
       if (resp.status === 401) {

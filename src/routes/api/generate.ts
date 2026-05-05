@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { and, eq, gte, sql } from "drizzle-orm";
 
 import { createGrsaiPredictions, createReplicatePredictions, generateText } from "@/lib/ai";
+import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getCachedResult, setCachedResult } from "@/lib/cache/prompt-cache";
 import { getDb } from "@/lib/db";
@@ -217,13 +218,6 @@ export const Route = createFileRoute("/api/generate")({
     },
   },
 });
-
-function jsonResponse(data: unknown, status: number) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
 
 function dbUnavailable() {
   return jsonResponse({ error: "Database not available" }, 501);

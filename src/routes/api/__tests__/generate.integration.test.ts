@@ -176,4 +176,67 @@ describe("handleGenerate", () => {
     const body = (await resp.json()) as { error: string };
     expect(body.error).toBe("Invalid request");
   });
+
+  // --- Video model (Replicate) ---
+  it("z-video-fast uses replicate and returns async prediction IDs", async () => {
+    const mockReplicate = vi.fn().mockResolvedValue([makePrediction("vid-001")]);
+
+    const resp = await handleGenerate({
+      request: makeRequest({ prompt: "a sunset", n: 1, model: "z-video-fast" }),
+      db,
+      userId,
+      replicateFn: mockReplicate,
+    } as any);
+    expect(resp.status).toBe(200);
+    const body = (await resp.json()) as { predictionIds: string[]; async: boolean };
+    expect(body.predictionIds).toEqual(["vid-001"]);
+    expect(body.async).toBe(true);
+  });
+
+  it("z-video-fast refunds on API failure", async () => {
+    const mockReplicate = vi.fn().mockRejectedValue(new Error("Replicate down"));
+
+    const resp = await handleGenerate({
+      request: makeRequest({ prompt: "a sunset", n: 1, model: "z-video-fast" }),
+      db,
+      userId,
+      replicateFn: mockReplicate,
+    } as any);
+    expect(resp.status).toBe(500);
+    expect(getCredits()).toBe(100);
+  });
+
+  // --- Credit deduction correctness ---
+  it("deducts correct amount for n > 1", async () => {
+    const mockGrsai = vi
+      .fn()
+      .mockResolvedValue([
+        makePrediction("grs-001"),
+        makePrediction("grs-002"),
+        makePrediction("grs-003"),
+      ]);
+
+    await handleGenerate({
+      request: makeRequest({ prompt: "test", n: 3, model: "z-image-pro" }),
+      db,
+      userId,
+      grsaiFn: mockGrsai,
+    } as any);
+
+    // 3 prompts × 20 credits each = 60 credits deducted
+    expect(getCredits()).toBe(40);
+  });
+
+  it("preserves credits when n=1 with pro model", async () => {
+    const mockGrsai = vi.fn().mockResolvedValue([makePrediction("grs-single")]);
+
+    await handleGenerate({
+      request: makeRequest({ prompt: "test", n: 1, model: "z-image-pro" }),
+      db,
+      userId,
+      grsaiFn: mockGrsai,
+    } as any);
+
+    expect(getCredits()).toBe(80); // 100 - 20
+  });
 });

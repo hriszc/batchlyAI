@@ -18,59 +18,64 @@ const ALLOWED_MIME_TYPES = [
 
 const ALLOWED_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".bmp", ".tiff"];
 
+export async function handleUpload(request: Request): Promise<Response> {
+  const auth = createAuth();
+  if (!auth) {
+    return jsonResponse({ error: "Auth unavailable" }, 501);
+  }
+
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session?.user?.id) {
+    return jsonResponse({ error: "Unauthorized" }, 401);
+  }
+
+  const limit = checkRateLimit(`upload:user:${session.user.id}`, 20, 60);
+  if (!limit.allowed) {
+    return jsonResponse({ error: "Upload rate limit exceeded. Please try again later." }, 429);
+  }
+
+  const rawFilename = request.headers.get("x-file-name") || "";
+  const filename = sanitizeFilename(decodeURIComponent(rawFilename));
+
+  const ext = filename.includes(".") ? filename.slice(filename.lastIndexOf(".")).toLowerCase() : "";
+  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    return jsonResponse({ error: `File type not allowed: ${ext || "unknown"}` }, 400);
+  }
+
+  const contentType = request.headers.get("Content-Type") || "";
+  if (!contentType || !ALLOWED_MIME_TYPES.includes(contentType)) {
+    return jsonResponse({ error: `Content-Type not allowed: ${contentType || "unknown"}` }, 400);
+  }
+
+  const contentLength = parseInt(request.headers.get("Content-Length") || "0", 10);
+  const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+  if (contentLength > MAX_SIZE) {
+    return jsonResponse({ error: "File too large (max 10 MB)" }, 413);
+  }
+
+  const sanitizedUserId = session.user.id.replace(/[^a-zA-Z0-9_-]/g, "_");
+  const key = `uploads/${sanitizedUserId}/${Date.now()}_${filename}`;
+
+  try {
+    const result = await uploadToR2(key, request.body!);
+
+    if (!result.success) {
+      return jsonResponse({ error: "R2 not configured" }, 501);
+    }
+
+    const proxyUrl = `${new URL(request.url).origin}/api/files/${key}`;
+
+    return jsonResponse({ publicUrl: proxyUrl, key }, 200);
+  } catch (err) {
+    console.error("[upload] R2 put error:", err);
+    return jsonResponse({ error: "Upload failed" }, 500);
+  }
+}
+
 export const Route = createFileRoute("/api/upload-url")({
   server: {
     handlers: {
-      POST: async ({ request }) => {
-        const auth = createAuth();
-        if (!auth) {
-          return jsonResponse({ error: "Auth unavailable" }, 501);
-        }
-
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user?.id) {
-          return jsonResponse({ error: "Unauthorized" }, 401);
-        }
-
-        const limit = checkRateLimit(`upload:user:${session.user.id}`, 20, 60);
-        if (!limit.allowed) {
-          return jsonResponse(
-            { error: "Upload rate limit exceeded. Please try again later." },
-            429,
-          );
-        }
-
-        const rawFilename = request.headers.get("x-file-name") || "";
-        const filename = sanitizeFilename(decodeURIComponent(rawFilename));
-
-        const ext = filename.includes(".")
-          ? filename.slice(filename.lastIndexOf(".")).toLowerCase()
-          : "";
-        if (!ALLOWED_EXTENSIONS.includes(ext)) {
-          return jsonResponse({ error: `File type not allowed: ${ext || "unknown"}` }, 400);
-        }
-
-        const contentType = request.headers.get("Content-Type") || "";
-        if (!contentType || !ALLOWED_MIME_TYPES.includes(contentType)) {
-          return jsonResponse(
-            { error: `Content-Type not allowed: ${contentType || "unknown"}` },
-            400,
-          );
-        }
-
-        const sanitizedUserId = session.user.id.replace(/[^a-zA-Z0-9_-]/g, "_");
-        const key = `uploads/${sanitizedUserId}/${Date.now()}_${filename}`;
-
-        const result = await uploadToR2(key, request.body!);
-
-        if (!result.success) {
-          return jsonResponse({ error: "R2 not configured" }, 501);
-        }
-
-        const proxyUrl = `${new URL(request.url).origin}/api/files/${key}`;
-
-        return jsonResponse({ publicUrl: proxyUrl, key }, 200);
-      },
+      POST: async ({ request }) => handleUpload(request),
     },
   },
 });
