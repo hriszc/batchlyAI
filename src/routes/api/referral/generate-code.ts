@@ -39,59 +39,68 @@ export const Route = createFileRoute("/api/referral/generate-code")({
         if (!binding) return jsonResponse({ error: "DB unavailable" }, 501);
         const db = getDb(binding);
 
-        // Idempotent: return existing code
-        const [existing] = await db
-          .select()
-          .from(referralCode)
-          .where(eq(referralCode.userId, userId));
+        try {
+          // Idempotent: return existing code
+          const [existing] = await db
+            .select()
+            .from(referralCode)
+            .where(eq(referralCode.userId, userId));
 
-        if (existing) {
+          if (existing) {
+            const origin = new URL(request.url).origin;
+            return jsonResponse(
+              { code: existing.code, shareUrl: `${origin}/r/${existing.code}` },
+              200,
+            );
+          }
+
+          // Activity gate
+          const [userRecord] = await db
+            .select({ credits: userTable.credits })
+            .from(userTable)
+            .where(eq(userTable.id, userId));
+
+          if (!userRecord || userRecord.credits >= 10) {
+            return jsonResponse(
+              {
+                error: "You must generate at least one image before creating a referral link",
+              },
+              403,
+            );
+          }
+
+          let code = "";
+          for (let attempt = 0; attempt < 5; attempt++) {
+            code = generateCode();
+            const [collision] = await db
+              .select({ id: referralCode.id })
+              .from(referralCode)
+              .where(eq(referralCode.code, code));
+            if (!collision) break;
+            if (attempt === 4) {
+              return jsonResponse({ error: "Failed to generate unique code" }, 500);
+            }
+          }
+
+          const now = Math.floor(Date.now() / 1000);
+          await db.insert(referralCode).values({
+            id: `refcode_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            userId,
+            code,
+            createdAt: now,
+          });
+
           const origin = new URL(request.url).origin;
-          return jsonResponse(
-            { code: existing.code, shareUrl: `${origin}/r/${existing.code}` },
-            200,
-          );
-        }
-
-        // Activity gate: must have spent at least some credits (credits < 10)
-        const [userRecord] = await db
-          .select({ credits: userTable.credits })
-          .from(userTable)
-          .where(eq(userTable.id, userId));
-
-        if (!userRecord || userRecord.credits >= 10) {
+          return jsonResponse({ code, shareUrl: `${origin}/r/${code}` }, 200);
+        } catch (err) {
+          console.error("[referral] generate-code error:", err);
           return jsonResponse(
             {
-              error: "You must generate at least one image before creating a referral link",
+              error: "Referral system unavailable. The database may not be migrated yet.",
             },
-            403,
+            500,
           );
         }
-
-        // Generate unique code
-        let code = "";
-        for (let attempt = 0; attempt < 5; attempt++) {
-          code = generateCode();
-          const [collision] = await db
-            .select({ id: referralCode.id })
-            .from(referralCode)
-            .where(eq(referralCode.code, code));
-          if (!collision) break;
-          if (attempt === 4) {
-            return jsonResponse({ error: "Failed to generate unique code" }, 500);
-          }
-        }
-
-        const now = Math.floor(Date.now() / 1000);
-        await db.insert(referralCode).values({
-          id: `refcode_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-          userId,
-          code,
-          createdAt: now,
-        });
-
-        const origin = new URL(request.url).origin;
-        return jsonResponse({ code, shareUrl: `${origin}/r/${code}` }, 200);
       },
     },
   },
