@@ -1,6 +1,7 @@
 import { ImageIcon, AlertCircleIcon, Loader2Icon } from "lucide-react";
 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+
 import type { GeneratedResult } from "./types";
 
 interface ResultCardProps {

@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-router";
 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+
 import { Button } from "./ui/button";
 
 export function DefaultCatchBoundary({ error }: Readonly<ErrorComponentProps>) {

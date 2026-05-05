@@ -20,7 +20,7 @@ const providerLabels: Record<string, string> = {
 export function SignInSocialButton(props: SocialLoginButtonProps) {
   const providerLabel =
     providerLabels[props.provider] ??
-    (props.provider.charAt(0).toUpperCase() + props.provider.slice(1));
+    props.provider.charAt(0).toUpperCase() + props.provider.slice(1);
   const { t } = useLanguage();
 
   const mutation = useMutation({
