@@ -30,6 +30,12 @@ export const Route = createFileRoute("/api/stripe/webhook")({
 
         let event;
         try {
+          if (!env.STRIPE_WEBHOOK_SECRET) {
+            return new Response(JSON.stringify({ error: "Stripe webhook not configured" }), {
+              status: 501,
+              headers: { "Content-Type": "application/json" },
+            });
+          }
           const stripe = getStripe();
           event = await stripe.webhooks.constructEventAsync(body, sig, env.STRIPE_WEBHOOK_SECRET);
         } catch (err) {

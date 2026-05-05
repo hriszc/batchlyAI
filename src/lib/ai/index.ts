@@ -32,7 +32,7 @@ export async function createGrsaiPredictions({
           prompt,
           aspectRatio,
           urls: [],
-          webHook: `${env.VITE_BASE_URL}/api/grs-webhook`,
+          webHook: `${env.VITE_BASE_URL}/api/grs-webhook${env.GRS_WEBHOOK_SECRET ? `?secret=${env.GRS_WEBHOOK_SECRET}` : ""}`,
         }),
       }).then(async (resp) => {
         if (!resp.ok) {

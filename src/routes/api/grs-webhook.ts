@@ -1,5 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { env } from "@/env/server";
+import { jsonResponse } from "@/lib/api-helpers";
+
 function getKvBinding(): KVNamespace | undefined {
   const platformEnv = (globalThis as Record<string, unknown>).__env__ as
     | Record<string, unknown>
@@ -18,32 +21,30 @@ export const Route = createFileRoute("/api/grs-webhook")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        if (env.GRS_WEBHOOK_SECRET) {
+          const url = new URL(request.url);
+          const secret = url.searchParams.get("secret");
+          if (secret !== env.GRS_WEBHOOK_SECRET) {
+            return jsonResponse({ error: "Unauthorized" }, 401);
+          }
+        }
+
         try {
           const body = (await request.json()) as GrsWebhookPayload;
           const taskId = body.id;
 
           if (!taskId) {
-            return new Response(JSON.stringify({ error: "Missing task id" }), {
-              status: 400,
-              headers: { "Content-Type": "application/json" },
-            });
+            return jsonResponse({ error: "Missing task id" }, 400);
           }
 
           const kv = getKvBinding();
           if (!kv) {
-            return new Response(JSON.stringify({ error: "KV not available" }), {
-              status: 501,
-              headers: { "Content-Type": "application/json" },
-            });
+            return jsonResponse({ error: "KV not available" }, 501);
           }
 
-          // Read existing task data
           const existing = await kv.get(`grs:${taskId}`);
           if (!existing) {
-            return new Response(JSON.stringify({ error: "Task not found" }), {
-              status: 404,
-              headers: { "Content-Type": "application/json" },
-            });
+            return jsonResponse({ error: "Task not found" }, 404);
           }
 
           const taskData = JSON.parse(existing) as {
@@ -61,22 +62,14 @@ export const Route = createFileRoute("/api/grs-webhook")({
             taskData.status = "failed";
             (taskData as Record<string, unknown>).error = body.error || "Generation failed";
           } else {
-            // Still processing — update with whatever we got
             taskData.status = body.status || "processing";
           }
 
           await kv.put(`grs:${taskId}`, JSON.stringify(taskData), { expirationTtl: 3600 });
 
-          return new Response(JSON.stringify({ received: true }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          });
-        } catch (err) {
-          const message = err instanceof Error ? err.message : "Webhook error";
-          return new Response(JSON.stringify({ error: message }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-          });
+          return jsonResponse({ received: true }, 200);
+        } catch {
+          return jsonResponse({ error: "Webhook processing error" }, 500);
         }
       },
     },

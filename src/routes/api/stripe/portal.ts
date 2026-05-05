@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
 
+import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getDb } from "@/lib/db";
 import { user as userTable } from "@/lib/db/schema";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { getStripe } from "@/lib/stripe";
 
 function getD1Binding(): D1Database | undefined {
@@ -19,27 +21,23 @@ export const Route = createFileRoute("/api/stripe/portal")({
       POST: async ({ request }) => {
         const auth = createAuth();
         if (!auth) {
-          return new Response(JSON.stringify({ error: "Auth unavailable" }), {
-            status: 501,
-            headers: { "Content-Type": "application/json" },
-          });
+          return jsonResponse({ error: "Auth unavailable" }, 501);
         }
 
         const session = await auth.api.getSession({ headers: request.headers });
         if (!session?.user?.id) {
-          return new Response(JSON.stringify({ error: "Unauthorized" }), {
-            status: 401,
-            headers: { "Content-Type": "application/json" },
-          });
+          return jsonResponse({ error: "Unauthorized" }, 401);
+        }
+
+        const limit = checkRateLimit(`stripe:portal:user:${session.user.id}`, 5, 60);
+        if (!limit.allowed) {
+          return jsonResponse({ error: "Too many requests. Please try again later." }, 429);
         }
 
         const userId = session.user.id;
         const binding = getD1Binding();
         if (!binding) {
-          return new Response(JSON.stringify({ error: "DB unavailable" }), {
-            status: 501,
-            headers: { "Content-Type": "application/json" },
-          });
+          return jsonResponse({ error: "DB unavailable" }, 501);
         }
 
         const db = getDb(binding);
@@ -49,10 +47,7 @@ export const Route = createFileRoute("/api/stripe/portal")({
           .where(eq(userTable.id, userId));
 
         if (!row?.stripeCustomerId) {
-          return new Response(JSON.stringify({ error: "No Stripe customer found" }), {
-            status: 404,
-            headers: { "Content-Type": "application/json" },
-          });
+          return jsonResponse({ error: "No Stripe customer found" }, 404);
         }
 
         try {
@@ -62,17 +57,11 @@ export const Route = createFileRoute("/api/stripe/portal")({
             return_url: `${new URL(request.url).origin}/`,
           });
 
-          return new Response(JSON.stringify({ url: portalSession.url }), {
-            status: 200,
-            headers: { "Content-Type": "application/json" },
-          });
+          return jsonResponse({ url: portalSession.url }, 200);
         } catch (err) {
           const message = err instanceof Error ? err.message : "Failed to create portal session";
           console.error("[stripe] portal error:", message);
-          return new Response(JSON.stringify({ error: message }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-          });
+          return jsonResponse({ error: "Billing service error" }, 500);
         }
       },
     },
