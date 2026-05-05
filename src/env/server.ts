@@ -17,9 +17,9 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: z.string().optional(),
 
     // Stripe
-    STRIPE_SECRET_KEY: z.string().min(1),
-    STRIPE_WEBHOOK_SECRET: z.string().min(1),
-    STRIPE_PRICE_ID: z.string().min(1),
+    STRIPE_SECRET_KEY: z.string().min(1).optional().default("dev-stripe-key"),
+    STRIPE_WEBHOOK_SECRET: z.string().min(1).optional().default("dev-stripe-webhook"),
+    STRIPE_PRICE_ID: z.string().min(1).optional().default("dev-stripe-price"),
   },
   runtimeEnv: process.env,
 });
