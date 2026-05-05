@@ -23,12 +23,13 @@ vi.mock("@/lib/rate-limit", () => ({
 import { handleUpload } from "@/routes/api/upload-url";
 
 function makeRequest(overrides?: {
-  body?: ReadableStream | null;
+  buffer?: ArrayBuffer;
   headers?: Record<string, string>;
   url?: string;
 }): Request {
   return {
-    body: overrides?.body ?? new ReadableStream(),
+    arrayBuffer: () => Promise.resolve(overrides?.buffer ?? new ArrayBuffer(100)),
+    body: new ReadableStream(),
     headers: new Headers(overrides?.headers ?? {}),
     url: overrides?.url ?? "https://batchlyai.com/api/upload-url",
   } as unknown as Request;
@@ -88,14 +89,30 @@ describe("handleUpload", () => {
     expect(body.error).toContain("Content-Type not allowed");
   });
 
-  it("returns 413 when Content-Length exceeds 10 MB", async () => {
+  it("returns 400 when file is empty (zero bytes)", async () => {
     mocks.mockGetSession.mockResolvedValue({ user: { id: "u1" } });
     const resp = await handleUpload(
       makeRequest({
+        buffer: new ArrayBuffer(0),
+        headers: {
+          "x-file-name": "empty.png",
+          "Content-Type": "image/png",
+        },
+      }),
+    );
+    expect(resp.status).toBe(400);
+    const body = (await resp.json()) as { error: string };
+    expect(body.error).toBe("Empty file");
+  });
+
+  it("returns 413 when file exceeds 10 MB", async () => {
+    mocks.mockGetSession.mockResolvedValue({ user: { id: "u1" } });
+    const resp = await handleUpload(
+      makeRequest({
+        buffer: new ArrayBuffer(11 * 1024 * 1024),
         headers: {
           "x-file-name": "large.png",
           "Content-Type": "image/png",
-          "Content-Length": String(11 * 1024 * 1024),
         },
       }),
     );
@@ -106,10 +123,10 @@ describe("handleUpload", () => {
     mocks.mockGetSession.mockResolvedValue({ user: { id: "u1" } });
     const resp = await handleUpload(
       makeRequest({
+        buffer: new ArrayBuffer(1000),
         headers: {
           "x-file-name": "photo.png",
           "Content-Type": "image/png",
-          "Content-Length": "1000",
         },
       }),
     );

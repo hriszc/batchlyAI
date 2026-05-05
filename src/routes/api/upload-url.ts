@@ -47,9 +47,21 @@ export async function handleUpload(request: Request): Promise<Response> {
     return jsonResponse({ error: `Content-Type not allowed: ${contentType || "unknown"}` }, 400);
   }
 
-  const contentLength = parseInt(request.headers.get("Content-Length") || "0", 10);
+  // Read entire body into buffer — request.body stream may be consumed by
+  // middleware or sent with chunked encoding, losing data if passed raw to R2.
+  let buffer: ArrayBuffer;
+  try {
+    buffer = await request.arrayBuffer();
+  } catch {
+    return jsonResponse({ error: "Failed to read request body" }, 400);
+  }
+
+  if (buffer.byteLength === 0) {
+    return jsonResponse({ error: "Empty file" }, 400);
+  }
+
   const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
-  if (contentLength > MAX_SIZE) {
+  if (buffer.byteLength > MAX_SIZE) {
     return jsonResponse({ error: "File too large (max 10 MB)" }, 413);
   }
 
@@ -57,7 +69,7 @@ export async function handleUpload(request: Request): Promise<Response> {
   const key = `uploads/${sanitizedUserId}/${Date.now()}_${filename}`;
 
   try {
-    const result = await uploadToR2(key, request.body!);
+    const result = await uploadToR2(key, buffer);
 
     if (!result.success) {
       return jsonResponse({ error: "R2 not configured" }, 501);
