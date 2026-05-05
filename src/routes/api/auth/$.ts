@@ -59,7 +59,6 @@ export const Route = createFileRoute("/api/auth/$")({
   },
 });
 
-
 function dbUnavailable() {
   return jsonResponse({ error: "Database not available" }, 501);
 }

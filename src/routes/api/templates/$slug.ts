@@ -21,10 +21,7 @@ export const Route = createFileRoute("/api/templates/$slug")({
         if (!binding) return jsonResponse({ error: "DB unavailable" }, 501);
         const db = getDb(binding);
 
-        const [row] = await db
-          .select()
-          .from(templateTable)
-          .where(eq(templateTable.slug, slug));
+        const [row] = await db.select().from(templateTable).where(eq(templateTable.slug, slug));
 
         if (!row) {
           return jsonResponse({ error: "Template not found" }, 404);

@@ -78,9 +78,7 @@ function SharedBatchPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold">Shared Batch</h1>
-          <p className="mt-1 font-mono text-sm text-muted-foreground">
-            {data.promptTemplate}
-          </p>
+          <p className="mt-1 font-mono text-sm text-muted-foreground">{data.promptTemplate}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {data.variableGroups.map((group, i) => (
               <span
@@ -113,16 +111,9 @@ function SharedBatchPage() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {imageUrls.map((url, i) => (
-          <div
-            key={i}
-            className="overflow-hidden rounded-lg border bg-card shadow-sm"
-          >
+          <div key={i} className="overflow-hidden rounded-lg border bg-card shadow-sm">
             <div className="aspect-square bg-muted">
-              <img
-                src={url}
-                alt={`Result ${i + 1}`}
-                className="h-full w-full object-cover"
-              />
+              <img src={url} alt={`Result ${i + 1}`} className="h-full w-full object-cover" />
             </div>
           </div>
         ))}
