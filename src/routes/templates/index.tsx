@@ -8,7 +8,8 @@ export const Route = createFileRoute("/templates/")({
       { title: "Prompt Templates — BatchlyAI" },
       {
         name: "description",
-        content: "Browse and use community prompt templates for AI image and video generation",
+        content:
+          "Browse and use community prompt templates for AI image and video generation",
       },
     ],
   }),
@@ -46,14 +47,14 @@ function TemplatesPage() {
   };
 
   // Fetch on mount
-  useState(() => {
-    fetchTemplates("", "");
-  });
+  useState(() => { fetchTemplates("", ""); });
 
   return (
     <main className="mx-auto max-w-[980px] px-4 py-8">
       <h1 className="text-2xl font-semibold">Prompt Templates</h1>
-      <p className="mt-1 text-muted-foreground">Browse community templates or create your own</p>
+      <p className="mt-1 text-muted-foreground">
+        Browse community templates or create your own
+      </p>
 
       <div className="mt-6 flex flex-wrap gap-2">
         {CATEGORIES.map((c) => (
@@ -76,7 +77,7 @@ function TemplatesPage() {
 
       <div className="mt-4">
         <div className="relative">
-          <SearchIcon className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground/50" />
+          <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
           <input
             type="text"
             placeholder="Search templates..."
@@ -85,7 +86,7 @@ function TemplatesPage() {
             onKeyDown={(e) => {
               if (e.key === "Enter") fetchTemplates(category, search);
             }}
-            className="w-full rounded-lg border bg-background py-2 pr-4 pl-9 text-sm placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-[#0071e3] focus:outline-none"
+            className="w-full rounded-lg border bg-background py-2 pl-9 pr-4 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-[#0071e3]"
           />
         </div>
       </div>
@@ -100,7 +101,11 @@ function TemplatesPage() {
           >
             <div className="aspect-[16/10] bg-muted">
               {t.previewImageUrl ? (
-                <img src={t.previewImageUrl} alt={t.name} className="h-full w-full object-cover" />
+                <img
+                  src={t.previewImageUrl}
+                  alt={t.name}
+                  className="h-full w-full object-cover"
+                />
               ) : (
                 <div className="flex h-full items-center justify-center text-muted-foreground/30">
                   No preview
@@ -109,12 +114,16 @@ function TemplatesPage() {
             </div>
             <div className="p-4">
               <h3 className="font-medium group-hover:text-[#0071e3]">{t.name}</h3>
-              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{t.description}</p>
+              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                {t.description}
+              </p>
               <div className="mt-2 flex items-center gap-2">
                 <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
                   {t.category}
                 </span>
-                <span className="text-[10px] text-muted-foreground">{t.usageCount} uses</span>
+                <span className="text-[10px] text-muted-foreground">
+                  {t.usageCount} uses
+                </span>
               </div>
             </div>
           </Link>

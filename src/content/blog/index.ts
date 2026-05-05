@@ -8,11 +8,15 @@ export interface BlogPost {
   content: string;
 }
 
-import { bestAiImageModels } from "./best-ai-image-models";
 import { introToBatchlyai } from "./intro-to-batchlyai";
 import { promptEngineeringGuide } from "./prompt-engineering-guide";
+import { bestAiImageModels } from "./best-ai-image-models";
 
-export const blogPosts: BlogPost[] = [introToBatchlyai, promptEngineeringGuide, bestAiImageModels];
+export const blogPosts: BlogPost[] = [
+  introToBatchlyai,
+  promptEngineeringGuide,
+  bestAiImageModels,
+];
 
 export function getPostBySlug(slug: string): BlogPost | undefined {
   return blogPosts.find((p) => p.slug === slug);

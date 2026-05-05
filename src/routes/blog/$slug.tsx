@@ -10,7 +10,9 @@ export const Route = createFileRoute("/blog/$slug")({
   head: ({ loaderData }) => ({
     meta: [
       {
-        title: loaderData ? `${loaderData.title} — BatchlyAI Blog` : "Blog — BatchlyAI",
+        title: loaderData
+          ? `${loaderData.title} — BatchlyAI Blog`
+          : "Blog — BatchlyAI",
       },
       {
         name: "description",
@@ -74,7 +76,9 @@ function BlogPostPage() {
             <span>·</span>
             <span>{post.author}</span>
           </div>
-          <h1 className="mt-2 text-[28px] leading-tight font-semibold">{post.title}</h1>
+          <h1 className="mt-2 text-[28px] font-semibold leading-tight">
+            {post.title}
+          </h1>
           <div className="mt-3 flex flex-wrap gap-1.5">
             {post.tags.map((tag) => (
               <span
@@ -92,14 +96,20 @@ function BlogPostPage() {
             // Handle headings
             if (block.startsWith("## ")) {
               return (
-                <h2 key={i} className="mt-8 mb-3 text-xl font-semibold">
+                <h2
+                  key={i}
+                  className="mt-8 mb-3 text-xl font-semibold"
+                >
                   {block.slice(3)}
                 </h2>
               );
             }
             if (block.startsWith("# ")) {
               return (
-                <h1 key={i} className="mt-8 mb-4 text-2xl font-semibold">
+                <h1
+                  key={i}
+                  className="mt-8 mb-4 text-2xl font-semibold"
+                >
                   {block.slice(2)}
                 </h1>
               );
@@ -109,17 +119,17 @@ function BlogPostPage() {
               const lines = block.split("\n");
               const codeContent = lines.slice(1, -1).join("\n");
               return (
-                <pre key={i} className="my-4 overflow-x-auto rounded-lg bg-muted p-4 text-sm">
+                <pre
+                  key={i}
+                  className="my-4 overflow-x-auto rounded-lg bg-muted p-4 text-sm"
+                >
                   <code>{codeContent}</code>
                 </pre>
               );
             }
             // Handle inline code in paragraphs
             const html = block
-              .replace(
-                /`([^`]+)`/g,
-                '<code class="rounded bg-muted px-1 py-0.5 text-sm font-mono">$1</code>',
-              )
+              .replace(/`([^`]+)`/g, '<code class="rounded bg-muted px-1 py-0.5 text-sm font-mono">$1</code>')
               .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
 
             return (

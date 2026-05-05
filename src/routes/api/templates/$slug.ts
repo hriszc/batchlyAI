@@ -16,12 +16,15 @@ export const Route = createFileRoute("/api/templates/$slug")({
   server: {
     handlers: {
       GET: async ({ request, params }) => {
-        const slug = (params as { slug: string }).slug;
+        const slug = (params as { _splat: string })._splat;
         const binding = getD1Binding();
         if (!binding) return jsonResponse({ error: "DB unavailable" }, 501);
         const db = getDb(binding);
 
-        const [row] = await db.select().from(templateTable).where(eq(templateTable.slug, slug));
+        const [row] = await db
+          .select()
+          .from(templateTable)
+          .where(eq(templateTable.slug, slug));
 
         if (!row) {
           return jsonResponse({ error: "Template not found" }, 404);
