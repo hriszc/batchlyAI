@@ -75,7 +75,7 @@ async function callApi(
   const SENSITIVE_PATHS = ["sign-in/email", "sign-up/email", "forget-password", "reset-password"];
   if (SENSITIVE_PATHS.includes(path)) {
     const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-    const { allowed } = await checkRateLimit(`${path}:${ip}`, 10, 60);
+    const { allowed } = checkRateLimit(`${path}:${ip}`, 10, 60);
     if (!allowed) {
       return jsonResponse({ error: "Too many requests" }, 429);
     }
@@ -103,10 +103,8 @@ async function callApi(
 
     return jsonResponse(result, 200);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Internal server error";
-    const stack = err instanceof Error ? err.stack : "";
-    console.error(`[auth] ${path} error:`, message, stack);
-    return jsonResponse({ error: message }, 500);
+    console.error(`[auth] ${path} error:`, err);
+    return jsonResponse({ error: "Internal server error" }, 500);
   }
 }
 

@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { createAuth } from "@/lib/auth/auth";
+
 interface R2Binding {
   get(
     key: string,
@@ -19,18 +21,35 @@ export const Route = createFileRoute("/api/files/$")({
         const key = (params as { _splat: string })._splat;
         if (!key) return new Response("Not found", { status: 404 });
 
+        // Require authentication for all file access
+        const auth = createAuth();
+        if (!auth) return new Response("Auth unavailable", { status: 501 });
+
+        const session = await auth.api.getSession({ headers: request.headers });
+        if (!session?.user?.id) {
+          return new Response("Unauthorized", { status: 401 });
+        }
+
+        // Verify the file belongs to this user
+        const userIdPrefix = `uploads/${session.user.id.replace(/[^a-zA-Z0-9_-]/g, "_")}/`;
+        if (!key.startsWith(userIdPrefix)) {
+          return new Response("Not found", { status: 404 });
+        }
+
         try {
           const obj = await r2.get(key);
           if (!obj) return new Response("Not found", { status: 404 });
 
           const headers = new Headers();
           obj.writeHttpMetadata(headers);
-          headers.set("Cache-Control", "public, max-age=86400");
+          headers.set("Cache-Control", "private, max-age=86400");
+          headers.set("X-Content-Type-Options", "nosniff");
+          headers.set("Content-Disposition", "inline");
 
           const origin = request.headers.get("Origin");
           if (origin) {
             const allowedOrigins = ["https://batchlyai.com", "http://localhost:3000"];
-            if (allowedOrigins.some((allowed) => origin.startsWith(allowed))) {
+            if (allowedOrigins.includes(origin)) {
               headers.set("Access-Control-Allow-Origin", origin);
             }
           }

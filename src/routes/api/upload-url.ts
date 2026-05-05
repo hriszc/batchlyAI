@@ -18,8 +18,6 @@ const ALLOWED_MIME_TYPES = [
 
 const ALLOWED_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".bmp", ".tiff"];
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
-
 export const Route = createFileRoute("/api/upload-url")({
   server: {
     handlers: {
@@ -53,13 +51,11 @@ export const Route = createFileRoute("/api/upload-url")({
         }
 
         const contentType = request.headers.get("Content-Type") || "";
-        if (contentType && !ALLOWED_MIME_TYPES.includes(contentType)) {
-          return jsonResponse({ error: `Content-Type not allowed: ${contentType}` }, 400);
-        }
-
-        const contentLength = parseInt(request.headers.get("Content-Length") || "0", 10);
-        if (contentLength > MAX_FILE_SIZE) {
-          return jsonResponse({ error: "File too large. Maximum size: 10MB" }, 413);
+        if (!contentType || !ALLOWED_MIME_TYPES.includes(contentType)) {
+          return jsonResponse(
+            { error: `Content-Type not allowed: ${contentType || "unknown"}` },
+            400,
+          );
         }
 
         const sanitizedUserId = session.user.id.replace(/[^a-zA-Z0-9_-]/g, "_");
