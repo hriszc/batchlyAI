@@ -12,6 +12,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { CreditPurchasePopover } from "@/components/CreditPurchasePopover";
 import { useTheme } from "@/components/theme-provider";
 import { authClient } from "@/lib/auth/auth-client";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -66,6 +67,7 @@ export function SettingsBar() {
   }
   const [referralStats, setReferralStats] = useState<ReferralStats | null>(null);
   const [referralLoading, setReferralLoading] = useState(false);
+  const [showPurchase, setShowPurchase] = useState(false);
 
   useEffect(() => {
     if (!session?.user) return;
@@ -111,57 +113,21 @@ export function SettingsBar() {
     }
   }, [referralStats]);
 
-  const [creditQty, setCreditQty] = useState(1);
-
-  const handleBuyCredits = async () => {
-    try {
-      const resp = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          currency: language === "zh" ? "cny" : "usd",
-          quantity: creditQty,
-        }),
-      });
-      const data = (await resp.json()) as { url?: string; error?: string };
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        toast.error(data.error || t("checkoutFailed"));
-      }
-    } catch {
-      toast.error(t("checkoutFailed"));
-    }
-  };
-
   return (
     <div className="fixed top-0 right-0 z-50 flex items-center gap-1 p-3">
       {session?.user ? (
         <div className="flex items-center gap-1">
-          <span className="inline-flex h-8 items-center overflow-hidden rounded-full bg-muted/80 text-xs font-medium text-muted-foreground backdrop-blur-sm">
-            {[1, 5, 10, 50, 100].map((qty) => (
-              <button
-                key={qty}
-                type="button"
-                onClick={() => setCreditQty(qty)}
-                className={`h-8 px-2 transition-colors ${
-                  creditQty === qty
-                    ? "bg-[#0071e3]/15 font-semibold text-[#0071e3]"
-                    : "hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                {qty}x
-              </button>
-            ))}
-          </span>
-          <button
-            onClick={handleBuyCredits}
-            title={t("buyCreditsTitle", { qty: creditQty, credits: creditQty * 1000 })}
-            className="inline-flex h-8 items-center justify-center gap-1 rounded-full bg-[#0071e3]/15 px-2.5 text-xs font-medium text-[#0071e3] backdrop-blur-sm transition-colors hover:bg-[#0071e3]/25"
-          >
-            <PlusIcon className="size-3" />
-            {creditQty > 1 ? `${t("buyCredits")} (${creditQty}x)` : t("buyCredits")}
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowPurchase(!showPurchase)}
+              title={t("buyCreditsTitle")}
+              className="inline-flex h-8 items-center justify-center gap-1 rounded-full bg-[#0071e3]/15 px-2.5 text-xs font-medium text-[#0071e3] backdrop-blur-sm transition-colors hover:bg-[#0071e3]/25"
+            >
+              <PlusIcon className="size-3" />
+              {t("buyCredits")}
+            </button>
+            {showPurchase && <CreditPurchasePopover onClose={() => setShowPurchase(false)} />}
+          </div>
 
           {/* Referral Section */}
           {referralStats?.referralCode ? (
