@@ -43,7 +43,7 @@ export function SettingsBar() {
 
   const handleSignOut = async () => {
     await authClient.signOut();
-    navigate({ to: "/" });
+    void navigate({ to: "/" });
   };
 
   const handleBuyCredits = async () => {

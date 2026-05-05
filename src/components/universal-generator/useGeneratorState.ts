@@ -330,16 +330,20 @@ export function useGeneratorState() {
             ];
           }
         }),
-      ).then((resultGroups) => {
-        const results = resultGroups.flat();
-        dispatch({ type: "FINISH_GENERATING", payload: results });
-        if (globalError) {
-          dispatch({ type: "SET_ERROR", payload: globalError });
-        }
-        if (creditsRemaining != null) {
-          dispatch({ type: "SET_CREDITS_REMAINING", payload: creditsRemaining });
-        }
-      });
+      )
+        .then((resultGroups) => {
+          const results = resultGroups.flat();
+          dispatch({ type: "FINISH_GENERATING", payload: results });
+          if (globalError) {
+            dispatch({ type: "SET_ERROR", payload: globalError });
+          }
+          if (creditsRemaining != null) {
+            dispatch({ type: "SET_CREDITS_REMAINING", payload: creditsRemaining });
+          }
+        })
+        .catch((err) => {
+          dispatch({ type: "SET_ERROR", payload: String(err) });
+        });
     } else {
       setTimeout(() => {
         const results = combinations.map((combination) => ({

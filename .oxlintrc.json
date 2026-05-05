@@ -24,8 +24,8 @@
   ],
   "rules": {
     "no-deprecated": "warn",
-    "typescript/no-floating-promises": "off",
-    "typescript/no-misused-spread": "off",
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-spread": "warn",
 
     "eslint-tanstack-router/create-route-property-order": "warn",
 
