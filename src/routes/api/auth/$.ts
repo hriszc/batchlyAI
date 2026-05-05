@@ -87,14 +87,14 @@ export function getApiMethod(
 
   if (EXACT_MAP[path]) {
     const method = EXACT_MAP[path];
-    return { method: auth.api[method] };
+    return { method: auth.api[method] as string };
   }
 
   // Dynamic callback/:provider match
   const callbackMatch = path.match(/^callback\/(.+)$/);
   if (callbackMatch) {
     const method = "callbackOAuth";
-    return { method: auth.api[method], params: { id: callbackMatch[1] } };
+    return { method: auth.api[method] as string, params: { id: callbackMatch[1] } };
   }
 
   return undefined;
