@@ -22,13 +22,13 @@
 | **图标**          | lucide-react + @icons-pack/react-simple-icons | UI 图标 + 品牌图标                                   |
 | **ORM**           | Drizzle ORM                                   | `drizzle-orm` + `drizzle-kit`, SQLite 方言           |
 | **数据库 (生产)** | Cloudflare D1                                 | `batchlyai_db`                                       |
-| **数据库 (本地)** | SQLite (local.db)                             | 开发模式使用本地 SQLite 文件                          |
+| **数据库 (本地)** | SQLite (local.db)                             | 开发模式使用本地 SQLite 文件                         |
 | **认证**          | Better Auth                                   | email/password + GitHub/Google OAuth                 |
 | **缓存**          | Cloudflare KV                                 | `batchlyai_kv`, prompt 结果缓存 + GRS 任务状态       |
 | **存储**          | Cloudflare R2                                 | `batchlyai_r2`, 文件上传                             |
 | **AI Providers**  | grsaiapi.com + Replicate                      | gpt-image-2 / z-image-turbo                          |
-| **支付**          | Stripe SDK v22                                | 一次性积分购买，API version `2026-04-22.dahlia`       |
-| **邮件**          | Cloudflare Email / MailChannels               | 基础设施就绪，auth 回调尚未接入                       |
+| **支付**          | Stripe SDK v22                                | 一次性积分购买，API version `2026-04-22.dahlia`      |
+| **邮件**          | Cloudflare Email / MailChannels               | 基础设施就绪，auth 回调尚未接入                      |
 | **服务端**        | Nitro v3 beta (Cloudflare Workers module)     | `nodejs_compat` flag                                 |
 | **构建**          | Vite 8 + rolldown                             | Babel plugin for React Compiler                      |
 | **语言**          | TypeScript 6                                  | strict mode                                          |
@@ -119,12 +119,14 @@
 Better Auth 使用标准 `auth.handler(request)` 处理所有认证请求。
 
 关键细节：
+
 - 敏感端点（sign-in/up、forget/reset-password）在 POST 请求进入 handler 之前有内存限流 (10 req/60s per IP)
 - 限流检查后直接 `return auth.handler(request)` 处理
 - Session 通过 cookie cache 管理 (5min maxAge)
 - 密码使用 PBKDF2-SHA256 哈希 (100k iterations, 16-byte salt, 64-byte key)
 
 **认证中间件** (`src/lib/auth/middleware.ts`)：
+
 - `authMiddleware` — 缓存 session (5min cookie cache)，用于路由级守卫
 - `freshAuthMiddleware` — 每次查询数据库，用于敏感/写操作
 
@@ -162,22 +164,22 @@ GRS AI 回调 POST /api/grs-webhook
 
 ## 5. API 路由表
 
-| 路由                        | 方法 | 文件                            | 功能            | 认证 | 限流   |
-| --------------------------- | ---- | ------------------------------- | --------------- | ---- | ------ |
-| `/api/auth/sign-up/email`   | POST | `routes/api/auth/$.ts`          | 邮箱注册        | 否   | 10/60s |
-| `/api/auth/sign-in/email`   | POST | `routes/api/auth/$.ts`          | 邮箱登录        | 否   | 10/60s |
-| `/api/auth/sign-out`        | POST | `routes/api/auth/$.ts`          | 登出            | 否   | -      |
-| `/api/auth/get-session`     | GET  | `routes/api/auth/$.ts`          | 获取当前会话    | 否   | -      |
-| `/api/auth/forget-password` | POST | `routes/api/auth/$.ts`          | 忘记密码        | 否   | 10/60s |
-| `/api/auth/reset-password`  | POST | `routes/api/auth/$.ts`          | 重置密码        | 否   | 10/60s |
-| `/api/auth/callback/:provider` | GET/POST | `routes/api/auth/$.ts`     | OAuth 回调      | 否   | -      |
-| `/api/generate`             | POST | `routes/api/generate.ts`        | AI 生成 (异步)  | 是   | -      |
-| `/api/generate-status`      | GET  | `routes/api/generate-status.ts` | 异步任务轮询    | 是   | -      |
-| `/api/grs-webhook`          | POST | `routes/api/grs-webhook.ts`     | GRS AI 回调     | 否   | -      |
-| `/api/upload-url`           | POST | `routes/api/upload-url.ts`      | 文件上传到 R2   | 是   | -      |
-| `/api/stripe/checkout`      | POST | `routes/api/stripe/checkout.ts` | 创建支付会话    | 是   | -      |
-| `/api/stripe/portal`        | POST | `routes/api/stripe/portal.ts`   | 账单管理门户    | 是   | -      |
-| `/api/stripe/webhook`       | POST | `routes/api/stripe/webhook.ts`  | Stripe 事件接收 | 否   | -      |
+| 路由                           | 方法     | 文件                            | 功能            | 认证 | 限流   |
+| ------------------------------ | -------- | ------------------------------- | --------------- | ---- | ------ |
+| `/api/auth/sign-up/email`      | POST     | `routes/api/auth/$.ts`          | 邮箱注册        | 否   | 10/60s |
+| `/api/auth/sign-in/email`      | POST     | `routes/api/auth/$.ts`          | 邮箱登录        | 否   | 10/60s |
+| `/api/auth/sign-out`           | POST     | `routes/api/auth/$.ts`          | 登出            | 否   | -      |
+| `/api/auth/get-session`        | GET      | `routes/api/auth/$.ts`          | 获取当前会话    | 否   | -      |
+| `/api/auth/forget-password`    | POST     | `routes/api/auth/$.ts`          | 忘记密码        | 否   | 10/60s |
+| `/api/auth/reset-password`     | POST     | `routes/api/auth/$.ts`          | 重置密码        | 否   | 10/60s |
+| `/api/auth/callback/:provider` | GET/POST | `routes/api/auth/$.ts`          | OAuth 回调      | 否   | -      |
+| `/api/generate`                | POST     | `routes/api/generate.ts`        | AI 生成 (异步)  | 是   | -      |
+| `/api/generate-status`         | GET      | `routes/api/generate-status.ts` | 异步任务轮询    | 是   | -      |
+| `/api/grs-webhook`             | POST     | `routes/api/grs-webhook.ts`     | GRS AI 回调     | 否   | -      |
+| `/api/upload-url`              | POST     | `routes/api/upload-url.ts`      | 文件上传到 R2   | 是   | -      |
+| `/api/stripe/checkout`         | POST     | `routes/api/stripe/checkout.ts` | 创建支付会话    | 是   | -      |
+| `/api/stripe/portal`           | POST     | `routes/api/stripe/portal.ts`   | 账单管理门户    | 是   | -      |
+| `/api/stripe/webhook`          | POST     | `routes/api/stripe/webhook.ts`  | Stripe 事件接收 | 否   | -      |
 
 ## 6. 关键模块详解
 
@@ -207,14 +209,14 @@ GRS AI 回调 POST /api/grs-webhook
 
 ### 6.4 模型定义 (`src/components/universal-generator/models.ts`)
 
-| id             | label       | category | tier | provider   | creditCost |
-| -------------- | ----------- | -------- | ---- | ---------- | ---------- |
-| `z-image-fast` | Image Turbo | image    | fast | replicate  | 10         |
-| `z-image-pro`  | Image Pro   | image    | pro  | grsai      | 20         |
-| `z-video-fast` | Video Turbo | video    | fast | simulated  | 40         |
-| `z-video-pro`  | Video Pro   | video    | pro  | simulated  | 80         |
-| `z-text-fast`  | Text Turbo  | text     | fast | simulated  | 5          |
-| `z-text-pro`   | Text Pro    | text     | pro  | simulated  | 10         |
+| id             | label       | category | tier | provider  | creditCost |
+| -------------- | ----------- | -------- | ---- | --------- | ---------- |
+| `z-image-fast` | Image Turbo | image    | fast | replicate | 10         |
+| `z-image-pro`  | Image Pro   | image    | pro  | grsai     | 20         |
+| `z-video-fast` | Video Turbo | video    | fast | simulated | 40         |
+| `z-video-pro`  | Video Pro   | video    | pro  | simulated | 80         |
+| `z-text-fast`  | Text Turbo  | text     | fast | simulated | 5          |
+| `z-text-pro`   | Text Pro    | text     | pro  | simulated | 10         |
 
 - 默认模型: `z-image-pro`
 - `provider` 字段驱动后端选择: `replicate` | `grsai` | `simulated`
@@ -223,12 +225,14 @@ GRS AI 回调 POST /api/grs-webhook
 ### 6.5 积分 & 支付系统
 
 **积分系统** (`src/routes/api/generate.ts`):
+
 - 新用户默认 10 积分
 - 原子扣减: `UPDATE user SET credits = credits - cost WHERE id = ? AND credits >= cost`
 - 失败退款: 生成失败时 `credits + refund`
 - 少生成退款: 实际生成数少于预期数量，退还多扣积分
 
 **Stripe 支付** (`src/lib/stripe.ts` + `src/routes/api/stripe/`):
+
 - **一次性支付** (`mode: "payment"`)，非订阅制
 - **多币种**: 根据用户语言自动选择 USD (`STRIPE_PRICE_ID_USD`) 或 CNY (`STRIPE_PRICE_ID_CNY`)，中文用户 → CNY
 - Checkout → Stripe → Webhook (`checkout.session.completed`) → 充值积分
