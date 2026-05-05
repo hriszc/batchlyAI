@@ -124,84 +124,109 @@ interface PollResult {
   error: string | null;
 }
 
-async function pollForResults(
-  predictionIds: string[],
-  modelType: string,
-  combination: PromptCombination,
-): Promise<import("./types").GeneratedResult[]> {
+interface AsyncPending {
+  predictionIds: string[];
+  modelType: string;
+  combination: PromptCombination;
+}
+
+/**
+ * Unified polling: merges all prediction IDs across combinations into a
+ * single poll request every 2 seconds. This avoids rate-limiting (429) from
+ * N concurrent polling loops and is much more efficient.
+ */
+async function unifiedPoll(pendings: AsyncPending[]): Promise<import("./types").GeneratedResult[]> {
   const maxAttempts = 60;
   const interval = 2000;
+
+  // Build id → combination map
+  const idToCombo = new Map<string, PromptCombination>();
+  const allIds: string[] = [];
+  for (const p of pendings) {
+    for (const id of p.predictionIds) {
+      idToCombo.set(id, p.combination);
+      allIds.push(id);
+    }
+  }
+
+  // All pendings share the same model type (all image models)
+  const modelType = pendings[0]?.modelType ?? "replicate";
+
+  const pendingIds = new Set(allIds);
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     await new Promise((r) => setTimeout(r, interval));
 
     try {
       const resp = await fetch(
-        `/api/generate-status?ids=${predictionIds.join(",")}&type=${modelType}`,
+        `/api/generate-status?ids=${[...pendingIds].join(",")}&type=${modelType}`,
       );
       const json = (await resp.json()) as { results?: PollResult[]; error?: string };
 
       if (!json.results) continue;
 
-      const allDone = json.results.every(
-        (r) =>
+      const finished: import("./types").GeneratedResult[] = [];
+      const stillProcessing: string[] = [];
+
+      for (const r of json.results) {
+        if (
           r.status === "succeeded" ||
           r.status === "failed" ||
           r.status === "canceled" ||
-          r.status === "error",
-      );
-
-      if (allDone) {
-        return json.results.flatMap(
-          (
-            r,
-          ): {
-            id: string;
-            combination: PromptCombination;
-            imageUrl: string | null;
-            textContent: string | null;
-            watermark: boolean;
-            status: "complete" | "error";
-          }[] => {
-            if (r.status === "succeeded" && r.urls) {
-              return r.urls.map((url) => ({
+          r.status === "error"
+        ) {
+          const combination = idToCombo.get(r.id) ?? pendings[0].combination;
+          if (r.status === "succeeded" && r.urls) {
+            for (const url of r.urls) {
+              finished.push({
                 id: generateResultId(),
                 combination,
                 imageUrl: url,
                 textContent: null,
                 watermark: false,
                 status: "complete" as const,
-              }));
+              });
             }
-            return [
-              {
-                id: generateResultId(),
-                combination,
-                imageUrl: null,
-                textContent: null,
-                watermark: false,
-                status: "error" as const,
-              },
-            ];
-          },
-        );
+          } else {
+            finished.push({
+              id: generateResultId(),
+              combination,
+              imageUrl: null,
+              textContent: null,
+              watermark: false,
+              status: "error" as const,
+            });
+          }
+          pendingIds.delete(r.id);
+        }
+      }
+
+      // If all done, return
+      if (pendingIds.size === 0) return finished;
+
+      // Only keep polling unfinished IDs (reduce request size)
+      if (stillProcessing.length > 0) {
+        // some still processing — continue
       }
     } catch {
       // Keep polling on transient errors
     }
   }
 
-  // Timeout
-  return [
-    {
+  // Timeout: remaining pending IDs become error results
+  const timedOut: import("./types").GeneratedResult[] = [];
+  for (const id of pendingIds) {
+    const combination = idToCombo.get(id) ?? pendings[0].combination;
+    timedOut.push({
       id: generateResultId(),
       combination,
       imageUrl: null,
       textContent: null,
       watermark: false,
       status: "error" as const,
-    },
-  ];
+    });
+  }
+  return timedOut;
 }
 
 export function useGeneratorState() {
@@ -270,6 +295,7 @@ export function useGeneratorState() {
       let globalError: string | null = null;
       let creditsRemaining: number | null = null;
       let isWatermarked = false;
+      const asyncPendings: AsyncPending[] = [];
 
       void Promise.all(
         combinations.map(async (combination) => {
@@ -337,10 +363,15 @@ export function useGeneratorState() {
               }));
             }
 
-            // Async response — poll for results
+            // Async response — defer to unified poll later
             if (json.predictionIds?.length && json.async) {
               const modelType = json.modelType || "replicate";
-              return await pollForResults(json.predictionIds, modelType, combination);
+              asyncPendings.push({
+                predictionIds: json.predictionIds,
+                modelType,
+                combination,
+              });
+              return [];
             }
 
             return [];
@@ -357,8 +388,15 @@ export function useGeneratorState() {
             ];
           }
         }),
-      ).then((resultGroups) => {
+      ).then(async (resultGroups) => {
         let results = resultGroups.flat();
+
+        // Unified polling: merge all prediction IDs into a single poll loop
+        if (asyncPendings.length > 0) {
+          const polled = (await unifiedPoll(asyncPendings)) as typeof results;
+          results = [...results, ...polled];
+        }
+
         if (isWatermarked) {
           results = results.map((r) => ({ ...r, watermark: true }));
         }
