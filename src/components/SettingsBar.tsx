@@ -111,12 +111,17 @@ export function SettingsBar() {
     }
   }, [referralStats]);
 
+  const [creditQty, setCreditQty] = useState(1);
+
   const handleBuyCredits = async () => {
     try {
       const resp = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currency: language === "zh" ? "cny" : "usd" }),
+        body: JSON.stringify({
+          currency: language === "zh" ? "cny" : "usd",
+          quantity: creditQty,
+        }),
       });
       const data = (await resp.json()) as { url?: string; error?: string };
       if (data.url) {
@@ -133,13 +138,29 @@ export function SettingsBar() {
     <div className="fixed top-0 right-0 z-50 flex items-center gap-1 p-3">
       {session?.user ? (
         <div className="flex items-center gap-1">
+          <span className="inline-flex h-8 items-center overflow-hidden rounded-full bg-muted/80 text-xs font-medium text-muted-foreground backdrop-blur-sm">
+            {[1, 5, 10, 50, 100].map((qty) => (
+              <button
+                key={qty}
+                type="button"
+                onClick={() => setCreditQty(qty)}
+                className={`h-8 px-2 transition-colors ${
+                  creditQty === qty
+                    ? "bg-[#0071e3]/15 font-semibold text-[#0071e3]"
+                    : "hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                {qty}x
+              </button>
+            ))}
+          </span>
           <button
             onClick={handleBuyCredits}
-            title={t("buyCreditsTitle")}
+            title={t("buyCreditsTitle", { qty: creditQty, credits: creditQty * 1000 })}
             className="inline-flex h-8 items-center justify-center gap-1 rounded-full bg-[#0071e3]/15 px-2.5 text-xs font-medium text-[#0071e3] backdrop-blur-sm transition-colors hover:bg-[#0071e3]/25"
           >
             <PlusIcon className="size-3" />
-            {t("buyCredits")}
+            {creditQty > 1 ? `${t("buyCredits")} (${creditQty}x)` : t("buyCredits")}
           </button>
 
           {/* Referral Section */}
