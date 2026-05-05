@@ -148,7 +148,6 @@ function SignupForm() {
             <SignInSocialButton
               provider="google"
               callbackURL={redirectUrl}
-              disabled={true}
               icon={<SiGoogle className="size-4" />}
             />
           </div>

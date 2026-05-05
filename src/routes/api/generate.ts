@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, eq, gte, sql } from "drizzle-orm";
 
-import { generateImage, createReplicatePredictions } from "@/lib/ai";
+import { createGrsaiPredictions, createReplicatePredictions } from "@/lib/ai";
 import { createAuth } from "@/lib/auth/auth";
 import { getCachedResult, setCachedResult } from "@/lib/cache/prompt-cache";
 import { getDb } from "@/lib/db";
@@ -23,12 +23,19 @@ function getD1Binding(): D1Database | undefined {
   return platformEnv?.batchlyai_db as D1Database | undefined;
 }
 
+function getKvBinding(): KVNamespace | undefined {
+  const platformEnv = (globalThis as Record<string, unknown>).__env__ as
+    | Record<string, unknown>
+    | undefined;
+  return platformEnv?.batchlyai_kv as KVNamespace | undefined;
+}
+
 export interface GenerateContext {
   request: Request;
   db: ReturnType<typeof getDb>;
   userId: string;
-  generateFn?: typeof generateImage;
   replicateFn?: typeof createReplicatePredictions;
+  grsaiFn?: typeof createGrsaiPredictions;
   getCachedFn?: typeof getCachedResult;
   setCachedFn?: typeof setCachedResult;
 }
@@ -38,8 +45,8 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
     request,
     db,
     userId,
-    generateFn = generateImage,
     replicateFn = createReplicatePredictions,
+    grsaiFn = createGrsaiPredictions,
     getCachedFn = getCachedResult,
     setCachedFn = setCachedResult,
   } = ctx;
@@ -56,7 +63,6 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
       return jsonResponse({ error: "Missing prompt" }, 400);
     }
 
-    // Calculate cost
     const model = body.model || "z-image-pro";
     const n = body.n ?? 1;
     const costPerUnit = CREDIT_COST[model] ?? 20;
@@ -95,43 +101,47 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
       );
     }
 
-    // Async path: Replicate (z-image-fast)
-    if (model === "z-image-fast") {
-      let predictions;
-      try {
+    // All generation is now async
+    let predictions: { id: string; status: string }[];
+
+    try {
+      if (model === "z-image-fast") {
         predictions = await replicateFn({
           prompt: body.prompt,
           aspectRatio: body.aspectRatio,
           n,
         });
-      } catch (err) {
-        await db
-          .update(userTable)
-          .set({ credits: sql`${userTable.credits} + ${maxCost}` })
-          .where(eq(userTable.id, userId));
-        const message = err instanceof Error ? err.message : "Generation failed";
-        return jsonResponse({ error: message }, 500);
+      } else {
+        // GRS AI async via webhook
+        predictions = await grsaiFn({
+          prompt: body.prompt,
+          aspectRatio: body.aspectRatio,
+          n,
+          model: body.model,
+        });
+
+        // Store GRS task info in KV for webhook/poll to access
+        const kv = getKvBinding();
+        if (kv) {
+          await Promise.all(
+            predictions.map((p) =>
+              kv.put(
+                `grs:${p.id}`,
+                JSON.stringify({
+                  userId,
+                  status: "processing",
+                  prompt: body.prompt,
+                  aspectRatio: body.aspectRatio,
+                  createdAt: Date.now(),
+                }),
+                { expirationTtl: 3600 },
+              ),
+            ),
+          );
+        }
       }
-
-      const predictionIds = predictions.map((p) => p.id);
-      const newBalance = deducted.credits - maxCost;
-
-      return jsonResponse(
-        { predictionIds, status: "processing", async: true, creditsRemaining: newBalance },
-        200,
-      );
-    }
-
-    // Sync path: grsaiapi (z-image-pro) or default
-    let urls: string[];
-    try {
-      urls = await generateFn({
-        prompt: body.prompt,
-        aspectRatio: body.aspectRatio,
-        n,
-        model: body.model,
-      });
     } catch (err) {
+      // Refund credits on creation failure
       await db
         .update(userTable)
         .set({ credits: sql`${userTable.credits} + ${maxCost}` })
@@ -140,29 +150,19 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
       return jsonResponse({ error: message }, 500);
     }
 
-    const actualCost = urls.length * costPerUnit;
-    const refund = maxCost - actualCost;
+    const predictionIds = predictions.map((p) => p.id);
+    const newBalance = deducted.credits;
 
-    if (refund > 0) {
-      await db
-        .update(userTable)
-        .set({ credits: sql`${userTable.credits} + ${refund}` })
-        .where(eq(userTable.id, userId));
-    }
-
-    const newBalance = deducted.credits - actualCost;
-
-    if (urls.length > 0) {
-      await setCachedFn(
-        body.prompt,
-        model,
-        body.aspectRatio || "1:1",
-        urls.length,
-        urls,
-      );
-    }
-
-    return jsonResponse({ urls, creditsRemaining: newBalance }, 200);
+    return jsonResponse(
+      {
+        predictionIds,
+        status: "processing",
+        async: true,
+        creditsRemaining: newBalance,
+        modelType: model === "z-image-fast" ? "replicate" : "grs",
+      },
+      200,
+    );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return jsonResponse({ error: message }, 500);

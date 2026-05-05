@@ -1,5 +1,5 @@
 import { useReducer, useCallback, useRef } from "react";
-import type { GeneratorState, GeneratorAction, GroupId } from "./types";
+import type { GeneratorState, GeneratorAction, GroupId, PromptCombination } from "./types";
 import { extractVariableGroups, computePromptCombinations } from "./utils";
 import { DEFAULT_MODEL, MODELS } from "./models";
 
@@ -118,6 +118,70 @@ export function reducer(state: GeneratorState, action: GeneratorAction): Generat
   }
 }
 
+interface PollResult {
+  id: string;
+  status: string;
+  urls: string[] | null;
+  error: string | null;
+}
+
+async function pollForResults(
+  predictionIds: string[],
+  modelType: string,
+  combination: PromptCombination,
+): Promise<import("./types").GeneratedResult[]> {
+  const maxAttempts = 60;
+  const interval = 2000;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    await new Promise((r) => setTimeout(r, interval));
+
+    try {
+      const resp = await fetch(
+        `/api/generate-status?ids=${predictionIds.join(",")}&type=${modelType}`,
+      );
+      const json = (await resp.json()) as { results?: PollResult[]; error?: string };
+
+      if (!json.results) continue;
+
+      const allDone = json.results.every(
+        (r) => r.status === "succeeded" || r.status === "failed" || r.status === "canceled" || r.status === "error",
+      );
+
+      if (allDone) {
+        return json.results.flatMap((r) => {
+          if (r.status === "succeeded" && r.urls) {
+            return r.urls.map((url) => ({
+              id: generateResultId(),
+              combination,
+              imageUrl: url,
+              status: "complete" as const,
+            }));
+          }
+          return {
+            id: generateResultId(),
+            combination,
+            imageUrl: null,
+            status: "error" as const,
+          };
+        });
+      }
+    } catch {
+      // Keep polling on transient errors
+    }
+  }
+
+  // Timeout
+  return [
+    {
+      id: generateResultId(),
+      combination,
+      imageUrl: null,
+      status: "error" as const,
+    },
+  ];
+}
+
 export function useGeneratorState() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -171,6 +235,9 @@ export function useGeneratorState() {
     const isImageModel = model?.category === "image";
 
     if (isImageModel) {
+      let globalError: string | null = null;
+      let creditsRemaining: number | null = null;
+
       Promise.all(
         combinations.map(async (combination) => {
           try {
@@ -186,6 +253,9 @@ export function useGeneratorState() {
             });
             const json = (await resp.json()) as {
               urls?: string[];
+              predictionIds?: string[];
+              async?: boolean;
+              modelType?: string;
               error?: string;
               required?: number;
               available?: number;
@@ -193,16 +263,13 @@ export function useGeneratorState() {
             };
 
             if (resp.status === 401) {
-              dispatch({ type: "SET_ERROR", payload: "Please login to generate" });
+              globalError = "Please login to generate";
               return [];
             }
 
             if (resp.status === 402) {
-              dispatch({
-                type: "SET_ERROR",
-                payload: `Insufficient credits: need ${json.required}, have ${json.available}`,
-              });
-              dispatch({ type: "SET_CREDITS_REMAINING", payload: json.available ?? null });
+              globalError = `Insufficient credits: need ${json.required}, have ${json.available}`;
+              creditsRemaining = json.available ?? null;
               return [];
             }
 
@@ -216,15 +283,30 @@ export function useGeneratorState() {
             }
 
             if (json.creditsRemaining != null) {
-              dispatch({ type: "SET_CREDITS_REMAINING", payload: json.creditsRemaining });
+              creditsRemaining = json.creditsRemaining;
             }
 
-            return (json.urls || []).map((url) => ({
-              id: generateResultId(),
-              combination,
-              imageUrl: url,
-              status: "complete" as const,
-            }));
+            // Sync response (cached)
+            if (json.urls) {
+              return json.urls.map((url) => ({
+                id: generateResultId(),
+                combination,
+                imageUrl: url,
+                status: "complete" as const,
+              }));
+            }
+
+            // Async response — poll for results
+            if (json.predictionIds?.length && json.async) {
+              const modelType = json.modelType || "replicate";
+              return await pollForResults(
+                json.predictionIds,
+                modelType,
+                combination,
+              );
+            }
+
+            return [];
           } catch {
             return [
               {
@@ -237,13 +319,16 @@ export function useGeneratorState() {
           }
         }),
       ).then((resultGroups) => {
-        dispatch({
-          type: "FINISH_GENERATING",
-          payload: resultGroups.flat(),
-        });
+        const results = resultGroups.flat();
+        dispatch({ type: "FINISH_GENERATING", payload: results });
+        if (globalError) {
+          dispatch({ type: "SET_ERROR", payload: globalError });
+        }
+        if (creditsRemaining != null) {
+          dispatch({ type: "SET_CREDITS_REMAINING", payload: creditsRemaining });
+        }
       });
     } else {
-      // Simulated generation for non-image models
       setTimeout(() => {
         const results = combinations.map((combination) => ({
           id: generateResultId(),

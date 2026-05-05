@@ -39,7 +39,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   const t = useCallback(
     (key: TranslationKey, vars?: Record<string, string | number>) => {
-      let text = translations[language][key];
+      let text: string = translations[language][key];
       if (vars) {
         for (const [k, v] of Object.entries(vars)) {
           text = text.replace(`{${k}}`, String(v));

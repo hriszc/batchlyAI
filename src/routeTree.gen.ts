@@ -13,12 +13,16 @@ import { Route as GuestRouteRouteImport } from './routes/_guest/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CnIndexRouteImport } from './routes/cn/index'
 import { Route as ApiUploadUrlRouteImport } from './routes/api/upload-url'
+import { Route as ApiGrsWebhookRouteImport } from './routes/api/grs-webhook'
 import { Route as ApiGenerateStatusRouteImport } from './routes/api/generate-status'
 import { Route as ApiGenerateRouteImport } from './routes/api/generate'
 import { Route as ApiDebugRouteImport } from './routes/api/debug'
 import { Route as ApiAuthTestRouteImport } from './routes/api/auth-test'
 import { Route as GuestSignupRouteImport } from './routes/_guest/signup'
 import { Route as GuestLoginRouteImport } from './routes/_guest/login'
+import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
+import { Route as ApiStripePortalRouteImport } from './routes/api/stripe/portal'
+import { Route as ApiStripeCheckoutRouteImport } from './routes/api/stripe/checkout'
 import { Route as ApiFilesSplatRouteImport } from './routes/api/files/$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
@@ -39,6 +43,11 @@ const CnIndexRoute = CnIndexRouteImport.update({
 const ApiUploadUrlRoute = ApiUploadUrlRouteImport.update({
   id: '/api/upload-url',
   path: '/api/upload-url',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiGrsWebhookRoute = ApiGrsWebhookRouteImport.update({
+  id: '/api/grs-webhook',
+  path: '/api/grs-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiGenerateStatusRoute = ApiGenerateStatusRouteImport.update({
@@ -71,6 +80,21 @@ const GuestLoginRoute = GuestLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => GuestRouteRoute,
 } as any)
+const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
+  id: '/api/stripe/webhook',
+  path: '/api/stripe/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStripePortalRoute = ApiStripePortalRouteImport.update({
+  id: '/api/stripe/portal',
+  path: '/api/stripe/portal',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStripeCheckoutRoute = ApiStripeCheckoutRouteImport.update({
+  id: '/api/stripe/checkout',
+  path: '/api/stripe/checkout',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiFilesSplatRoute = ApiFilesSplatRouteImport.update({
   id: '/api/files/$',
   path: '/api/files/$',
@@ -90,10 +114,14 @@ export interface FileRoutesByFullPath {
   '/api/debug': typeof ApiDebugRoute
   '/api/generate': typeof ApiGenerateRoute
   '/api/generate-status': typeof ApiGenerateStatusRoute
+  '/api/grs-webhook': typeof ApiGrsWebhookRoute
   '/api/upload-url': typeof ApiUploadUrlRoute
   '/cn/': typeof CnIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/files/$': typeof ApiFilesSplatRoute
+  '/api/stripe/checkout': typeof ApiStripeCheckoutRoute
+  '/api/stripe/portal': typeof ApiStripePortalRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -103,10 +131,14 @@ export interface FileRoutesByTo {
   '/api/debug': typeof ApiDebugRoute
   '/api/generate': typeof ApiGenerateRoute
   '/api/generate-status': typeof ApiGenerateStatusRoute
+  '/api/grs-webhook': typeof ApiGrsWebhookRoute
   '/api/upload-url': typeof ApiUploadUrlRoute
   '/cn': typeof CnIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/files/$': typeof ApiFilesSplatRoute
+  '/api/stripe/checkout': typeof ApiStripeCheckoutRoute
+  '/api/stripe/portal': typeof ApiStripePortalRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -118,10 +150,14 @@ export interface FileRoutesById {
   '/api/debug': typeof ApiDebugRoute
   '/api/generate': typeof ApiGenerateRoute
   '/api/generate-status': typeof ApiGenerateStatusRoute
+  '/api/grs-webhook': typeof ApiGrsWebhookRoute
   '/api/upload-url': typeof ApiUploadUrlRoute
   '/cn/': typeof CnIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/files/$': typeof ApiFilesSplatRoute
+  '/api/stripe/checkout': typeof ApiStripeCheckoutRoute
+  '/api/stripe/portal': typeof ApiStripePortalRoute
+  '/api/stripe/webhook': typeof ApiStripeWebhookRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -133,10 +169,14 @@ export interface FileRouteTypes {
     | '/api/debug'
     | '/api/generate'
     | '/api/generate-status'
+    | '/api/grs-webhook'
     | '/api/upload-url'
     | '/cn/'
     | '/api/auth/$'
     | '/api/files/$'
+    | '/api/stripe/checkout'
+    | '/api/stripe/portal'
+    | '/api/stripe/webhook'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -146,10 +186,14 @@ export interface FileRouteTypes {
     | '/api/debug'
     | '/api/generate'
     | '/api/generate-status'
+    | '/api/grs-webhook'
     | '/api/upload-url'
     | '/cn'
     | '/api/auth/$'
     | '/api/files/$'
+    | '/api/stripe/checkout'
+    | '/api/stripe/portal'
+    | '/api/stripe/webhook'
   id:
     | '__root__'
     | '/'
@@ -160,10 +204,14 @@ export interface FileRouteTypes {
     | '/api/debug'
     | '/api/generate'
     | '/api/generate-status'
+    | '/api/grs-webhook'
     | '/api/upload-url'
     | '/cn/'
     | '/api/auth/$'
     | '/api/files/$'
+    | '/api/stripe/checkout'
+    | '/api/stripe/portal'
+    | '/api/stripe/webhook'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -173,10 +221,14 @@ export interface RootRouteChildren {
   ApiDebugRoute: typeof ApiDebugRoute
   ApiGenerateRoute: typeof ApiGenerateRoute
   ApiGenerateStatusRoute: typeof ApiGenerateStatusRoute
+  ApiGrsWebhookRoute: typeof ApiGrsWebhookRoute
   ApiUploadUrlRoute: typeof ApiUploadUrlRoute
   CnIndexRoute: typeof CnIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiFilesSplatRoute: typeof ApiFilesSplatRoute
+  ApiStripeCheckoutRoute: typeof ApiStripeCheckoutRoute
+  ApiStripePortalRoute: typeof ApiStripePortalRoute
+  ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -207,6 +259,13 @@ declare module '@tanstack/react-router' {
       path: '/api/upload-url'
       fullPath: '/api/upload-url'
       preLoaderRoute: typeof ApiUploadUrlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/grs-webhook': {
+      id: '/api/grs-webhook'
+      path: '/api/grs-webhook'
+      fullPath: '/api/grs-webhook'
+      preLoaderRoute: typeof ApiGrsWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/generate-status': {
@@ -251,6 +310,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuestLoginRouteImport
       parentRoute: typeof GuestRouteRoute
     }
+    '/api/stripe/webhook': {
+      id: '/api/stripe/webhook'
+      path: '/api/stripe/webhook'
+      fullPath: '/api/stripe/webhook'
+      preLoaderRoute: typeof ApiStripeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/stripe/portal': {
+      id: '/api/stripe/portal'
+      path: '/api/stripe/portal'
+      fullPath: '/api/stripe/portal'
+      preLoaderRoute: typeof ApiStripePortalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/stripe/checkout': {
+      id: '/api/stripe/checkout'
+      path: '/api/stripe/checkout'
+      fullPath: '/api/stripe/checkout'
+      preLoaderRoute: typeof ApiStripeCheckoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/files/$': {
       id: '/api/files/$'
       path: '/api/files/$'
@@ -289,10 +369,14 @@ const rootRouteChildren: RootRouteChildren = {
   ApiDebugRoute: ApiDebugRoute,
   ApiGenerateRoute: ApiGenerateRoute,
   ApiGenerateStatusRoute: ApiGenerateStatusRoute,
+  ApiGrsWebhookRoute: ApiGrsWebhookRoute,
   ApiUploadUrlRoute: ApiUploadUrlRoute,
   CnIndexRoute: CnIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiFilesSplatRoute: ApiFilesSplatRoute,
+  ApiStripeCheckoutRoute: ApiStripeCheckoutRoute,
+  ApiStripePortalRoute: ApiStripePortalRoute,
+  ApiStripeWebhookRoute: ApiStripeWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

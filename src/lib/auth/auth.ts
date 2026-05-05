@@ -1,5 +1,4 @@
 import "@tanstack/react-start/server-only";
-import type { BetterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth } from "better-auth";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
@@ -10,7 +9,8 @@ import { sendEmail } from "@/lib/email";
 import * as schema from "@/lib/db/schema";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 
-let _auth: BetterAuth | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _auth: any = null;
 
 function getD1Binding(): D1Database | undefined {
   const platformEnv = (globalThis as Record<string, unknown>).__env__ as
@@ -33,6 +33,14 @@ export function createAuth(d1Binding?: D1Database) {
       telemetry: { enabled: false },
       database: drizzleAdapter(db, { provider: "sqlite", schema }),
       plugins: [tanstackStartCookies()],
+      user: {
+        additionalFields: {
+          credits: {
+            type: "number",
+            defaultValue: 10,
+          },
+        },
+      },
       session: {
         cookieCache: {
           enabled: true,
@@ -63,10 +71,10 @@ export function createAuth(d1Binding?: D1Database) {
           hash: hashPassword,
           verify: verifyPassword,
         },
-        sendEmailVerification: async ({ user, url }) => {
+        sendEmailVerification: async ({ user, url }: { user: { email: string; name?: string }; url: string }) => {
           console.log("[auth] Verification email:", user.email, url);
         },
-        sendResetPassword: async ({ user, url }) => {
+        sendResetPassword: async ({ user, url }: { user: { email: string; name?: string }; url: string }) => {
           console.log("[auth] Reset email:", user.email, url);
         },
       },

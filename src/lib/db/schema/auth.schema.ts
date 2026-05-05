@@ -8,6 +8,7 @@ export const user = sqliteTable("user", {
   emailVerified: integer("email_verified", { mode: "boolean" }).default(false).notNull(),
   image: text("image"),
   credits: integer("credits").default(10).notNull(),
+  stripeCustomerId: text("stripe_customer_id"),
   createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" })
     .$defaultFn(() => new Date())

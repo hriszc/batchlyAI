@@ -29,7 +29,7 @@ const QUANTITIES = [1, 2, 4];
 
 function getCategoryLabel(
   cat: ModelInfo["category"],
-  t: (key: string) => string,
+  t: ReturnType<typeof useLanguage>["t"],
 ) {
   const map: Record<string, string> = {
     image: t("modelImage"),
@@ -40,7 +40,7 @@ function getCategoryLabel(
   return map[cat];
 }
 
-function getTierLabel(tier: ModelInfo["tier"], t: (key: string) => string) {
+function getTierLabel(tier: ModelInfo["tier"], t: ReturnType<typeof useLanguage>["t"]) {
   return tier === "fast" ? t("tierFast") : t("tierPro");
 }
 

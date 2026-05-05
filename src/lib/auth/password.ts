@@ -4,13 +4,13 @@ const SALT_BYTES = 16;
 const KEY_BYTES = 64;
 const VERSION_PREFIX = "pbkdf2$";
 
-function buf2hex(buf: ArrayBuffer): string {
-  return Array.from(new Uint8Array(buf))
+function buf2hex(buf: BufferSource): string {
+  return Array.from(new Uint8Array(buf as ArrayBuffer))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 }
 
-function hex2buf(hex: string): Uint8Array {
+function hex2buf(hex: string): BufferSource {
   const bytes = new Uint8Array(hex.length / 2);
   for (let i = 0; i < hex.length; i += 2) {
     bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);

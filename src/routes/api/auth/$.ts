@@ -29,23 +29,31 @@ export const Route = createFileRoute("/api/auth/$")({
 export function getApiMethod(auth: NonNullable<ReturnType<typeof createAuth>>, path: string) {
   switch (path) {
     case "sign-up/email":
-      return auth.api.signUpEmail;
+      return { method: auth.api.signUpEmail };
     case "sign-in/email":
-      return auth.api.signInEmail;
+      return { method: auth.api.signInEmail };
+    case "sign-in/social":
+      return { method: auth.api.signInSocial };
     case "sign-out":
-      return auth.api.signOut;
+      return { method: auth.api.signOut };
     case "get-session":
-      return auth.api.getSession;
+      return { method: auth.api.getSession };
     case "forget-password":
-      return auth.api.forgetPassword;
+      return { method: auth.api.forgetPassword };
     case "reset-password":
-      return auth.api.resetPassword;
+      return { method: auth.api.resetPassword };
     case "verify-email":
-      return auth.api.verifyEmail;
+      return { method: auth.api.verifyEmail };
     case "send-verification-email":
-      return auth.api.sendVerificationEmail;
-    default:
+      return { method: auth.api.sendVerificationEmail };
+    default: {
+      // OAuth callback: /callback/:provider
+      const callbackMatch = path.match(/^callback\/(.+)$/);
+      if (callbackMatch) {
+        return { method: auth.api.callbackOAuth, params: { id: callbackMatch[1] } };
+      }
       return undefined;
+    }
   }
 }
 
@@ -55,13 +63,15 @@ async function callApi(
   request: Request,
   _method: string,
 ) {
-  const apiMethod = getApiMethod(auth, path);
-  if (!apiMethod) {
+  const resolved = getApiMethod(auth, path);
+  if (!resolved) {
     return new Response(JSON.stringify({ error: `Unknown auth path: ${path}` }), {
       status: 404,
       headers: { "Content-Type": "application/json" },
     });
   }
+
+  const { method: apiMethod, params } = resolved;
 
   // Rate limit sensitive endpoints
   const SENSITIVE_PATHS = ["sign-in/email", "sign-up/email", "forget-password", "reset-password"];
@@ -90,6 +100,7 @@ async function callApi(
       body,
       headers: request.headers,
       request,
+      ...(params ? { params } : {}),
       asResponse: true,
     });
 

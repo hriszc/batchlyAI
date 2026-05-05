@@ -46,6 +46,10 @@ export const translations = {
     modelMusic: "Music",
     tierFast: "Fast",
     tierPro: "Pro",
+    buyCredits: "Buy Credits",
+    buyCreditsTitle: "10 USD = 1000 Credits",
+    purchaseSuccess: "Purchase successful! Credits have been added.",
+    purchaseCanceled: "Purchase canceled.",
   },
   zh: {
     siteTitle: "BatchlyAI",
@@ -94,6 +98,10 @@ export const translations = {
     modelMusic: "生音乐",
     tierFast: "快速",
     tierPro: "最佳",
+    buyCredits: "购买积分",
+    buyCreditsTitle: "10美元 = 1000积分",
+    purchaseSuccess: "购买成功！积分已到账。",
+    purchaseCanceled: "购买已取消。",
   },
 } as const;
 
