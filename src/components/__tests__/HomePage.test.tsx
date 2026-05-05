@@ -6,9 +6,9 @@ import { renderWithProviders } from "#test/test-utils";
 import { HomePage } from "../HomePage";
 
 describe("HomePage", () => {
-  it("renders site logo", () => {
+  it("renders site title", () => {
     renderWithProviders(<HomePage />);
-    expect(screen.getAllByAltText("BatchlyAI")[0]).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "BatchlyAI" })).toBeInTheDocument();
   });
 
   it("renders site description", () => {
@@ -21,9 +21,9 @@ describe("HomePage", () => {
     expect(screen.getByPlaceholderText(/Use {{vars}} for batch generation/)).toBeInTheDocument();
   });
 
-  it("renders logo when forceLanguage is zh", () => {
+  it("renders title in Chinese when forceLanguage is zh", () => {
     renderWithProviders(<HomePage forceLanguage="zh" />, { language: "zh" });
-    expect(screen.getAllByAltText("BatchlyAI")[0]).toBeInTheDocument();
+    expect(screen.getByText(/万能 AI 生成器/)).toBeInTheDocument();
   });
 
   it("renders with no results initially", () => {

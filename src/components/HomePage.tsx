@@ -1,7 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { GeneratorCard } from "@/components/universal-generator/GeneratorCard";
 import { ResultsGrid } from "@/components/universal-generator/ResultsGrid";
+import { ShareScreenshot } from "@/components/universal-generator/ShareScreenshot";
 import { useGeneratorState } from "@/components/universal-generator/useGeneratorState";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -13,6 +15,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
   const { state, actions } = useGeneratorState();
   const resultsRef = useRef<HTMLDivElement>(null);
   const { setLanguage, t } = useLanguage();
+  const [shareMode, setShareMode] = useState(false);
 
   useEffect(() => {
     if (forceLanguage) {
@@ -47,6 +50,9 @@ export function HomePage({ forceLanguage }: HomePageProps) {
           className="hidden h-12 w-auto sm:h-14 md:h-16 dark:block"
         />
       </div>
+      <h1 className="mb-2 text-center text-[32px] leading-[1.07] font-semibold tracking-[-0.028em] text-foreground sm:text-[40px] md:text-[56px]">
+        {t("siteTitle")}
+      </h1>
       <p className="mb-8 text-center text-[17px] leading-[1.19] tracking-[-0.022em] text-muted-foreground sm:text-[21px]">
         {t("siteDescription")}
       </p>
@@ -54,8 +60,32 @@ export function HomePage({ forceLanguage }: HomePageProps) {
       <GeneratorCard state={state} actions={actions} />
 
       <div ref={resultsRef}>
-        <ResultsGrid results={state.results} isGenerating={state.isGenerating} />
+        <ResultsGrid
+          results={state.results}
+          isGenerating={state.isGenerating}
+          onShare={() => {
+            if (state.results.length === 0) return;
+            setShareMode(true);
+          }}
+        />
       </div>
+
+      {shareMode && (
+        <ShareScreenshot
+          promptTemplate={state.promptTemplate}
+          variableGroups={state.variableGroups}
+          results={state.results}
+          onComplete={() => {
+            setShareMode(false);
+            toast.success(t("shareSuccess"));
+          }}
+          onError={(msg) => {
+            setShareMode(false);
+            toast.error(t("shareFailed"));
+            console.error("[share]", msg);
+          }}
+        />
+      )}
     </main>
   );
 }
