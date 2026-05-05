@@ -19,7 +19,8 @@ export const env = createEnv({
     // Stripe
     STRIPE_SECRET_KEY: z.string().min(1).optional().default("dev-stripe-key"),
     STRIPE_WEBHOOK_SECRET: z.string().min(1).optional().default("dev-stripe-webhook"),
-    STRIPE_PRICE_ID: z.string().min(1).optional().default("dev-stripe-price"),
+    STRIPE_PRICE_ID_USD: z.string().min(1).optional().default("dev-stripe-price-usd"),
+    STRIPE_PRICE_ID_CNY: z.string().min(1).optional().default("dev-stripe-price-cny"),
   },
   runtimeEnv: process.env,
 });

@@ -51,6 +51,7 @@ export function SettingsBar() {
       const resp = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currency: language === "zh" ? "cny" : "usd" }),
       });
       const data = (await resp.json()) as { url?: string; error?: string };
       if (data.url) {

@@ -28,13 +28,23 @@ export const Route = createFileRoute("/api/stripe/checkout")({
         const userEmail = session.user.email;
         const origin = new URL(request.url).origin;
 
+        let currency = "usd";
+        try {
+          const body = await request.json();
+          if (body.currency === "cny") currency = "cny";
+        } catch {
+          // no body or invalid JSON, default to usd
+        }
+
+        const priceId = currency === "cny" ? env.STRIPE_PRICE_ID_CNY : env.STRIPE_PRICE_ID_USD;
+
         try {
           const stripe = getStripe();
           const checkoutSession = await stripe.checkout.sessions.create({
             mode: "payment",
             line_items: [
               {
-                price: env.STRIPE_PRICE_ID,
+                price: priceId,
                 quantity: 1,
               },
             ],
