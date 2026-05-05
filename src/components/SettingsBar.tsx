@@ -105,11 +105,11 @@ export function SettingsBar() {
   }, []);
 
   const handleCopyReferralLink = useCallback(async () => {
-    if (referralStats?.shareUrl) {
+    if (referralStats) {
       await navigator.clipboard.writeText(referralStats.shareUrl);
       toast.success("Referral link copied!");
     }
-  }, [referralStats?.shareUrl]);
+  }, [referralStats]);
 
   const handleBuyCredits = async () => {
     try {
