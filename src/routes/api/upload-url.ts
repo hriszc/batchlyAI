@@ -1,7 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { uploadToR2 } from "@/lib/cloudflare/r2";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { sanitizeFilename } from "@/lib/upload/sanitize";
+
+const ALLOWED_MIME_TYPES = [
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+  "image/svg+xml",
+  "image/bmp",
+  "image/tiff",
+];
+
+const ALLOWED_EXTENSIONS = [
+  ".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".bmp", ".tiff",
+];
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
 export const Route = createFileRoute("/api/upload-url")({
   server: {
@@ -9,41 +28,49 @@ export const Route = createFileRoute("/api/upload-url")({
       POST: async ({ request }) => {
         const auth = createAuth();
         if (!auth) {
-          return new Response(JSON.stringify({ error: "Auth unavailable" }), {
-            status: 501,
-            headers: { "Content-Type": "application/json" },
-          });
+          return jsonResponse({ error: "Auth unavailable" }, 501);
         }
 
         const session = await auth.api.getSession({ headers: request.headers });
         if (!session?.user?.id) {
-          return new Response(JSON.stringify({ error: "Unauthorized" }), {
-            status: 401,
-            headers: { "Content-Type": "application/json" },
-          });
+          return jsonResponse({ error: "Unauthorized" }, 401);
         }
 
-        const contentDisposition = request.headers.get("x-file-name") || "";
-        const filename = decodeURIComponent(contentDisposition) || "upload";
+        const limit = checkRateLimit(`upload:user:${session.user.id}`, 20, 60);
+        if (!limit.allowed) {
+          return jsonResponse({ error: "Upload rate limit exceeded. Please try again later." }, 429);
+        }
 
-        const userId = session.user.id;
-        const key = `uploads/${userId}/${Date.now()}_${filename}`;
+        const rawFilename = request.headers.get("x-file-name") || "";
+        const filename = sanitizeFilename(decodeURIComponent(rawFilename));
+
+        const ext = filename.includes(".") ? filename.slice(filename.lastIndexOf(".")).toLowerCase() : "";
+        if (!ALLOWED_EXTENSIONS.includes(ext)) {
+          return jsonResponse({ error: `File type not allowed: ${ext || "unknown"}` }, 400);
+        }
+
+        const contentType = request.headers.get("Content-Type") || "";
+        if (contentType && !ALLOWED_MIME_TYPES.includes(contentType)) {
+          return jsonResponse({ error: `Content-Type not allowed: ${contentType}` }, 400);
+        }
+
+        const contentLength = parseInt(request.headers.get("Content-Length") || "0", 10);
+        if (contentLength > MAX_FILE_SIZE) {
+          return jsonResponse({ error: "File too large. Maximum size: 10MB" }, 413);
+        }
+
+        const sanitizedUserId = session.user.id.replace(/[^a-zA-Z0-9_-]/g, "_");
+        const key = `uploads/${sanitizedUserId}/${Date.now()}_${filename}`;
 
         const result = await uploadToR2(key, request.body!);
 
         if (!result.success) {
-          return new Response(JSON.stringify({ error: "R2 not configured" }), {
-            status: 501,
-            headers: { "Content-Type": "application/json" },
-          });
+          return jsonResponse({ error: "R2 not configured" }, 501);
         }
 
         const proxyUrl = `${new URL(request.url).origin}/api/files/${key}`;
 
-        return new Response(
-          JSON.stringify({ publicUrl: proxyUrl, key }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
-        );
+        return jsonResponse({ publicUrl: proxyUrl, key }, 200);
       },
     },
   },

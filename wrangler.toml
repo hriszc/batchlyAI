@@ -4,7 +4,7 @@ compatibility_flags = ["nodejs_compat"]
 main = ".output/server/index.mjs"
 
 # Warm-up: Use an external cron service (e.g. cron-job.org) to
-# GET https://batchlyai.com/api/auth-test every 5 minutes.
+# GET https://batchlyai.com/api/health every 5 minutes.
 # This keeps the Worker warm and avoids cold-start CPU spikes (50ms+).
 
 [assets]

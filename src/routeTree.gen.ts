@@ -13,10 +13,9 @@ import { Route as GuestRouteRouteImport } from './routes/_guest/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CnIndexRouteImport } from './routes/cn/index'
 import { Route as ApiUploadUrlRouteImport } from './routes/api/upload-url'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiGenerateStatusRouteImport } from './routes/api/generate-status'
 import { Route as ApiGenerateRouteImport } from './routes/api/generate'
-import { Route as ApiDebugRouteImport } from './routes/api/debug'
-import { Route as ApiAuthTestRouteImport } from './routes/api/auth-test'
 import { Route as GuestSignupRouteImport } from './routes/_guest/signup'
 import { Route as GuestLoginRouteImport } from './routes/_guest/login'
 import { Route as ApiFilesSplatRouteImport } from './routes/api/files/$'
@@ -41,6 +40,11 @@ const ApiUploadUrlRoute = ApiUploadUrlRouteImport.update({
   path: '/api/upload-url',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiGenerateStatusRoute = ApiGenerateStatusRouteImport.update({
   id: '/api/generate-status',
   path: '/api/generate-status',
@@ -49,16 +53,6 @@ const ApiGenerateStatusRoute = ApiGenerateStatusRouteImport.update({
 const ApiGenerateRoute = ApiGenerateRouteImport.update({
   id: '/api/generate',
   path: '/api/generate',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiDebugRoute = ApiDebugRouteImport.update({
-  id: '/api/debug',
-  path: '/api/debug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiAuthTestRoute = ApiAuthTestRouteImport.update({
-  id: '/api/auth-test',
-  path: '/api/auth-test',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GuestSignupRoute = GuestSignupRouteImport.update({
@@ -86,10 +80,9 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
-  '/api/auth-test': typeof ApiAuthTestRoute
-  '/api/debug': typeof ApiDebugRoute
   '/api/generate': typeof ApiGenerateRoute
   '/api/generate-status': typeof ApiGenerateStatusRoute
+  '/api/health': typeof ApiHealthRoute
   '/api/upload-url': typeof ApiUploadUrlRoute
   '/cn/': typeof CnIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -99,10 +92,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
-  '/api/auth-test': typeof ApiAuthTestRoute
-  '/api/debug': typeof ApiDebugRoute
   '/api/generate': typeof ApiGenerateRoute
   '/api/generate-status': typeof ApiGenerateStatusRoute
+  '/api/health': typeof ApiHealthRoute
   '/api/upload-url': typeof ApiUploadUrlRoute
   '/cn': typeof CnIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -114,10 +106,9 @@ export interface FileRoutesById {
   '/_guest': typeof GuestRouteRouteWithChildren
   '/_guest/login': typeof GuestLoginRoute
   '/_guest/signup': typeof GuestSignupRoute
-  '/api/auth-test': typeof ApiAuthTestRoute
-  '/api/debug': typeof ApiDebugRoute
   '/api/generate': typeof ApiGenerateRoute
   '/api/generate-status': typeof ApiGenerateStatusRoute
+  '/api/health': typeof ApiHealthRoute
   '/api/upload-url': typeof ApiUploadUrlRoute
   '/cn/': typeof CnIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -129,10 +120,9 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/signup'
-    | '/api/auth-test'
-    | '/api/debug'
     | '/api/generate'
     | '/api/generate-status'
+    | '/api/health'
     | '/api/upload-url'
     | '/cn/'
     | '/api/auth/$'
@@ -142,10 +132,9 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/signup'
-    | '/api/auth-test'
-    | '/api/debug'
     | '/api/generate'
     | '/api/generate-status'
+    | '/api/health'
     | '/api/upload-url'
     | '/cn'
     | '/api/auth/$'
@@ -156,10 +145,9 @@ export interface FileRouteTypes {
     | '/_guest'
     | '/_guest/login'
     | '/_guest/signup'
-    | '/api/auth-test'
-    | '/api/debug'
     | '/api/generate'
     | '/api/generate-status'
+    | '/api/health'
     | '/api/upload-url'
     | '/cn/'
     | '/api/auth/$'
@@ -169,10 +157,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GuestRouteRoute: typeof GuestRouteRouteWithChildren
-  ApiAuthTestRoute: typeof ApiAuthTestRoute
-  ApiDebugRoute: typeof ApiDebugRoute
   ApiGenerateRoute: typeof ApiGenerateRoute
   ApiGenerateStatusRoute: typeof ApiGenerateStatusRoute
+  ApiHealthRoute: typeof ApiHealthRoute
   ApiUploadUrlRoute: typeof ApiUploadUrlRoute
   CnIndexRoute: typeof CnIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -209,6 +196,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiUploadUrlRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/generate-status': {
       id: '/api/generate-status'
       path: '/api/generate-status'
@@ -221,20 +215,6 @@ declare module '@tanstack/react-router' {
       path: '/api/generate'
       fullPath: '/api/generate'
       preLoaderRoute: typeof ApiGenerateRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/debug': {
-      id: '/api/debug'
-      path: '/api/debug'
-      fullPath: '/api/debug'
-      preLoaderRoute: typeof ApiDebugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/auth-test': {
-      id: '/api/auth-test'
-      path: '/api/auth-test'
-      fullPath: '/api/auth-test'
-      preLoaderRoute: typeof ApiAuthTestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_guest/signup': {
@@ -285,10 +265,9 @@ const GuestRouteRouteWithChildren = GuestRouteRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GuestRouteRoute: GuestRouteRouteWithChildren,
-  ApiAuthTestRoute: ApiAuthTestRoute,
-  ApiDebugRoute: ApiDebugRoute,
   ApiGenerateRoute: ApiGenerateRoute,
   ApiGenerateStatusRoute: ApiGenerateStatusRoute,
+  ApiHealthRoute: ApiHealthRoute,
   ApiUploadUrlRoute: ApiUploadUrlRoute,
   CnIndexRoute: CnIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,

@@ -2,10 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { and, eq, gte, sql } from "drizzle-orm";
 
 import { generateImage, createReplicatePredictions } from "@/lib/ai";
+import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getCachedResult, setCachedResult } from "@/lib/cache/prompt-cache";
 import { getDb } from "@/lib/db";
 import { user as userTable } from "@/lib/db/schema/auth.schema";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { generateRequestSchema } from "@/lib/validation/schemas";
 
 export const CREDIT_COST: Record<string, number> = {
   "z-image-fast": 10,
@@ -45,30 +48,22 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
   } = ctx;
 
   try {
-    const body = (await request.json()) as {
-      prompt: string;
-      aspectRatio?: string;
-      n?: number;
-      model?: string;
-    };
+    const rawBody = await request.json();
+    const parsed = generateRequestSchema.safeParse(rawBody);
 
-    if (!body.prompt) {
-      return jsonResponse({ error: "Missing prompt" }, 400);
+    if (!parsed.success) {
+      return jsonResponse(
+        { error: "Invalid request", details: parsed.error.flatten().fieldErrors },
+        400,
+      );
     }
 
-    // Calculate cost
-    const model = body.model || "z-image-pro";
-    const n = body.n ?? 1;
+    const { prompt, aspectRatio, n, model } = parsed.data;
     const costPerUnit = CREDIT_COST[model] ?? 20;
     const maxCost = costPerUnit * n;
 
     // Check prompt cache first
-    const cachedUrls = await getCachedFn(
-      body.prompt,
-      model,
-      body.aspectRatio || "1:1",
-      n,
-    );
+    const cachedUrls = await getCachedFn(prompt, model, aspectRatio, n);
     if (cachedUrls) {
       return jsonResponse(
         { urls: cachedUrls, creditsRemaining: null, cached: true },
@@ -100,8 +95,8 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
       let predictions;
       try {
         predictions = await replicateFn({
-          prompt: body.prompt,
-          aspectRatio: body.aspectRatio,
+          prompt,
+          aspectRatio,
           n,
         });
       } catch (err) {
@@ -126,10 +121,10 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
     let urls: string[];
     try {
       urls = await generateFn({
-        prompt: body.prompt,
-        aspectRatio: body.aspectRatio,
+        prompt,
+        aspectRatio,
         n,
-        model: body.model,
+        model,
       });
     } catch (err) {
       await db
@@ -153,13 +148,7 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
     const newBalance = deducted.credits - actualCost;
 
     if (urls.length > 0) {
-      await setCachedFn(
-        body.prompt,
-        model,
-        body.aspectRatio || "1:1",
-        urls.length,
-        urls,
-      );
+      await setCachedFn(prompt, model, aspectRatio, urls.length, urls);
     }
 
     return jsonResponse({ urls, creditsRemaining: newBalance }, 200);
@@ -181,6 +170,22 @@ export const Route = createFileRoute("/api/generate")({
           return jsonResponse({ error: "Unauthorized" }, 401);
         }
 
+        const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+        const userId = session.user.id;
+
+        const userLimit = checkRateLimit(`generate:user:${userId}`, 30, 60);
+        if (!userLimit.allowed) {
+          return jsonResponse(
+            { error: "Rate limit exceeded. Please wait before generating more." },
+            429,
+          );
+        }
+
+        const ipLimit = checkRateLimit(`generate:ip:${ip}`, 60, 60);
+        if (!ipLimit.allowed) {
+          return jsonResponse({ error: "Too many requests from this IP" }, 429);
+        }
+
         const binding = getD1Binding();
         if (!binding) return dbUnavailable();
 
@@ -193,13 +198,6 @@ export const Route = createFileRoute("/api/generate")({
     },
   },
 });
-
-function jsonResponse(data: unknown, status: number) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
 
 function dbUnavailable() {
   return jsonResponse({ error: "Database not available" }, 501);

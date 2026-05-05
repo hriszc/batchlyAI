@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { jsonResponse } from "@/lib/api-helpers";
 import { pollReplicatePrediction } from "@/lib/ai";
 import { createAuth } from "@/lib/auth/auth";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const Route = createFileRoute("/api/generate-status")({
   server: {
@@ -9,27 +11,24 @@ export const Route = createFileRoute("/api/generate-status")({
       GET: async ({ request }) => {
         const auth = createAuth();
         if (!auth) {
-          return new Response(JSON.stringify({ error: "Database not available" }), {
-            status: 501,
-            headers: { "Content-Type": "application/json" },
-          });
+          return jsonResponse({ error: "Database not available" }, 501);
         }
 
         const session = await auth.api.getSession({ headers: request.headers });
         if (!session?.user?.id) {
-          return new Response(JSON.stringify({ error: "Unauthorized" }), {
-            status: 401,
-            headers: { "Content-Type": "application/json" },
-          });
+          return jsonResponse({ error: "Unauthorized" }, 401);
+        }
+
+        const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+        const limit = checkRateLimit(`generate-status:ip:${ip}`, 60, 60);
+        if (!limit.allowed) {
+          return jsonResponse({ error: "Too many status checks. Please slow down." }, 429);
         }
 
         const url = new URL(request.url);
         const idsParam = url.searchParams.get("ids");
         if (!idsParam) {
-          return new Response(JSON.stringify({ error: "Missing ids parameter" }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-          });
+          return jsonResponse({ error: "Missing ids parameter" }, 400);
         }
 
         const ids = idsParam.split(",").filter(Boolean);
@@ -46,18 +45,13 @@ export const Route = createFileRoute("/api/generate-status")({
             }),
           );
 
-          return new Response(
-            JSON.stringify({
-              results: results.map((r, i) => ({ id: ids[i], ...r })),
-            }),
-            { status: 200, headers: { "Content-Type": "application/json" } },
+          return jsonResponse(
+            { results: results.map((r, i) => ({ id: ids[i], ...r })) },
+            200,
           );
         } catch (err) {
           const message = err instanceof Error ? err.message : "Unknown error";
-          return new Response(JSON.stringify({ error: message }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-          });
+          return jsonResponse({ error: message }, 500);
         }
       },
     },
