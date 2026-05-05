@@ -17,6 +17,13 @@
       "breakpoints": true
     },
     {
+      "idx": 2,
+      "version": "6",
+      "when": 1777900000000,
+      "tag": "0002_stripe",
+      "breakpoints": true
+    },
+    {
       "idx": 3,
       "version": "6",
       "when": 1777965000000,
