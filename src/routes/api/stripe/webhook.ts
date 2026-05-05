@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq, sql } from "drizzle-orm";
 
+import { env } from "@/env/server";
 import { getDb } from "@/lib/db";
 import { user as userTable, creditPurchase } from "@/lib/db/schema";
-import { env } from "@/env/server";
 import { getStripe } from "@/lib/stripe";
 
 function getD1Binding(): D1Database | undefined {
@@ -31,11 +31,7 @@ export const Route = createFileRoute("/api/stripe/webhook")({
         let event;
         try {
           const stripe = getStripe();
-          event = await stripe.webhooks.constructEventAsync(
-            body,
-            sig,
-            env.STRIPE_WEBHOOK_SECRET,
-          );
+          event = await stripe.webhooks.constructEventAsync(body, sig, env.STRIPE_WEBHOOK_SECRET);
         } catch (err) {
           const message = err instanceof Error ? err.message : "Signature verification failed";
           console.error("[stripe] webhook signature error:", message);

@@ -1,9 +1,11 @@
-import { describe, it, expect, vi } from "vitest";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { VariableGroupCard } from "../VariableGroupCard";
+import { describe, it, expect, vi } from "vitest";
+
 import { renderWithProviders } from "#test/test-utils";
+
 import type { VariableGroup } from "../types";
+import { VariableGroupCard } from "../VariableGroupCard";
 
 const baseGroup: VariableGroup = {
   id: "var_0",

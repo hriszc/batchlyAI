@@ -10,7 +10,12 @@ function getKV(): KVNamespace | undefined {
   return platformEnv?.batchlyai_kv as KVNamespace | undefined;
 }
 
-async function hashKey(prompt: string, model: string, aspectRatio: string, n: number): Promise<string> {
+async function hashKey(
+  prompt: string,
+  model: string,
+  aspectRatio: string,
+  n: number,
+): Promise<string> {
   const input = `${prompt}|${model}|${aspectRatio}|${n}`;
   const data = new TextEncoder().encode(input);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);

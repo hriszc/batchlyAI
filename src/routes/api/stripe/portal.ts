@@ -49,13 +49,10 @@ export const Route = createFileRoute("/api/stripe/portal")({
           .where(eq(userTable.id, userId));
 
         if (!row?.stripeCustomerId) {
-          return new Response(
-            JSON.stringify({ error: "No Stripe customer found" }),
-            {
-              status: 404,
-              headers: { "Content-Type": "application/json" },
-            },
-          );
+          return new Response(JSON.stringify({ error: "No Stripe customer found" }), {
+            status: 404,
+            headers: { "Content-Type": "application/json" },
+          });
         }
 
         try {
@@ -65,13 +62,10 @@ export const Route = createFileRoute("/api/stripe/portal")({
             return_url: `${new URL(request.url).origin}/`,
           });
 
-          return new Response(
-            JSON.stringify({ url: portalSession.url }),
-            {
-              status: 200,
-              headers: { "Content-Type": "application/json" },
-            },
-          );
+          return new Response(JSON.stringify({ url: portalSession.url }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
         } catch (err) {
           const message = err instanceof Error ? err.message : "Failed to create portal session";
           console.error("[stripe] portal error:", message);

@@ -1,5 +1,6 @@
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
+
 import * as schema from "@/lib/db/schema";
 
 export function createTestDb() {
@@ -18,6 +19,7 @@ export function applyMigrations(db: ReturnType<typeof createTestDb>) {
     "email_verified" integer DEFAULT false NOT NULL,
     "image" text,
     "credits" integer DEFAULT 10 NOT NULL,
+    "stripe_customer_id" text,
     "created_at" integer NOT NULL,
     "updated_at" integer NOT NULL
   )`);

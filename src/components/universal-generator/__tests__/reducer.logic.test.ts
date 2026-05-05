@@ -1,9 +1,7 @@
 import { describe, it, expect } from "vitest";
-import {
-  reducer,
-  initialState,
-} from "../useGeneratorState";
+
 import type { GeneratorState } from "../types";
+import { reducer, initialState } from "../useGeneratorState";
 
 function state(overrides?: Partial<GeneratorState>): GeneratorState {
   return { ...initialState, ...overrides };
@@ -34,10 +32,9 @@ describe("reducer", () => {
   // --- SYNC_GROUPS_FROM_TEMPLATE ---
   describe("SYNC_GROUPS_FROM_TEMPLATE", () => {
     it("extracts groups from template", () => {
-      const next = reducer(
-        state({ promptTemplate: "{{cat, dog}} in {{forest, beach}}" }),
-        { type: "SYNC_GROUPS_FROM_TEMPLATE" },
-      );
+      const next = reducer(state({ promptTemplate: "{{cat, dog}} in {{forest, beach}}" }), {
+        type: "SYNC_GROUPS_FROM_TEMPLATE",
+      });
       expect(next.variableGroups).toEqual([
         { id: "var_0", values: ["cat", "dog"] },
         { id: "var_1", values: ["forest", "beach"] },

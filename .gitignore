@@ -24,4 +24,4 @@ dist
 /server/build
 /public/build
 
-.tanstack
+.tanstack.claude/worktrees/

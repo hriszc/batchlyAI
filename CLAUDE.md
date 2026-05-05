@@ -33,6 +33,7 @@ const result = await apiMethod.call(auth.api, { body, headers, request, asRespon
 ```
 
 **代价**：
+
 - 需手动维护 `API_MAP` 路由表覆盖所有 auth 端点
 - Better Auth 升级时端点名称可能变化需同步
 - OAuth 回调等特殊端点可能需额外处理

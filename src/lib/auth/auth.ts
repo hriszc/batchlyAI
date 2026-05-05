@@ -4,10 +4,10 @@ import { betterAuth } from "better-auth";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 
 import { env } from "@/env/server";
-import { getDb } from "@/lib/db";
-import { sendEmail } from "@/lib/email";
-import * as schema from "@/lib/db/schema";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
+import { getDb } from "@/lib/db";
+import * as schema from "@/lib/db/schema";
+import { sendEmail } from "@/lib/email";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _auth: any = null;
@@ -71,10 +71,22 @@ export function createAuth(d1Binding?: D1Database) {
           hash: hashPassword,
           verify: verifyPassword,
         },
-        sendEmailVerification: async ({ user, url }: { user: { email: string; name?: string }; url: string }) => {
+        sendEmailVerification: async ({
+          user,
+          url,
+        }: {
+          user: { email: string; name?: string };
+          url: string;
+        }) => {
           console.log("[auth] Verification email:", user.email, url);
         },
-        sendResetPassword: async ({ user, url }: { user: { email: string; name?: string }; url: string }) => {
+        sendResetPassword: async ({
+          user,
+          url,
+        }: {
+          user: { email: string; name?: string };
+          url: string;
+        }) => {
           console.log("[auth] Reset email:", user.email, url);
         },
       },

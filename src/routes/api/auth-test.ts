@@ -23,7 +23,9 @@ export const Route = createFileRoute("/api/auth-test")({
           // Step 2: Check if auth.handler exists
           steps.hasHandler = typeof auth.handler === "function";
           steps.hasApi = !!auth.api;
-          steps.apiMethods = auth.api ? Object.keys(auth.api).filter(k => !k.startsWith("_") && !k.startsWith("$")) : [];
+          steps.apiMethods = auth.api
+            ? Object.keys(auth.api).filter((k) => !k.startsWith("_") && !k.startsWith("$"))
+            : [];
 
           // Step 3: Try to read request body (clone test)
           try {
@@ -65,7 +67,6 @@ export const Route = createFileRoute("/api/auth-test")({
             steps.handlerTestError = String(e);
             steps.handlerTestErrorStack = (e as Error).stack?.slice(0, 500);
           }
-
         } catch (e) {
           steps.fatalError = String(e);
           steps.fatalErrorStack = (e as Error).stack?.slice(0, 500);

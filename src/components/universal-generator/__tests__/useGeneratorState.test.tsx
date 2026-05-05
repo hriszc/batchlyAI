@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { renderHook, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { renderHook, act } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
 import { useGeneratorState } from "../useGeneratorState";
 
 function createWrapper() {
@@ -8,11 +9,7 @@ function createWrapper() {
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   return function Wrapper({ children }: { children: React.ReactNode }) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
-    );
+    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   };
 }
 
@@ -102,9 +99,7 @@ describe("useGeneratorState", () => {
     act(() => {
       vi.advanceTimersByTime(500);
     });
-    expect(result.current.state.variableGroups).toEqual([
-      { id: "var_0", values: ["cat", "dog"] },
-    ]);
+    expect(result.current.state.variableGroups).toEqual([{ id: "var_0", values: ["cat", "dog"] }]);
 
     vi.useRealTimers();
   });
@@ -270,8 +265,6 @@ describe("useGeneratorState", () => {
       result.current.actions.removeAttachment("att_1");
     });
 
-    expect(
-      result.current.state.attachedFiles.find((f) => f.id === "att_1"),
-    ).toBeUndefined();
+    expect(result.current.state.attachedFiles.find((f) => f.id === "att_1")).toBeUndefined();
   });
 });

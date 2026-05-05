@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { createAuth } from "@/lib/auth/auth";
 import { env } from "@/env/server";
+import { createAuth } from "@/lib/auth/auth";
 import { getStripe } from "@/lib/stripe";
 
 export const Route = createFileRoute("/api/stripe/checkout")({
@@ -44,13 +44,10 @@ export const Route = createFileRoute("/api/stripe/checkout")({
             cancel_url: `${origin}/?purchase=canceled`,
           });
 
-          return new Response(
-            JSON.stringify({ url: checkoutSession.url }),
-            {
-              status: 200,
-              headers: { "Content-Type": "application/json" },
-            },
-          );
+          return new Response(JSON.stringify({ url: checkoutSession.url }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
         } catch (err) {
           const message = err instanceof Error ? err.message : "Failed to create checkout";
           console.error("[stripe] checkout error:", message);

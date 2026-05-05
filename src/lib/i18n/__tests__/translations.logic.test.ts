@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+
 import { translations, getTranslation } from "../translations";
 import type { TranslationKey } from "../translations";
 

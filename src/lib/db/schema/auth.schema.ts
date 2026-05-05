@@ -9,7 +9,9 @@ export const user = sqliteTable("user", {
   image: text("image"),
   credits: integer("credits").default(10).notNull(),
   stripeCustomerId: text("stripe_customer_id"),
-  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .$defaultFn(() => new Date())
+    .notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" })
     .$defaultFn(() => new Date())
     .$onUpdate(() => new Date())
@@ -22,7 +24,9 @@ export const session = sqliteTable(
     id: text("id").primaryKey(),
     expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
     token: text("token").notNull().unique(),
-    createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" })
       .$defaultFn(() => new Date())
       .$onUpdate(() => new Date())
@@ -52,7 +56,9 @@ export const account = sqliteTable(
     refreshTokenExpiresAt: integer("refresh_token_expires_at", { mode: "timestamp" }),
     scope: text("scope"),
     password: text("password"),
-    createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" })
       .$defaultFn(() => new Date())
       .$onUpdate(() => new Date())
@@ -68,7 +74,9 @@ export const verification = sqliteTable(
     identifier: text("identifier").notNull(),
     value: text("value").notNull(),
     expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
-    createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .$defaultFn(() => new Date())
+      .notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" })
       .$defaultFn(() => new Date())
       .$onUpdate(() => new Date())

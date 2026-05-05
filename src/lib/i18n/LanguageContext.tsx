@@ -1,4 +1,5 @@
 import { createContext, use, useState, useEffect, useCallback } from "react";
+
 import type { Language, TranslationKey } from "./translations";
 import { translations } from "./translations";
 
@@ -26,9 +27,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem("language") as Language | null;
-    setLanguageState(
-      stored === "en" || stored === "zh" ? stored : detectBrowserLanguage(),
-    );
+    setLanguageState(stored === "en" || stored === "zh" ? stored : detectBrowserLanguage());
     setMounted(true);
   }, []);
 
@@ -50,11 +49,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     [language],
   );
 
-  return (
-    <LanguageContext value={{ language, setLanguage, t }}>
-      {children}
-    </LanguageContext>
-  );
+  return <LanguageContext value={{ language, setLanguage, t }}>{children}</LanguageContext>;
 }
 
 export function useLanguage() {
