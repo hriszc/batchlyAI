@@ -156,3 +156,59 @@ export async function pollReplicatePrediction(predictionId: string): Promise<Pol
   }
   return { status: prediction.status, urls: null, error: null };
 }
+
+const ANTHROPIC_HOST = "https://api.anthropic.com/v1/messages";
+const ANTHROPIC_VERSION = "2023-06-01";
+
+const EXPAND_SYSTEM_PROMPT =
+  "You are a variable expander for an AI image generator. " +
+  "Given a natural language description, output 3-8 concrete, diverse, and specific values " +
+  "as a comma-separated list on one line. Be creative and varied. Do not include explanations " +
+  "or numbering. Output only the comma-separated list.\n\n" +
+  "Examples:\n" +
+  'User: "three colors"\n' +
+  "Assistant: crimson red, sunshine yellow, ocean blue\n" +
+  'User: "famous artists"\n' +
+  "Assistant: Picasso, Van Gogh, Monet, Dali, Warhol\n" +
+  'User: "summer vibes"\n' +
+  "Assistant: beach sunset, tropical palm, pool party, ice cream truck";
+
+export async function runExpandLLM(description: string): Promise<string[]> {
+  const key = env.ANTHROPIC_API_KEY;
+  if (!key) throw new Error("ANTHROPIC_API_KEY is not configured");
+
+  const resp = await fetch(ANTHROPIC_HOST, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": key,
+      "anthropic-version": ANTHROPIC_VERSION,
+    },
+    body: JSON.stringify({
+      model: "claude-haiku-4-5",
+      max_tokens: 100,
+      temperature: 0.7,
+      system: EXPAND_SYSTEM_PROMPT,
+      messages: [{ role: "user", content: description }],
+    }),
+  });
+
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error(`Anthropic API error ${resp.status}: ${errText}`);
+  }
+
+  const data = (await resp.json()) as {
+    content: Array<{ type: string; text: string }>;
+  };
+  const text = data.content
+    .filter((c) => c.type === "text")
+    .map((c) => c.text)
+    .join("")
+    .trim();
+
+  return text
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}

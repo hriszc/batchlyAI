@@ -1,5 +1,10 @@
 export type GroupId = string;
 
+export interface AiBlock {
+  raw: string;
+  description: string;
+}
+
 export interface VariableGroup {
   id: GroupId;
   values: string[];

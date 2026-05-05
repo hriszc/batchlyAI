@@ -70,3 +70,34 @@ export async function setCachedResult(
     // Cache write failure is non-fatal
   }
 }
+
+const EXPAND_TTL = 30 * 24 * 60 * 60; // 30 days
+
+function expandCacheKey(description: string): string {
+  return `expand:${description.toLowerCase().trim()}`;
+}
+
+export async function getExpandCache(description: string): Promise<string[] | null> {
+  const kv = getKV();
+  if (!kv) return null;
+
+  try {
+    const raw = await kv.get(expandCacheKey(description));
+    return raw ? (JSON.parse(raw) as string[]) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function setExpandCache(description: string, values: string[]): Promise<void> {
+  const kv = getKV();
+  if (!kv) return;
+
+  try {
+    await kv.put(expandCacheKey(description), JSON.stringify(values), {
+      expirationTtl: EXPAND_TTL,
+    });
+  } catch {
+    // Cache write failure is non-fatal
+  }
+}

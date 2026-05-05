@@ -1,4 +1,22 @@
-import type { VariableGroup, PromptCombination } from "./types";
+import type { VariableGroup, PromptCombination, AiBlock } from "./types";
+
+export function extractAiBlocks(template: string): AiBlock[] {
+  const regex = /\{\*(.+?)\*\}/g;
+  const blocks: AiBlock[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(template)) !== null) {
+    const raw = match[0];
+    const description = match[1].trim();
+    if (description) {
+      blocks.push({ raw, description });
+    }
+  }
+  return blocks;
+}
+
+export function replaceAiBlock(template: string, raw: string, values: string[]): string {
+  return template.replace(raw, `{{${values.join(", ")}}}`);
+}
 
 export function extractVariableGroups(template: string): VariableGroup[] {
   const regex = /\{\{(.+?)\}\}/g;
