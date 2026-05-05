@@ -20,6 +20,8 @@ export function applyMigrations(db: ReturnType<typeof createTestDb>) {
     "image" text,
     "credits" integer DEFAULT 10 NOT NULL,
     "stripe_customer_id" text,
+    "referral_tier" text DEFAULT 'none' NOT NULL,
+    "total_referrals" integer DEFAULT 0 NOT NULL,
     "created_at" integer NOT NULL,
     "updated_at" integer NOT NULL
   )`);
@@ -75,6 +77,33 @@ export function applyMigrations(db: ReturnType<typeof createTestDb>) {
     "created_at" integer NOT NULL,
     "completed_at" integer
   )`);
+
+  // Referral tables
+  db.run(`CREATE TABLE "referral_code" (
+    "id" text PRIMARY KEY NOT NULL,
+    "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+    "code" text NOT NULL,
+    "created_at" integer NOT NULL
+  )`);
+  db.run(`CREATE UNIQUE INDEX "referral_code_user_id_unique" ON "referral_code" ("user_id")`);
+  db.run(`CREATE UNIQUE INDEX "referral_code_code_unique" ON "referral_code" ("code")`);
+
+  db.run(`CREATE TABLE "referral" (
+    "id" text PRIMARY KEY NOT NULL,
+    "referrer_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+    "referee_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+    "code" text NOT NULL,
+    "status" text NOT NULL DEFAULT 'pending',
+    "referrer_credits_awarded" integer NOT NULL DEFAULT 0,
+    "referee_credits_awarded" integer NOT NULL DEFAULT 0,
+    "purchase_commission_awarded" integer NOT NULL DEFAULT 0,
+    "ip_address" text,
+    "created_at" integer NOT NULL,
+    "credited_at" integer
+  )`);
+  db.run(`CREATE UNIQUE INDEX "referral_referee_id_unique" ON "referral" ("referee_id")`);
+  db.run(`CREATE INDEX "referral_referrer_id_idx" ON "referral" ("referrer_id")`);
+  db.run(`CREATE INDEX "referral_referee_id_idx" ON "referral" ("referee_id")`);
 }
 
 export function seedUser(
