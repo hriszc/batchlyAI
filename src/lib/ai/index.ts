@@ -9,10 +9,10 @@ interface ImageGenerationParams {
 
 // Cloudflare AI Gateway — all AI API calls route through here for caching, retries, analytics
 const AI_GATEWAY =
-  "https://gateway.ai.cloudflare.com/v1/b06ef09426453ac00c27f343d05a0a23/batchlyai-gateway";
-const DEEPSEEK_HOST = `${AI_GATEWAY}/deepseek/v1/chat/completions`;
-const REPLICATE_API_BASE = `${AI_GATEWAY}/replicate`;
-const DRAW_API_HOST = "https://grsaiapi.com/v1/draw/completions"; // GRS AI: custom provider, not in gateway yet
+  "https://gateway.ai.cloudflare.com/v1/b06ef09426453ac00c27f343d05a0a23/ai-draw-guess";
+const DEEPSEEK_HOST = `${AI_GATEWAY}/compat/chat/completions`;
+const REPLICATE_API_BASE = `${AI_GATEWAY}/compat-replicate`;
+const DRAW_API_HOST = `${AI_GATEWAY}/compat-grs/v1/draw/completions`;
 
 export interface GrsaiCreateResult {
   id: string;
