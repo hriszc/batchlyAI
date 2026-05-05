@@ -11,7 +11,7 @@ interface ImageGenerationParams {
 const AI_GATEWAY =
   "https://gateway.ai.cloudflare.com/v1/b06ef09426453ac00c27f343d05a0a23/ai-draw-guess";
 const DEEPSEEK_HOST = `${AI_GATEWAY}/compat/chat/completions`;
-const REPLICATE_API_BASE = `${AI_GATEWAY}/compat-replicate`;
+const REPLICATE_API_BASE = `${AI_GATEWAY}/replicate`;
 const DRAW_API_HOST = `${AI_GATEWAY}/compat-grs/v1/draw/completions`;
 
 export interface GrsaiCreateResult {
