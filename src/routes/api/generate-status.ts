@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { jsonResponse } from "@/lib/api-helpers";
 import { pollReplicatePrediction } from "@/lib/ai";
+import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 
@@ -92,10 +92,7 @@ export const Route = createFileRoute("/api/generate-status")({
             }),
           );
 
-          return jsonResponse(
-            { results: results.map((r, i) => ({ id: ids[i], ...r })) },
-            200,
-          );
+          return jsonResponse({ results: results.map((r, i) => ({ id: ids[i], ...r })) }, 200);
         } catch (err) {
           const message = err instanceof Error ? err.message : "Unknown error";
           return jsonResponse({ error: message }, 500);

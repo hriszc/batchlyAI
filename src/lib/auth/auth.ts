@@ -83,7 +83,7 @@ export function createAuth(d1Binding?: D1Database) {
             subject: "Verify your email — BatchlyAI",
             html: [
               `<h1>Welcome to BatchlyAI${user.name ? `, ${user.name}` : ""}!</h1>`,
-              '<p>Please verify your email address by clicking the link below:</p>',
+              "<p>Please verify your email address by clicking the link below:</p>",
               `<p><a href="${url}">Verify Email</a></p>`,
               "<p>This link expires in 1 hour.</p>",
               "<p>If you did not create this account, please ignore this email.</p>",

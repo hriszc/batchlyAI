@@ -16,9 +16,7 @@ const ALLOWED_MIME_TYPES = [
   "image/tiff",
 ];
 
-const ALLOWED_EXTENSIONS = [
-  ".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".bmp", ".tiff",
-];
+const ALLOWED_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".bmp", ".tiff"];
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
@@ -38,13 +36,18 @@ export const Route = createFileRoute("/api/upload-url")({
 
         const limit = checkRateLimit(`upload:user:${session.user.id}`, 20, 60);
         if (!limit.allowed) {
-          return jsonResponse({ error: "Upload rate limit exceeded. Please try again later." }, 429);
+          return jsonResponse(
+            { error: "Upload rate limit exceeded. Please try again later." },
+            429,
+          );
         }
 
         const rawFilename = request.headers.get("x-file-name") || "";
         const filename = sanitizeFilename(decodeURIComponent(rawFilename));
 
-        const ext = filename.includes(".") ? filename.slice(filename.lastIndexOf(".")).toLowerCase() : "";
+        const ext = filename.includes(".")
+          ? filename.slice(filename.lastIndexOf(".")).toLowerCase()
+          : "";
         if (!ALLOWED_EXTENSIONS.includes(ext)) {
           return jsonResponse({ error: `File type not allowed: ${ext || "unknown"}` }, 400);
         }

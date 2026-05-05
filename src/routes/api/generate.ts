@@ -103,7 +103,13 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
             predictions.map((p) =>
               kv.put(
                 `grs:${p.id}`,
-                JSON.stringify({ userId, status: "processing", prompt, aspectRatio, createdAt: Date.now() }),
+                JSON.stringify({
+                  userId,
+                  status: "processing",
+                  prompt,
+                  aspectRatio,
+                  createdAt: Date.now(),
+                }),
                 { expirationTtl: 3600 },
               ),
             ),
