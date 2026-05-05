@@ -11,18 +11,26 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as GuestRouteRouteImport } from './routes/_guest/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TemplatesIndexRouteImport } from './routes/templates/index'
 import { Route as CnIndexRouteImport } from './routes/cn/index'
+import { Route as BlogIndexRouteImport } from './routes/blog/index'
+import { Route as TemplatesSlugRouteImport } from './routes/templates/$slug'
 import { Route as SitemapXmlRouteImport } from './routes/sitemap.xml'
 import { Route as RobotsTxtRouteImport } from './routes/robots.txt'
 import { Route as RCodeRouteImport } from './routes/r/$code'
+import { Route as GShareIdRouteImport } from './routes/g/$shareId'
+import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as ApiUploadUrlRouteImport } from './routes/api/upload-url'
+import { Route as ApiTemplatesRouteImport } from './routes/api/templates'
+import { Route as ApiShareRouteImport } from './routes/api/share'
+import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as ApiGrsWebhookRouteImport } from './routes/api/grs-webhook'
 import { Route as ApiGenerateStatusRouteImport } from './routes/api/generate-status'
 import { Route as ApiGenerateRouteImport } from './routes/api/generate'
 import { Route as ApiExpandVarsRouteImport } from './routes/api/expand-vars'
-import { Route as ApiHealthRouteImport } from './routes/api/health'
 import { Route as GuestSignupRouteImport } from './routes/_guest/signup'
 import { Route as GuestLoginRouteImport } from './routes/_guest/login'
+import { Route as ApiTemplatesSlugRouteImport } from './routes/api/templates/$slug'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
 import { Route as ApiStripePortalRouteImport } from './routes/api/stripe/portal'
 import { Route as ApiStripeCheckoutRouteImport } from './routes/api/stripe/checkout'
@@ -31,14 +39,6 @@ import { Route as ApiReferralGenerateCodeRouteImport } from './routes/api/referr
 import { Route as ApiFilesSplatRouteImport } from './routes/api/files/$'
 import { Route as ApiAuthGoogleOneTapRouteImport } from './routes/api/auth/google-one-tap'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
-import { Route as ApiShareRouteImport } from './routes/api/share'
-import { Route as ApiTemplatesSlugRouteImport } from './routes/api/templates/$slug'
-import { Route as ApiTemplatesRouteImport } from './routes/api/templates'
-import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
-import { Route as BlogIndexRouteImport } from './routes/blog/index'
-import { Route as GShareIdRouteImport } from './routes/g/$shareId'
-import { Route as TemplatesSlugRouteImport } from './routes/templates/$slug'
-import { Route as TemplatesIndexRouteImport } from './routes/templates/index'
 
 const GuestRouteRoute = GuestRouteRouteImport.update({
   id: '/_guest',
@@ -49,9 +49,24 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TemplatesIndexRoute = TemplatesIndexRouteImport.update({
+  id: '/templates/',
+  path: '/templates/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CnIndexRoute = CnIndexRouteImport.update({
   id: '/cn/',
   path: '/cn/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogIndexRoute = BlogIndexRouteImport.update({
+  id: '/blog/',
+  path: '/blog/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TemplatesSlugRoute = TemplatesSlugRouteImport.update({
+  id: '/templates/$slug',
+  path: '/templates/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapXmlRoute = SitemapXmlRouteImport.update({
@@ -69,9 +84,34 @@ const RCodeRoute = RCodeRouteImport.update({
   path: '/r/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GShareIdRoute = GShareIdRouteImport.update({
+  id: '/g/$shareId',
+  path: '/g/$shareId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogSlugRoute = BlogSlugRouteImport.update({
+  id: '/blog/$slug',
+  path: '/blog/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiUploadUrlRoute = ApiUploadUrlRouteImport.update({
   id: '/api/upload-url',
   path: '/api/upload-url',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTemplatesRoute = ApiTemplatesRouteImport.update({
+  id: '/api/templates',
+  path: '/api/templates',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiShareRoute = ApiShareRouteImport.update({
+  id: '/api/share',
+  path: '/api/share',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiHealthRoute = ApiHealthRouteImport.update({
+  id: '/api/health',
+  path: '/api/health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiGrsWebhookRoute = ApiGrsWebhookRouteImport.update({
@@ -94,11 +134,6 @@ const ApiExpandVarsRoute = ApiExpandVarsRouteImport.update({
   path: '/api/expand-vars',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiHealthRoute = ApiHealthRouteImport.update({
-  id: '/api/health',
-  path: '/api/health',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const GuestSignupRoute = GuestSignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -108,6 +143,11 @@ const GuestLoginRoute = GuestLoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => GuestRouteRoute,
+} as any)
+const ApiTemplatesSlugRoute = ApiTemplatesSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => ApiTemplatesRoute,
 } as any)
 const ApiStripeWebhookRoute = ApiStripeWebhookRouteImport.update({
   id: '/api/stripe/webhook',
@@ -149,46 +189,6 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiShareRoute = ApiShareRouteImport.update({
-  id: '/api/share',
-  path: '/api/share',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiTemplatesRoute = ApiTemplatesRouteImport.update({
-  id: '/api/templates',
-  path: '/api/templates',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiTemplatesSlugRoute = ApiTemplatesSlugRouteImport.update({
-  id: '/api/templates/$slug',
-  path: '/api/templates/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BlogIndexRoute = BlogIndexRouteImport.update({
-  id: '/blog/',
-  path: '/blog',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BlogSlugRoute = BlogSlugRouteImport.update({
-  id: '/blog/$slug',
-  path: '/blog/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GShareIdRoute = GShareIdRouteImport.update({
-  id: '/g/$shareId',
-  path: '/g/$shareId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TemplatesIndexRoute = TemplatesIndexRouteImport.update({
-  id: '/templates/',
-  path: '/templates',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TemplatesSlugRoute = TemplatesSlugRouteImport.update({
-  id: '/templates/$slug',
-  path: '/templates/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -199,11 +199,18 @@ export interface FileRoutesByFullPath {
   '/api/generate-status': typeof ApiGenerateStatusRoute
   '/api/grs-webhook': typeof ApiGrsWebhookRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/share': typeof ApiShareRoute
+  '/api/templates': typeof ApiTemplatesRouteWithChildren
   '/api/upload-url': typeof ApiUploadUrlRoute
+  '/blog/$slug': typeof BlogSlugRoute
+  '/g/$shareId': typeof GShareIdRoute
   '/r/$code': typeof RCodeRoute
   '/robots/txt': typeof RobotsTxtRoute
   '/sitemap/xml': typeof SitemapXmlRoute
+  '/templates/$slug': typeof TemplatesSlugRoute
+  '/blog/': typeof BlogIndexRoute
   '/cn/': typeof CnIndexRoute
+  '/templates/': typeof TemplatesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/google-one-tap': typeof ApiAuthGoogleOneTapRoute
   '/api/files/$': typeof ApiFilesSplatRoute
@@ -212,14 +219,7 @@ export interface FileRoutesByFullPath {
   '/api/stripe/checkout': typeof ApiStripeCheckoutRoute
   '/api/stripe/portal': typeof ApiStripePortalRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
-  '/api/share': typeof ApiShareRoute
-  '/api/templates': typeof ApiTemplatesRoute
   '/api/templates/$slug': typeof ApiTemplatesSlugRoute
-  '/blog/': typeof BlogIndexRoute
-  '/blog/$slug': typeof BlogSlugRoute
-  '/g/$shareId': typeof GShareIdRoute
-  '/templates/': typeof TemplatesIndexRoute
-  '/templates/$slug': typeof TemplatesSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -230,11 +230,18 @@ export interface FileRoutesByTo {
   '/api/generate-status': typeof ApiGenerateStatusRoute
   '/api/grs-webhook': typeof ApiGrsWebhookRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/share': typeof ApiShareRoute
+  '/api/templates': typeof ApiTemplatesRouteWithChildren
   '/api/upload-url': typeof ApiUploadUrlRoute
+  '/blog/$slug': typeof BlogSlugRoute
+  '/g/$shareId': typeof GShareIdRoute
   '/r/$code': typeof RCodeRoute
   '/robots/txt': typeof RobotsTxtRoute
   '/sitemap/xml': typeof SitemapXmlRoute
+  '/templates/$slug': typeof TemplatesSlugRoute
+  '/blog': typeof BlogIndexRoute
   '/cn': typeof CnIndexRoute
+  '/templates': typeof TemplatesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/google-one-tap': typeof ApiAuthGoogleOneTapRoute
   '/api/files/$': typeof ApiFilesSplatRoute
@@ -243,14 +250,7 @@ export interface FileRoutesByTo {
   '/api/stripe/checkout': typeof ApiStripeCheckoutRoute
   '/api/stripe/portal': typeof ApiStripePortalRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
-  '/api/share': typeof ApiShareRoute
-  '/api/templates': typeof ApiTemplatesRoute
   '/api/templates/$slug': typeof ApiTemplatesSlugRoute
-  '/blog': typeof BlogIndexRoute
-  '/blog/$slug': typeof BlogSlugRoute
-  '/g/$shareId': typeof GShareIdRoute
-  '/templates': typeof TemplatesIndexRoute
-  '/templates/$slug': typeof TemplatesSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -263,11 +263,18 @@ export interface FileRoutesById {
   '/api/generate-status': typeof ApiGenerateStatusRoute
   '/api/grs-webhook': typeof ApiGrsWebhookRoute
   '/api/health': typeof ApiHealthRoute
+  '/api/share': typeof ApiShareRoute
+  '/api/templates': typeof ApiTemplatesRouteWithChildren
   '/api/upload-url': typeof ApiUploadUrlRoute
+  '/blog/$slug': typeof BlogSlugRoute
+  '/g/$shareId': typeof GShareIdRoute
   '/r/$code': typeof RCodeRoute
   '/robots/txt': typeof RobotsTxtRoute
   '/sitemap/xml': typeof SitemapXmlRoute
+  '/templates/$slug': typeof TemplatesSlugRoute
+  '/blog/': typeof BlogIndexRoute
   '/cn/': typeof CnIndexRoute
+  '/templates/': typeof TemplatesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/google-one-tap': typeof ApiAuthGoogleOneTapRoute
   '/api/files/$': typeof ApiFilesSplatRoute
@@ -276,14 +283,7 @@ export interface FileRoutesById {
   '/api/stripe/checkout': typeof ApiStripeCheckoutRoute
   '/api/stripe/portal': typeof ApiStripePortalRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
-  '/api/share': typeof ApiShareRoute
-  '/api/templates': typeof ApiTemplatesRoute
   '/api/templates/$slug': typeof ApiTemplatesSlugRoute
-  '/blog/': typeof BlogIndexRoute
-  '/blog/$slug': typeof BlogSlugRoute
-  '/g/$shareId': typeof GShareIdRoute
-  '/templates/': typeof TemplatesIndexRoute
-  '/templates/$slug': typeof TemplatesSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -296,11 +296,18 @@ export interface FileRouteTypes {
     | '/api/generate-status'
     | '/api/grs-webhook'
     | '/api/health'
+    | '/api/share'
+    | '/api/templates'
     | '/api/upload-url'
+    | '/blog/$slug'
+    | '/g/$shareId'
     | '/r/$code'
     | '/robots/txt'
     | '/sitemap/xml'
+    | '/templates/$slug'
+    | '/blog/'
     | '/cn/'
+    | '/templates/'
     | '/api/auth/$'
     | '/api/auth/google-one-tap'
     | '/api/files/$'
@@ -309,14 +316,7 @@ export interface FileRouteTypes {
     | '/api/stripe/checkout'
     | '/api/stripe/portal'
     | '/api/stripe/webhook'
-    | '/api/share'
-    | '/api/templates'
     | '/api/templates/$slug'
-    | '/blog/'
-    | '/blog/$slug'
-    | '/g/$shareId'
-    | '/templates/'
-    | '/templates/$slug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -327,11 +327,18 @@ export interface FileRouteTypes {
     | '/api/generate-status'
     | '/api/grs-webhook'
     | '/api/health'
+    | '/api/share'
+    | '/api/templates'
     | '/api/upload-url'
+    | '/blog/$slug'
+    | '/g/$shareId'
     | '/r/$code'
     | '/robots/txt'
     | '/sitemap/xml'
+    | '/templates/$slug'
+    | '/blog'
     | '/cn'
+    | '/templates'
     | '/api/auth/$'
     | '/api/auth/google-one-tap'
     | '/api/files/$'
@@ -340,14 +347,7 @@ export interface FileRouteTypes {
     | '/api/stripe/checkout'
     | '/api/stripe/portal'
     | '/api/stripe/webhook'
-    | '/api/share'
-    | '/api/templates'
     | '/api/templates/$slug'
-    | '/blog'
-    | '/blog/$slug'
-    | '/g/$shareId'
-    | '/templates'
-    | '/templates/$slug'
   id:
     | '__root__'
     | '/'
@@ -359,11 +359,18 @@ export interface FileRouteTypes {
     | '/api/generate-status'
     | '/api/grs-webhook'
     | '/api/health'
+    | '/api/share'
+    | '/api/templates'
     | '/api/upload-url'
+    | '/blog/$slug'
+    | '/g/$shareId'
     | '/r/$code'
     | '/robots/txt'
     | '/sitemap/xml'
+    | '/templates/$slug'
+    | '/blog/'
     | '/cn/'
+    | '/templates/'
     | '/api/auth/$'
     | '/api/auth/google-one-tap'
     | '/api/files/$'
@@ -372,14 +379,7 @@ export interface FileRouteTypes {
     | '/api/stripe/checkout'
     | '/api/stripe/portal'
     | '/api/stripe/webhook'
-    | '/api/share'
-    | '/api/templates'
     | '/api/templates/$slug'
-    | '/blog/'
-    | '/blog/$slug'
-    | '/g/$shareId'
-    | '/templates/'
-    | '/templates/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -390,11 +390,18 @@ export interface RootRouteChildren {
   ApiGenerateStatusRoute: typeof ApiGenerateStatusRoute
   ApiGrsWebhookRoute: typeof ApiGrsWebhookRoute
   ApiHealthRoute: typeof ApiHealthRoute
+  ApiShareRoute: typeof ApiShareRoute
+  ApiTemplatesRoute: typeof ApiTemplatesRouteWithChildren
   ApiUploadUrlRoute: typeof ApiUploadUrlRoute
+  BlogSlugRoute: typeof BlogSlugRoute
+  GShareIdRoute: typeof GShareIdRoute
   RCodeRoute: typeof RCodeRoute
   RobotsTxtRoute: typeof RobotsTxtRoute
   SitemapXmlRoute: typeof SitemapXmlRoute
+  TemplatesSlugRoute: typeof TemplatesSlugRoute
+  BlogIndexRoute: typeof BlogIndexRoute
   CnIndexRoute: typeof CnIndexRoute
+  TemplatesIndexRoute: typeof TemplatesIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAuthGoogleOneTapRoute: typeof ApiAuthGoogleOneTapRoute
   ApiFilesSplatRoute: typeof ApiFilesSplatRoute
@@ -403,14 +410,6 @@ export interface RootRouteChildren {
   ApiStripeCheckoutRoute: typeof ApiStripeCheckoutRoute
   ApiStripePortalRoute: typeof ApiStripePortalRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
-  ApiShareRoute: typeof ApiShareRoute
-  ApiTemplatesRoute: typeof ApiTemplatesRoute
-  ApiTemplatesSlugRoute: typeof ApiTemplatesSlugRoute
-  BlogIndexRoute: typeof BlogIndexRoute
-  BlogSlugRoute: typeof BlogSlugRoute
-  GShareIdRoute: typeof GShareIdRoute
-  TemplatesIndexRoute: typeof TemplatesIndexRoute
-  TemplatesSlugRoute: typeof TemplatesSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -429,11 +428,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/templates/': {
+      id: '/templates/'
+      path: '/templates'
+      fullPath: '/templates/'
+      preLoaderRoute: typeof TemplatesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/cn/': {
       id: '/cn/'
       path: '/cn'
       fullPath: '/cn/'
       preLoaderRoute: typeof CnIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/': {
+      id: '/blog/'
+      path: '/blog'
+      fullPath: '/blog/'
+      preLoaderRoute: typeof BlogIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/templates/$slug': {
+      id: '/templates/$slug'
+      path: '/templates/$slug'
+      fullPath: '/templates/$slug'
+      preLoaderRoute: typeof TemplatesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap/xml': {
@@ -457,11 +477,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/g/$shareId': {
+      id: '/g/$shareId'
+      path: '/g/$shareId'
+      fullPath: '/g/$shareId'
+      preLoaderRoute: typeof GShareIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/$slug': {
+      id: '/blog/$slug'
+      path: '/blog/$slug'
+      fullPath: '/blog/$slug'
+      preLoaderRoute: typeof BlogSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/upload-url': {
       id: '/api/upload-url'
       path: '/api/upload-url'
       fullPath: '/api/upload-url'
       preLoaderRoute: typeof ApiUploadUrlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/templates': {
+      id: '/api/templates'
+      path: '/api/templates'
+      fullPath: '/api/templates'
+      preLoaderRoute: typeof ApiTemplatesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/share': {
+      id: '/api/share'
+      path: '/api/share'
+      fullPath: '/api/share'
+      preLoaderRoute: typeof ApiShareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/health': {
+      id: '/api/health'
+      path: '/api/health'
+      fullPath: '/api/health'
+      preLoaderRoute: typeof ApiHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/grs-webhook': {
@@ -492,13 +547,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiExpandVarsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/health': {
-      id: '/api/health'
-      path: '/api/health'
-      fullPath: '/api/health'
-      preLoaderRoute: typeof ApiHealthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_guest/signup': {
       id: '/_guest/signup'
       path: '/signup'
@@ -512,6 +560,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/login'
       preLoaderRoute: typeof GuestLoginRouteImport
       parentRoute: typeof GuestRouteRoute
+    }
+    '/api/templates/$slug': {
+      id: '/api/templates/$slug'
+      path: '/$slug'
+      fullPath: '/api/templates/$slug'
+      preLoaderRoute: typeof ApiTemplatesSlugRouteImport
+      parentRoute: typeof ApiTemplatesRoute
     }
     '/api/stripe/webhook': {
       id: '/api/stripe/webhook'
@@ -569,62 +624,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/share': {
-      id: '/api/share'
-      path: '/api/share'
-      fullPath: '/api/share'
-      preLoaderRoute: typeof ApiShareRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/templates': {
-      id: '/api/templates'
-      path: '/api/templates'
-      fullPath: '/api/templates'
-      preLoaderRoute: typeof ApiTemplatesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/templates/$slug': {
-      id: '/api/templates/$slug'
-      path: '/api/templates/$slug'
-      fullPath: '/api/templates/$slug'
-      preLoaderRoute: typeof ApiTemplatesSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/blog/': {
-      id: '/blog/'
-      path: '/blog'
-      fullPath: '/blog/'
-      preLoaderRoute: typeof BlogIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/blog/$slug': {
-      id: '/blog/$slug'
-      path: '/blog/$slug'
-      fullPath: '/blog/$slug'
-      preLoaderRoute: typeof BlogSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/g/$shareId': {
-      id: '/g/$shareId'
-      path: '/g/$shareId'
-      fullPath: '/g/$shareId'
-      preLoaderRoute: typeof GShareIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/templates/': {
-      id: '/templates/'
-      path: '/templates'
-      fullPath: '/templates/'
-      preLoaderRoute: typeof TemplatesIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/templates/$slug': {
-      id: '/templates/$slug'
-      path: '/templates/$slug'
-      fullPath: '/templates/$slug'
-      preLoaderRoute: typeof TemplatesSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -642,6 +641,18 @@ const GuestRouteRouteWithChildren = GuestRouteRoute._addFileChildren(
   GuestRouteRouteChildren,
 )
 
+interface ApiTemplatesRouteChildren {
+  ApiTemplatesSlugRoute: typeof ApiTemplatesSlugRoute
+}
+
+const ApiTemplatesRouteChildren: ApiTemplatesRouteChildren = {
+  ApiTemplatesSlugRoute: ApiTemplatesSlugRoute,
+}
+
+const ApiTemplatesRouteWithChildren = ApiTemplatesRoute._addFileChildren(
+  ApiTemplatesRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GuestRouteRoute: GuestRouteRouteWithChildren,
@@ -650,11 +661,18 @@ const rootRouteChildren: RootRouteChildren = {
   ApiGenerateStatusRoute: ApiGenerateStatusRoute,
   ApiGrsWebhookRoute: ApiGrsWebhookRoute,
   ApiHealthRoute: ApiHealthRoute,
+  ApiShareRoute: ApiShareRoute,
+  ApiTemplatesRoute: ApiTemplatesRouteWithChildren,
   ApiUploadUrlRoute: ApiUploadUrlRoute,
+  BlogSlugRoute: BlogSlugRoute,
+  GShareIdRoute: GShareIdRoute,
   RCodeRoute: RCodeRoute,
   RobotsTxtRoute: RobotsTxtRoute,
   SitemapXmlRoute: SitemapXmlRoute,
+  TemplatesSlugRoute: TemplatesSlugRoute,
+  BlogIndexRoute: BlogIndexRoute,
   CnIndexRoute: CnIndexRoute,
+  TemplatesIndexRoute: TemplatesIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAuthGoogleOneTapRoute: ApiAuthGoogleOneTapRoute,
   ApiFilesSplatRoute: ApiFilesSplatRoute,
@@ -663,14 +681,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiStripeCheckoutRoute: ApiStripeCheckoutRoute,
   ApiStripePortalRoute: ApiStripePortalRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,
-  ApiShareRoute: ApiShareRoute,
-  ApiTemplatesRoute: ApiTemplatesRoute,
-  ApiTemplatesSlugRoute: ApiTemplatesSlugRoute,
-  BlogIndexRoute: BlogIndexRoute,
-  BlogSlugRoute: BlogSlugRoute,
-  GShareIdRoute: GShareIdRoute,
-  TemplatesIndexRoute: TemplatesIndexRoute,
-  TemplatesSlugRoute: TemplatesSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
