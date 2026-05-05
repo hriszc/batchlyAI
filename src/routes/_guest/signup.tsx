@@ -77,7 +77,18 @@ function SignupForm() {
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center gap-2">
             <Link to="/" className="flex flex-col items-center gap-2 font-medium">
-              <span className="text-2xl font-semibold tracking-[-0.028em]">BatchlyAI</span>
+              <div className="relative h-8 w-auto">
+                <img
+                  src="/logo-light.png"
+                  alt="BatchlyAI"
+                  className="block h-8 w-auto dark:hidden"
+                />
+                <img
+                  src="/logo-dark.png"
+                  alt="BatchlyAI"
+                  className="hidden h-8 w-auto dark:block"
+                />
+              </div>
             </Link>
             <h1 className="text-xl font-bold">{t("signupTitle")}</h1>
           </div>

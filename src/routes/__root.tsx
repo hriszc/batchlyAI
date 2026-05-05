@@ -29,9 +29,20 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         content:
           "Universal AI Generator — batch generate all combinations from multi-variable prompts",
       },
+      { property: "og:title", content: "BatchlyAI — Universal AI Generator" },
+      {
+        property: "og:description",
+        content:
+          "Universal AI Generator — batch generate all combinations from multi-variable prompts",
+      },
+      { property: "og:image", content: "https://batchlyai.com/logo-light.png" },
+      { property: "og:url", content: "https://batchlyai.com" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "https://batchlyai.com/logo-light.png" },
     ],
     links: [
-      { rel: "icon", href: "https://mugnavo.com/favicon.ico" },
+      { rel: "icon", href: "/logo-light.png" },
       { rel: "stylesheet", href: appCss },
     ],
   }),

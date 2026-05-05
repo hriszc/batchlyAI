@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Generator E2E", () => {
   test("page loads with correct title", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator("h1")).toContainText("BatchlyAI");
+    await expect(page.locator('img[alt="BatchlyAI"]').first()).toBeVisible();
   });
 
   test("prompt textarea is visible and accepts input", async ({ page }) => {
@@ -36,7 +36,7 @@ test.describe("Generator E2E", () => {
     }
     // Navigate to Chinese route
     await page.goto("/cn");
-    await expect(page.locator("h1")).toBeVisible();
+    await expect(page.locator('img[alt="BatchlyAI"]').first()).toBeVisible();
     // Chinese description should contain Chinese characters
     const description = page.locator("p").first();
     const text = await description.textContent();
@@ -82,7 +82,7 @@ test.describe("Generator E2E", () => {
   test("responsive layout works at mobile width", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/");
-    await expect(page.locator("h1")).toBeVisible();
+    await expect(page.locator('img[alt="BatchlyAI"]').first()).toBeVisible();
     // Generator card should be fully visible
     const textarea = page.locator("textarea").first();
     await expect(textarea).toBeVisible();
