@@ -7,6 +7,7 @@ import type { GeneratedResult } from "./types";
 interface ResultsGridProps {
   results: GeneratedResult[];
   isGenerating: boolean;
+  onShare?: () => void;
 }
 
 function SkeletonCard() {

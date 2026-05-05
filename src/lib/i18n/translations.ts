@@ -66,6 +66,9 @@ export const translations = {
     referralLinkCreated: "Referral link created!",
     referralEarned: "earned",
     referralNeedGeneration: "You must generate at least one image before creating a referral link",
+    shareSuccess: "Screenshot saved!",
+    shareFailed: "Failed to create screenshot",
+    shareLoading: "Preparing screenshot...",
   },
   zh: {
     siteTitle: "BatchlyAI",
@@ -133,6 +136,9 @@ export const translations = {
     referralLinkCreated: "推荐链接已创建！",
     referralEarned: "已赚取",
     referralNeedGeneration: "需要先生成至少一张图片才能创建推荐链接",
+    shareSuccess: "截图已保存！",
+    shareFailed: "创建截图失败",
+    shareLoading: "正在准备截图...",
   },
 } as const;
 
