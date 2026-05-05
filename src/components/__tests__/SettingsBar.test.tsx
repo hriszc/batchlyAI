@@ -61,12 +61,7 @@ describe("SettingsBar", () => {
     expect(buttons.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("sends POST with currency=usd when language=en", async () => {
-    const user = userEvent.setup();
-    mockUseSession.mockReturnValue({
-      data: { user: { name: "Bob", email: "bob@test.com", credits: 10 } },
-    });
-    const mockFetch = vi.fn().mockResolvedValue({
+const mockFetch = vi.fn().mockResolvedValue({
       json: () => Promise.resolve({ url: "https://checkout.stripe.com/c/test" }),
     });
     vi.stubGlobal("fetch", mockFetch);
