@@ -7,10 +7,12 @@ import {
   useRouter,
 } from "@tanstack/react-router";
 
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { Button } from "./ui/button";
 
 export function DefaultCatchBoundary({ error }: Readonly<ErrorComponentProps>) {
   const router = useRouter();
+  const { t } = useLanguage();
   const isRoot = useMatch({
     strict: false,
     select: (state) => state.id === rootRouteId,
@@ -28,11 +30,11 @@ export function DefaultCatchBoundary({ error }: Readonly<ErrorComponentProps>) {
             void router.invalidate();
           }}
         >
-          Try Again
+          {t("tryAgain")}
         </Button>
         {isRoot ? (
           <Button render={<Link to="/" />} variant="secondary" nativeButton={false}>
-            Home
+            {t("home")}
           </Button>
         ) : (
           <Button
@@ -48,7 +50,7 @@ export function DefaultCatchBoundary({ error }: Readonly<ErrorComponentProps>) {
             variant="secondary"
             nativeButton={false}
           >
-            Go Back
+            {t("goBack")}
           </Button>
         )}
       </div>
