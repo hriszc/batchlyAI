@@ -20,6 +20,7 @@ export interface GeneratedResult {
   combination: PromptCombination;
   imageUrl: string | null;
   textContent: string | null;
+  watermark: boolean;
   status: "pending" | "generating" | "complete" | "error";
 }
 

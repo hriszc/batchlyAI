@@ -25,6 +25,7 @@ import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhoo
 import { Route as ApiStripePortalRouteImport } from './routes/api/stripe/portal'
 import { Route as ApiStripeCheckoutRouteImport } from './routes/api/stripe/checkout'
 import { Route as ApiFilesSplatRouteImport } from './routes/api/files/$'
+import { Route as ApiAuthGoogleOneTapRouteImport } from './routes/api/auth/google-one-tap'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const GuestRouteRoute = GuestRouteRouteImport.update({
@@ -106,6 +107,11 @@ const ApiFilesSplatRoute = ApiFilesSplatRouteImport.update({
   path: '/api/files/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthGoogleOneTapRoute = ApiAuthGoogleOneTapRouteImport.update({
+  id: '/api/auth/google-one-tap',
+  path: '/api/auth/google-one-tap',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -125,6 +131,7 @@ export interface FileRoutesByFullPath {
   '/api/upload-url': typeof ApiUploadUrlRoute
   '/cn/': typeof CnIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/auth/google-one-tap': typeof ApiAuthGoogleOneTapRoute
   '/api/files/$': typeof ApiFilesSplatRoute
   '/api/stripe/checkout': typeof ApiStripeCheckoutRoute
   '/api/stripe/portal': typeof ApiStripePortalRoute
@@ -143,6 +150,7 @@ export interface FileRoutesByTo {
   '/api/upload-url': typeof ApiUploadUrlRoute
   '/cn': typeof CnIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/auth/google-one-tap': typeof ApiAuthGoogleOneTapRoute
   '/api/files/$': typeof ApiFilesSplatRoute
   '/api/stripe/checkout': typeof ApiStripeCheckoutRoute
   '/api/stripe/portal': typeof ApiStripePortalRoute
@@ -163,6 +171,7 @@ export interface FileRoutesById {
   '/api/upload-url': typeof ApiUploadUrlRoute
   '/cn/': typeof CnIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/auth/google-one-tap': typeof ApiAuthGoogleOneTapRoute
   '/api/files/$': typeof ApiFilesSplatRoute
   '/api/stripe/checkout': typeof ApiStripeCheckoutRoute
   '/api/stripe/portal': typeof ApiStripePortalRoute
@@ -183,6 +192,7 @@ export interface FileRouteTypes {
     | '/api/upload-url'
     | '/cn/'
     | '/api/auth/$'
+    | '/api/auth/google-one-tap'
     | '/api/files/$'
     | '/api/stripe/checkout'
     | '/api/stripe/portal'
@@ -201,6 +211,7 @@ export interface FileRouteTypes {
     | '/api/upload-url'
     | '/cn'
     | '/api/auth/$'
+    | '/api/auth/google-one-tap'
     | '/api/files/$'
     | '/api/stripe/checkout'
     | '/api/stripe/portal'
@@ -220,6 +231,7 @@ export interface FileRouteTypes {
     | '/api/upload-url'
     | '/cn/'
     | '/api/auth/$'
+    | '/api/auth/google-one-tap'
     | '/api/files/$'
     | '/api/stripe/checkout'
     | '/api/stripe/portal'
@@ -238,6 +250,7 @@ export interface RootRouteChildren {
   ApiUploadUrlRoute: typeof ApiUploadUrlRoute
   CnIndexRoute: typeof CnIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiAuthGoogleOneTapRoute: typeof ApiAuthGoogleOneTapRoute
   ApiFilesSplatRoute: typeof ApiFilesSplatRoute
   ApiStripeCheckoutRoute: typeof ApiStripeCheckoutRoute
   ApiStripePortalRoute: typeof ApiStripePortalRoute
@@ -358,6 +371,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiFilesSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/google-one-tap': {
+      id: '/api/auth/google-one-tap'
+      path: '/api/auth/google-one-tap'
+      fullPath: '/api/auth/google-one-tap'
+      preLoaderRoute: typeof ApiAuthGoogleOneTapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -394,6 +414,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiUploadUrlRoute: ApiUploadUrlRoute,
   CnIndexRoute: CnIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiAuthGoogleOneTapRoute: ApiAuthGoogleOneTapRoute,
   ApiFilesSplatRoute: ApiFilesSplatRoute,
   ApiStripeCheckoutRoute: ApiStripeCheckoutRoute,
   ApiStripePortalRoute: ApiStripePortalRoute,

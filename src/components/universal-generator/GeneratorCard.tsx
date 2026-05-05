@@ -10,6 +10,7 @@ import { useState, useRef, useEffect } from "react";
 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
+import { getRandomPrompt } from "./inspire-prompts";
 import { MODELS, MODEL_CATEGORIES } from "./models";
 import type { ModelInfo } from "./models";
 import type { GeneratorState, GroupId } from "./types";
@@ -182,6 +183,7 @@ export function GeneratorCard({ state, actions }: GeneratorCardProps) {
         <div className="flex items-center gap-2">
           <button
             type="button"
+            onClick={() => actions.setPromptTemplate(getRandomPrompt())}
             className="flex h-9 w-9 items-center justify-center rounded-lg border bg-muted/30 transition-colors hover:bg-muted"
             title={t("inspire")}
           >

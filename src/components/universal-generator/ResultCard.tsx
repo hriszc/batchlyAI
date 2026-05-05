@@ -11,13 +11,22 @@ export function ResultCard({ result }: ResultCardProps) {
 
   return (
     <div className="overflow-hidden rounded-[8px] border bg-card shadow-sm">
-      <div className="flex aspect-square items-center justify-center bg-muted">
+      <div className="relative flex aspect-square items-center justify-center bg-muted">
         {result.imageUrl ? (
-          <img
-            src={result.imageUrl}
-            alt={combination.prompt}
-            className="h-full w-full object-cover"
-          />
+          <>
+            <img
+              src={result.imageUrl}
+              alt={combination.prompt}
+              className="h-full w-full object-cover"
+            />
+            {result.watermark && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden opacity-10">
+                <span className="rotate-[-30deg] text-[10px] font-semibold whitespace-nowrap text-white">
+                  batchlyai.com
+                </span>
+              </div>
+            )}
+          </>
         ) : result.textContent ? (
           <p className="line-clamp-6 px-4 text-center text-sm leading-relaxed text-foreground/80">
             {result.textContent}

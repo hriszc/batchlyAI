@@ -34,6 +34,7 @@ export interface GenerateContext {
   request: Request;
   db: ReturnType<typeof getDb>;
   userId: string;
+  stripeCustomerId?: string | null;
   replicateFn?: typeof createReplicatePredictions;
   grsaiFn?: typeof createGrsaiPredictions;
   textFn?: typeof generateText;
@@ -69,11 +70,15 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
     const n = body.n ?? 1;
     const costPerUnit = CREDIT_COST[model] ?? 20;
     const maxCost = costPerUnit * n;
+    const watermark = !ctx.stripeCustomerId;
 
     // Check prompt cache first
     const cachedUrls = await getCachedFn(body.prompt, model, body.aspectRatio || "1:1", n);
     if (cachedUrls) {
-      return jsonResponse({ urls: cachedUrls, creditsRemaining: null, cached: true }, 200);
+      return jsonResponse(
+        { urls: cachedUrls, creditsRemaining: null, cached: true, watermark },
+        200,
+      );
     }
 
     // Atomically check and deduct credits before generation
@@ -100,7 +105,7 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
           await setCachedFn(body.prompt, model, body.aspectRatio || "1:1", texts.length, texts);
         }
 
-        return jsonResponse({ texts, creditsRemaining: newBalance, isText: true }, 200);
+        return jsonResponse({ texts, creditsRemaining: newBalance, isText: true, watermark }, 200);
       } catch (err) {
         await db
           .update(userTable)
@@ -174,6 +179,7 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
         creditsRemaining: newBalance,
         modelType: model === "z-image-fast" || model.startsWith("z-video") ? "replicate" : "grs",
         isVideo,
+        watermark,
       },
       200,
     );
@@ -198,10 +204,17 @@ export const Route = createFileRoute("/api/generate")({
         const binding = getD1Binding();
         if (!binding) return dbUnavailable();
 
+        const db = getDb(binding);
+        const user = await db.query.user.findFirst({
+          where: eq(userTable.id, session.user.id),
+          columns: { stripeCustomerId: true },
+        });
+
         return handleGenerate({
           request,
-          db: getDb(binding),
+          db,
           userId: session.user.id,
+          stripeCustomerId: user?.stripeCustomerId,
         });
       },
     },
