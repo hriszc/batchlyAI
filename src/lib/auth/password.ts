@@ -4,8 +4,9 @@ const SALT_BYTES = 16;
 const KEY_BYTES = 64;
 const VERSION_PREFIX = "pbkdf2$";
 
-function buf2hex(buf: ArrayBuffer): string {
-  return Array.from(new Uint8Array(buf))
+function buf2hex(buf: ArrayBuffer | Uint8Array): string {
+  const arr = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+  return Array.from(arr)
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 }
@@ -41,8 +42,8 @@ async function deriveKey(password: string, salt: BufferSource): Promise<ArrayBuf
 
 export async function hashPassword(password: string): Promise<string> {
   const salt = crypto.getRandomValues(new Uint8Array(SALT_BYTES));
-  const key = await deriveKey(password, salt);
-  return `${VERSION_PREFIX}${buf2hex(salt)}:${buf2hex(key)}`;
+  const key = await deriveKey(password, salt.buffer as ArrayBuffer);
+  return `${VERSION_PREFIX}${buf2hex(salt.buffer)}:${buf2hex(key)}`;
 }
 
 export async function verifyPassword({
@@ -59,6 +60,6 @@ export async function verifyPassword({
   if (!saltHex || !keyHex) return false;
 
   const salt = hex2buf(saltHex);
-  const targetKey = await deriveKey(password, salt);
+  const targetKey = await deriveKey(password, salt.buffer as ArrayBuffer);
   return buf2hex(targetKey) === keyHex;
 }

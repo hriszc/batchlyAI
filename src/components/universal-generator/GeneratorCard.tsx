@@ -202,7 +202,7 @@ export function GeneratorCard({ state, actions }: GeneratorCardProps) {
                 return (
                   <div key={cat.key}>
                     <div className="px-3 pt-2.5 pb-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                      {getCategoryLabel(cat.key, t)}
+                      {getCategoryLabel(cat.key, t as (key: string) => string)}
                     </div>
                     {models.map((m) => (
                       <button
@@ -220,7 +220,7 @@ export function GeneratorCard({ state, actions }: GeneratorCardProps) {
                       >
                         <span>{m.label}</span>
                         <span className="text-[11px] text-muted-foreground">
-                          {getTierLabel(m.tier, t)}
+                          {getTierLabel(m.tier, t as (key: string) => string)}
                         </span>
                       </button>
                     ))}

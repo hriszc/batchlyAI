@@ -15,9 +15,7 @@ export default defineConfig({
   },
   plugins: [
     devtools(),
-    tanstackStart({
-      target: "cloudflare-module",
-    }),
+    tanstackStart({}) as any,
     nitro({
       preset: "cloudflare-module",
     }),

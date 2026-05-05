@@ -9,7 +9,6 @@ export default {
   dialect: "sqlite",
   casing: "snake_case",
   dbCredentials: {
-    wranglerConfigPath: "./wrangler.toml",
-    dbName: "batchlyai-db",
+    url: "file:./.data/local.db",
   },
 } satisfies Config;

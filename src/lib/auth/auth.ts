@@ -1,5 +1,4 @@
 import "@tanstack/react-start/server-only";
-import type { BetterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth } from "better-auth";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
@@ -10,16 +9,16 @@ import { sendEmail } from "@/lib/email";
 import * as schema from "@/lib/db/schema";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 
-let _auth: BetterAuth | null = null;
+let _auth: any = null;
 
-function getD1Binding(): D1Database | undefined {
+function getD1Binding(): any {
   const platformEnv = (globalThis as Record<string, unknown>).__env__ as
     | Record<string, unknown>
     | undefined;
-  return platformEnv?.batchlyai_db as D1Database | undefined;
+  return platformEnv?.batchlyai_db as any;
 }
 
-export function createAuth(d1Binding?: D1Database) {
+export function createAuth(d1Binding?: any) {
   if (_auth) return _auth;
 
   const binding = d1Binding ?? getD1Binding();
@@ -29,7 +28,7 @@ export function createAuth(d1Binding?: D1Database) {
     const db = getDb(binding);
 
     _auth = betterAuth({
-      baseURL: env.VITE_BASE_URL,
+      baseURL: env.VITE_BASE_URL as any,
       telemetry: { enabled: false },
       database: drizzleAdapter(db, { provider: "sqlite", schema }),
       plugins: [tanstackStartCookies()],
@@ -63,7 +62,7 @@ export function createAuth(d1Binding?: D1Database) {
           hash: hashPassword,
           verify: verifyPassword,
         },
-        sendEmailVerification: async ({ user, url }) => {
+        sendEmailVerification: async ({ user, url }: { user: { email: string; name?: string }; url: string }) => {
           await sendEmail({
             to: user.email,
             subject: "Verify your email — BatchlyAI",
@@ -76,7 +75,7 @@ export function createAuth(d1Binding?: D1Database) {
             ].join(""),
           });
         },
-        sendResetPassword: async ({ user, url }) => {
+        sendResetPassword: async ({ user, url }: { user: { email: string; name?: string }; url: string }) => {
           await sendEmail({
             to: user.email,
             subject: "Reset your password — BatchlyAI",
@@ -99,6 +98,6 @@ export function createAuth(d1Binding?: D1Database) {
   }
 }
 
-export function getAuth() {
+export function getAuth(): any {
   return _auth;
 }

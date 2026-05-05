@@ -38,7 +38,7 @@ export function getApiMethod(auth: NonNullable<ReturnType<typeof createAuth>>, p
     case "get-session":
       return auth.api.getSession;
     case "forget-password":
-      return auth.api.forgetPassword;
+      return (auth.api as any).forgetPassword;
     case "reset-password":
       return auth.api.resetPassword;
     case "verify-email":
