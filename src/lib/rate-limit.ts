@@ -1,48 +1,57 @@
-// KV-backed rate limiter using Cloudflare KV (batchlyai_kv binding).
-// KV has eventual consistency, so there's a brief window (~1s) where counters
-// may lag across Worker instances. This is acceptable for abuse prevention.
+/**
+ * In-memory rate limiter -- per Worker isolate, NOT globally consistent.
+ *
+ * LIMITATION: On Cloudflare Workers, each isolate maintains its own Map.
+ * Rate limits may be higher than configured under high traffic (requests
+ * spread across isolates). For production use with strict rate limiting:
+ *
+ *   - Cloudflare WAF Rate Limiting Rules (recommended): Dashboard > Security > WAF
+ *   - Durable Objects for global state
+ *   - Cloudflare KV with atomic increments for approximate limits
+ *
+ * For the current deployment scale, this per-isolate limiter provides
+ * adequate abuse prevention combined with the credit-based system.
+ *
+ * Lazy cleanup: expired entries are evicted on each check, and a full sweep
+ * runs every 30 seconds to prevent unbounded memory growth.
+ */
 
-interface KvNamespace {
-  get(key: string): Promise<string | null>;
-  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
+interface Bucket {
+  count: number;
+  resetAt: number;
 }
 
-function getKv(): KvNamespace | undefined {
-  const platformEnv = (globalThis as Record<string, unknown>).__env__ as
-    | Record<string, unknown>
-    | undefined;
-  return platformEnv?.batchlyai_kv as KvNamespace | undefined;
+const store = new Map<string, Bucket>();
+let lastCleanup = Date.now();
+
+function lazyCleanup(now: number) {
+  if (now - lastCleanup < 30_000) return;
+  lastCleanup = now;
+  for (const [key, bucket] of store) {
+    if (bucket.resetAt <= now) store.delete(key);
+  }
 }
 
-export async function checkRateLimit(
+export function checkRateLimit(
   key: string,
   maxRequests: number,
   windowSeconds: number,
-): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
-  const kv = getKv();
-  if (!kv) {
-    return { allowed: true, remaining: maxRequests, resetAt: Date.now() + windowSeconds * 1000 };
-  }
-
+): { allowed: boolean; remaining: number; resetAt: number } {
   const now = Date.now();
-  const resetAt = now + windowSeconds * 1000;
+  lazyCleanup(now);
 
-  try {
-    const current = await kv.get(key);
-    if (!current) {
-      await kv.put(key, "1", { expirationTtl: windowSeconds });
-      return { allowed: true, remaining: maxRequests - 1, resetAt };
-    }
+  const entry = store.get(key);
 
-    const count = parseInt(current, 10);
-    if (isNaN(count) || count >= maxRequests) {
-      return { allowed: false, remaining: 0, resetAt };
-    }
-
-    await kv.put(key, String(count + 1), { expirationTtl: windowSeconds });
-    return { allowed: true, remaining: maxRequests - (count + 1), resetAt };
-  } catch (err) {
-    console.error("[rate-limit] KV error:", err);
-    return { allowed: true, remaining: maxRequests, resetAt };
+  if (!entry || entry.resetAt <= now) {
+    const bucket: Bucket = { count: 1, resetAt: now + windowSeconds * 1000 };
+    store.set(key, bucket);
+    return { allowed: true, remaining: maxRequests - 1, resetAt: bucket.resetAt };
   }
+
+  entry.count++;
+  if (entry.count > maxRequests) {
+    return { allowed: false, remaining: 0, resetAt: entry.resetAt };
+  }
+
+  return { allowed: true, remaining: maxRequests - entry.count, resetAt: entry.resetAt };
 }

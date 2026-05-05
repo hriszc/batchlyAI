@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 
@@ -65,10 +66,7 @@ async function callApi(
 ) {
   const resolved = getApiMethod(auth, path);
   if (!resolved) {
-    return new Response(JSON.stringify({ error: `Unknown auth path: ${path}` }), {
-      status: 404,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: `Unknown auth path: ${path}` }, 404);
   }
 
   const { method: apiMethod, params } = resolved;
@@ -79,10 +77,7 @@ async function callApi(
     const ip = request.headers.get("CF-Connecting-IP") || "unknown";
     const { allowed } = await checkRateLimit(`${path}:${ip}`, 10, 60);
     if (!allowed) {
-      return new Response(JSON.stringify({ error: "Too many requests" }), {
-        status: 429,
-        headers: { "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "Too many requests" }, 429);
     }
   }
 
@@ -106,24 +101,15 @@ async function callApi(
 
     if (result instanceof Response) return result;
 
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonResponse(result, 200);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Internal server error";
     const stack = err instanceof Error ? err.stack : "";
     console.error(`[auth] ${path} error:`, message, stack);
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: message }, 500);
   }
 }
 
 function dbUnavailable() {
-  return new Response(JSON.stringify({ error: "Database not available" }), {
-    status: 501,
-    headers: { "Content-Type": "application/json" },
-  });
+  return jsonResponse({ error: "Database not available" }, 501);
 }
