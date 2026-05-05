@@ -78,7 +78,11 @@ export function createAuth(d1Binding?: D1Database) {
           user: { email: string; name?: string };
           url: string;
         }) => {
-          console.log("[auth] Verification email:", user.email, url);
+          await sendEmail({
+            to: user.email,
+            subject: "Verify your BatchlyAI account",
+            html: `<p>Click <a href="${url}">here</a> to verify your email.</p>`,
+          });
         },
         sendResetPassword: async ({
           user,
@@ -87,7 +91,11 @@ export function createAuth(d1Binding?: D1Database) {
           user: { email: string; name?: string };
           url: string;
         }) => {
-          console.log("[auth] Reset email:", user.email, url);
+          await sendEmail({
+            to: user.email,
+            subject: "Reset your BatchlyAI password",
+            html: `<p>Click <a href="${url}">here</a> to reset your password.</p>`,
+          });
         },
       },
     });
