@@ -16,7 +16,7 @@ export const Route = createFileRoute("/api/templates/$slug")({
   server: {
     handlers: {
       GET: async ({ request, params }) => {
-        const slug = params.slug;
+        const slug = (params as unknown as { slug: string }).slug;
         const binding = getD1Binding();
         if (!binding) return jsonResponse({ error: "DB unavailable" }, 501);
         const db = getDb(binding);

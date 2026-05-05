@@ -62,33 +62,3 @@ export const Route = createFileRoute("/api/auth/$")({
 function dbUnavailable() {
   return jsonResponse({ error: "Database not available" }, 501);
 }
-
-export function getApiMethod(
-  auth: { api: Record<string, unknown> },
-  path: string,
-): { method: string; params?: Record<string, string> } | undefined {
-  const API_MAP: Record<string, { method: string; paramKey?: string }> = {
-    "sign-up/email": { method: "signUpEmail" },
-    "sign-in/email": { method: "signInEmail" },
-    "sign-in/social": { method: "signInSocial" },
-    "sign-out": { method: "signOut" },
-    "get-session": { method: "getSession" },
-    "forget-password": { method: "forgetPassword" },
-    "reset-password": { method: "resetPassword" },
-    "verify-email": { method: "verifyEmail" },
-    "send-verification-email": { method: "sendVerificationEmail" },
-  };
-
-  const exact = API_MAP[path];
-  if (exact) {
-    return { method: exact.method };
-  }
-
-  // Match callback/:provider pattern
-  const callbackMatch = path.match(/^callback\/(.+)$/);
-  if (callbackMatch) {
-    return { method: "callbackOAuth", params: { id: callbackMatch[1] } };
-  }
-
-  return undefined;
-}
