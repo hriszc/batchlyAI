@@ -63,8 +63,7 @@ export const Route = createFileRoute("/api/referral/generate-code")({
           if (!userRecord || userRecord.credits >= 10) {
             return jsonResponse(
               {
-                error:
-                  "You must generate at least one image before creating a referral link",
+                error: "You must generate at least one image before creating a referral link",
               },
               403,
             );
@@ -97,8 +96,7 @@ export const Route = createFileRoute("/api/referral/generate-code")({
           console.error("[referral] generate-code error:", err);
           return jsonResponse(
             {
-              error:
-                "Referral system unavailable. The database may not be migrated yet.",
+              error: "Referral system unavailable. The database may not be migrated yet.",
             },
             500,
           );
