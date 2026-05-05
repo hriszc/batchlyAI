@@ -32,13 +32,17 @@ describe("handleGenerate", () => {
     return row?.credits ?? 0;
   }
 
+  function makePrediction(id: string) {
+    return { id, status: "processing" };
+  }
+
   // --- Validation ---
   it("returns 400 for missing prompt", async () => {
     const resp = await handleGenerate({
       request: makeRequest({}),
       db,
       userId,
-      generateFn: vi.fn(),
+      grsaiFn: vi.fn(),
     } as any);
     expect(resp.status).toBe(400);
     const body = (await resp.json()) as { error: string };
@@ -57,7 +61,7 @@ describe("handleGenerate", () => {
       request: makeRequest({ prompt: "test", n: 3, model: "z-image-pro" }),
       db,
       userId: poorId,
-      generateFn: vi.fn(),
+      grsaiFn: vi.fn(),
     } as any);
     expect(resp.status).toBe(402);
     const body = (await resp.json()) as { error: string; required: number };
@@ -65,49 +69,35 @@ describe("handleGenerate", () => {
     expect(body.required).toBe(60);
   });
 
-  // --- Credit deduction ---
-  it("deducts credits on successful generation", async () => {
-    const mockGenerate = vi.fn().mockResolvedValue(["http://img.com/1.png"]);
+  // --- Generation (now all async) ---
+  it("sends pro model to GRS AI and returns async prediction IDs", async () => {
+    const mockGrsai = vi.fn().mockResolvedValue([makePrediction("grs-001")]);
 
     const resp = await handleGenerate({
       request: makeRequest({ prompt: "test", n: 1, model: "z-image-pro" }),
       db,
       userId,
-      generateFn: mockGenerate,
+      grsaiFn: mockGrsai,
     } as any);
     expect(resp.status).toBe(200);
-    const body = (await resp.json()) as { urls: string[]; creditsRemaining: number };
-    expect(body.urls).toEqual(["http://img.com/1.png"]);
-    // Atomic deduction: 100 - 20 = 80 in DB
+    const body = (await resp.json()) as {
+      predictionIds: string[];
+      async: boolean;
+      creditsRemaining: number;
+    };
+    expect(body.async).toBe(true);
+    expect(body.predictionIds).toEqual(["grs-001"]);
     expect(body.creditsRemaining).toBeGreaterThan(0);
   });
 
-  it("refunds when generation produces fewer images than requested", async () => {
-    const mockGenerate = vi.fn().mockResolvedValue(["http://img.com/1.png"]); // only 1
-
-    const resp = await handleGenerate({
-      request: makeRequest({ prompt: "test", n: 3, model: "z-image-pro" }),
-      db,
-      userId,
-      generateFn: mockGenerate,
-    } as any);
-    expect(resp.status).toBe(200);
-    const body = (await resp.json()) as { urls: string[]; creditsRemaining: number };
-    expect(body.urls).toHaveLength(1);
-
-    // DB should have the refund applied (maxCost 60 deducted, 40 refunded)
-    // 100 - 60 + 40 = 80
-    expect(getCredits()).toBe(80);
-  });
-
   it("refunds all credits on generation failure", async () => {
-    const mockGenerate = vi.fn().mockRejectedValue(new Error("API down"));
+    const mockGrsai = vi.fn().mockRejectedValue(new Error("API down"));
 
     const resp = await handleGenerate({
       request: makeRequest({ prompt: "test", n: 1, model: "z-image-pro" }),
       db,
       userId,
-      generateFn: mockGenerate,
+      grsaiFn: mockGrsai,
     } as any);
     expect(resp.status).toBe(500);
 
@@ -115,11 +105,9 @@ describe("handleGenerate", () => {
     expect(getCredits()).toBe(100);
   });
 
-  // --- Model-specific behavior ---
-  it("z-image-fast returns async prediction IDs", async () => {
-    const mockReplicate = vi
-      .fn()
-      .mockResolvedValue([{ id: "pred-001", status: "starting", urls: { get: "", cancel: "" } }]);
+  // --- Fast model (Replicate) ---
+  it("z-image-fast uses replicate and returns async prediction IDs", async () => {
+    const mockReplicate = vi.fn().mockResolvedValue([makePrediction("pred-001")]);
 
     const resp = await handleGenerate({
       request: makeRequest({ prompt: "test", n: 2, model: "z-image-fast" }),
@@ -154,7 +142,7 @@ describe("handleGenerate", () => {
       request: makeRequest({ prompt: "cached prompt", n: 1, model: "z-image-pro" }),
       db,
       userId,
-      generateFn: vi.fn(),
+      grsaiFn: vi.fn(),
       getCachedFn: mockGetCache,
     } as any);
     expect(resp.status).toBe(200);
@@ -176,7 +164,7 @@ describe("handleGenerate", () => {
   });
 
   it("defaults to 20 credits for unknown model", async () => {
-    const mockGenerate = vi.fn().mockResolvedValue(["http://img.com/1.png"]);
+    const mockGrsai = vi.fn().mockResolvedValue([makePrediction("grs-001")]);
     // Start with just enough for default cost
     const lowUser = seedUser(db, {
       id: "unknown-model-user",
@@ -188,7 +176,7 @@ describe("handleGenerate", () => {
       request: makeRequest({ prompt: "test", n: 1, model: "unknown-model" }),
       db,
       userId: lowUser,
-      generateFn: mockGenerate,
+      grsaiFn: mockGrsai,
     } as any);
     // Should fail because unknown model costs 20 (default)
     expect(resp.status).toBe(402);
