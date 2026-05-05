@@ -42,7 +42,7 @@ async function deriveKey(password: string, salt: BufferSource): Promise<ArrayBuf
 export async function hashPassword(password: string): Promise<string> {
   const salt = crypto.getRandomValues(new Uint8Array(SALT_BYTES));
   const key = await deriveKey(password, salt);
-  return `${VERSION_PREFIX}${buf2hex(salt)}:${buf2hex(key)}`;
+  return `${VERSION_PREFIX}${buf2hex(salt.buffer as ArrayBuffer)}:${buf2hex(key)}`;
 }
 
 export async function verifyPassword({
@@ -59,6 +59,6 @@ export async function verifyPassword({
   if (!saltHex || !keyHex) return false;
 
   const salt = hex2buf(saltHex);
-  const targetKey = await deriveKey(password, salt);
+  const targetKey = await deriveKey(password, salt as unknown as BufferSource);
   return buf2hex(targetKey) === keyHex;
 }

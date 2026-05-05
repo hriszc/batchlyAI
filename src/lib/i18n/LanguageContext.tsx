@@ -22,14 +22,11 @@ function detectBrowserLanguage(): Language {
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>("en");
-  const [mounted, setMounted] = useState(false);
-
   useEffect(() => {
     const stored = localStorage.getItem("language") as Language | null;
     setLanguageState(
       stored === "en" || stored === "zh" ? stored : detectBrowserLanguage(),
     );
-    setMounted(true);
   }, []);
 
   const setLanguage = useCallback((lang: Language) => {
@@ -39,7 +36,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   const t = useCallback(
     (key: TranslationKey, vars?: Record<string, string | number>) => {
-      let text = translations[language][key];
+      let text: string = translations[language][key];
       if (vars) {
         for (const [k, v] of Object.entries(vars)) {
           text = text.replace(`{${k}}`, String(v));

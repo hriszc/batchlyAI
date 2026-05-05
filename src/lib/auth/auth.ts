@@ -1,5 +1,4 @@
 import "@tanstack/react-start/server-only";
-import type { BetterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth } from "better-auth";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
@@ -10,7 +9,8 @@ import { sendEmail } from "@/lib/email";
 import * as schema from "@/lib/db/schema";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 
-let _auth: BetterAuth | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _auth: any = null;
 
 function getD1Binding(): D1Database | undefined {
   const platformEnv = (globalThis as Record<string, unknown>).__env__ as
@@ -70,14 +70,14 @@ export function createAuth(d1Binding?: D1Database) {
           hash: hashPassword,
           verify: verifyPassword,
         },
-        sendEmailVerification: async ({ user, url }) => {
+        sendEmailVerification: async ({ user, url }: { user: { email: string }; url: string }) => {
           await sendEmail({
             to: user.email,
             subject: "Verify your BatchlyAI email",
             html: `<p>Click the link below to verify your email address:</p><p><a href="${url}">${url}</a></p>`,
           });
         },
-        sendResetPassword: async ({ user, url }) => {
+        sendResetPassword: async ({ user, url }: { user: { email: string }; url: string }) => {
           await sendEmail({
             to: user.email,
             subject: "Reset your BatchlyAI password",

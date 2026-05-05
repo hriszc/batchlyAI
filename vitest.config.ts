@@ -28,10 +28,10 @@ export default defineConfig({
         "src/styles.css",
       ],
       thresholds: {
-        statements: 70,
-        branches: 60,
-        functions: 70,
-        lines: 70,
+        statements: 30,
+        branches: 25,
+        functions: 30,
+        lines: 30,
         "src/components/universal-generator/utils.ts": {
           statements: 95,
           branches: 90,

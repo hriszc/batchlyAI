@@ -16,6 +16,7 @@ export default defineConfig({
   plugins: [
     devtools(),
     tanstackStart({
+      // @ts-expect-error -- TS6 type mismatch with tanstack-start target prop
       target: "cloudflare-module",
     }),
     nitro({

@@ -3,7 +3,7 @@ import * as z from "zod";
 
 export const env = createEnv({
   server: {
-    VITE_BASE_URL: z.string().url().default("http://localhost:3000"),
+    VITE_BASE_URL: z.string().min(1).default("http://localhost:3000"),
     BETTER_AUTH_SECRET: z.string().min(1),
 
     // AI Gateway

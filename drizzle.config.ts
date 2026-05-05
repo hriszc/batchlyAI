@@ -12,4 +12,4 @@ export default {
     wranglerConfigPath: "./wrangler.toml",
     dbName: "batchlyai-db",
   },
-} satisfies Config;
+} as Config;
