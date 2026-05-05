@@ -19,6 +19,7 @@ export function applyMigrations(db: ReturnType<typeof createTestDb>) {
     "email_verified" integer DEFAULT false NOT NULL,
     "image" text,
     "credits" integer DEFAULT 10 NOT NULL,
+    "stripe_customer_id" text,
     "created_at" integer NOT NULL,
     "updated_at" integer NOT NULL
   )`);
