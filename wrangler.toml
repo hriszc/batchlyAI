@@ -28,25 +28,3 @@ bucket_name = "batchlyai-uploads"
 #   R2_BUCKET
 [vars]
 VITE_BASE_URL = "https://batchlyai.com"
-
-# Staging environment — uncomment and fill in real IDs after creating resources:
-#   wrangler d1 create batchlyai-db-staging
-#   wrangler kv namespace create batchlyai-kv-staging
-#   wrangler r2 bucket create batchlyai-uploads-staging
-#
-# [env.staging]
-# name = "batchlyai-staging"
-# vars = { VITE_BASE_URL = "https://staging.batchlyai.com" }
-#
-# [[env.staging.d1_databases]]
-# binding = "batchlyai_db"
-# database_name = "batchlyai-db-staging"
-# database_id = "<fill-in-real-id>"
-#
-# [[env.staging.kv_namespaces]]
-# binding = "batchlyai_kv"
-# id = "<fill-in-real-id>"
-#
-# [[env.staging.r2_buckets]]
-# binding = "batchlyai_r2"
-# bucket_name = "batchlyai-uploads-staging"

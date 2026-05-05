@@ -12,6 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as GuestRouteRouteImport } from './routes/_guest/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CnIndexRouteImport } from './routes/cn/index'
+import { Route as SitemapXmlRouteImport } from './routes/sitemap.xml'
+import { Route as RobotsTxtRouteImport } from './routes/robots.txt'
+import { Route as RCodeRouteImport } from './routes/r/$code'
 import { Route as ApiUploadUrlRouteImport } from './routes/api/upload-url'
 import { Route as ApiGrsWebhookRouteImport } from './routes/api/grs-webhook'
 import { Route as ApiGenerateStatusRouteImport } from './routes/api/generate-status'
@@ -24,6 +27,8 @@ import { Route as GuestLoginRouteImport } from './routes/_guest/login'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
 import { Route as ApiStripePortalRouteImport } from './routes/api/stripe/portal'
 import { Route as ApiStripeCheckoutRouteImport } from './routes/api/stripe/checkout'
+import { Route as ApiReferralStatsRouteImport } from './routes/api/referral/stats'
+import { Route as ApiReferralGenerateCodeRouteImport } from './routes/api/referral/generate-code'
 import { Route as ApiFilesSplatRouteImport } from './routes/api/files/$'
 import { Route as ApiAuthGoogleOneTapRouteImport } from './routes/api/auth/google-one-tap'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -40,6 +45,21 @@ const IndexRoute = IndexRouteImport.update({
 const CnIndexRoute = CnIndexRouteImport.update({
   id: '/cn/',
   path: '/cn/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapXmlRoute = SitemapXmlRouteImport.update({
+  id: '/sitemap/xml',
+  path: '/sitemap/xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsTxtRoute = RobotsTxtRouteImport.update({
+  id: '/robots/txt',
+  path: '/robots/txt',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RCodeRoute = RCodeRouteImport.update({
+  id: '/r/$code',
+  path: '/r/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiUploadUrlRoute = ApiUploadUrlRouteImport.update({
@@ -102,6 +122,16 @@ const ApiStripeCheckoutRoute = ApiStripeCheckoutRouteImport.update({
   path: '/api/stripe/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiReferralStatsRoute = ApiReferralStatsRouteImport.update({
+  id: '/api/referral/stats',
+  path: '/api/referral/stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiReferralGenerateCodeRoute = ApiReferralGenerateCodeRouteImport.update({
+  id: '/api/referral/generate-code',
+  path: '/api/referral/generate-code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiFilesSplatRoute = ApiFilesSplatRouteImport.update({
   id: '/api/files/$',
   path: '/api/files/$',
@@ -129,10 +159,15 @@ export interface FileRoutesByFullPath {
   '/api/generate-status': typeof ApiGenerateStatusRoute
   '/api/grs-webhook': typeof ApiGrsWebhookRoute
   '/api/upload-url': typeof ApiUploadUrlRoute
+  '/r/$code': typeof RCodeRoute
+  '/robots/txt': typeof RobotsTxtRoute
+  '/sitemap/xml': typeof SitemapXmlRoute
   '/cn/': typeof CnIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/google-one-tap': typeof ApiAuthGoogleOneTapRoute
   '/api/files/$': typeof ApiFilesSplatRoute
+  '/api/referral/generate-code': typeof ApiReferralGenerateCodeRoute
+  '/api/referral/stats': typeof ApiReferralStatsRoute
   '/api/stripe/checkout': typeof ApiStripeCheckoutRoute
   '/api/stripe/portal': typeof ApiStripePortalRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
@@ -148,10 +183,15 @@ export interface FileRoutesByTo {
   '/api/generate-status': typeof ApiGenerateStatusRoute
   '/api/grs-webhook': typeof ApiGrsWebhookRoute
   '/api/upload-url': typeof ApiUploadUrlRoute
+  '/r/$code': typeof RCodeRoute
+  '/robots/txt': typeof RobotsTxtRoute
+  '/sitemap/xml': typeof SitemapXmlRoute
   '/cn': typeof CnIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/google-one-tap': typeof ApiAuthGoogleOneTapRoute
   '/api/files/$': typeof ApiFilesSplatRoute
+  '/api/referral/generate-code': typeof ApiReferralGenerateCodeRoute
+  '/api/referral/stats': typeof ApiReferralStatsRoute
   '/api/stripe/checkout': typeof ApiStripeCheckoutRoute
   '/api/stripe/portal': typeof ApiStripePortalRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
@@ -169,10 +209,15 @@ export interface FileRoutesById {
   '/api/generate-status': typeof ApiGenerateStatusRoute
   '/api/grs-webhook': typeof ApiGrsWebhookRoute
   '/api/upload-url': typeof ApiUploadUrlRoute
+  '/r/$code': typeof RCodeRoute
+  '/robots/txt': typeof RobotsTxtRoute
+  '/sitemap/xml': typeof SitemapXmlRoute
   '/cn/': typeof CnIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/google-one-tap': typeof ApiAuthGoogleOneTapRoute
   '/api/files/$': typeof ApiFilesSplatRoute
+  '/api/referral/generate-code': typeof ApiReferralGenerateCodeRoute
+  '/api/referral/stats': typeof ApiReferralStatsRoute
   '/api/stripe/checkout': typeof ApiStripeCheckoutRoute
   '/api/stripe/portal': typeof ApiStripePortalRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
@@ -190,10 +235,15 @@ export interface FileRouteTypes {
     | '/api/generate-status'
     | '/api/grs-webhook'
     | '/api/upload-url'
+    | '/r/$code'
+    | '/robots/txt'
+    | '/sitemap/xml'
     | '/cn/'
     | '/api/auth/$'
     | '/api/auth/google-one-tap'
     | '/api/files/$'
+    | '/api/referral/generate-code'
+    | '/api/referral/stats'
     | '/api/stripe/checkout'
     | '/api/stripe/portal'
     | '/api/stripe/webhook'
@@ -209,10 +259,15 @@ export interface FileRouteTypes {
     | '/api/generate-status'
     | '/api/grs-webhook'
     | '/api/upload-url'
+    | '/r/$code'
+    | '/robots/txt'
+    | '/sitemap/xml'
     | '/cn'
     | '/api/auth/$'
     | '/api/auth/google-one-tap'
     | '/api/files/$'
+    | '/api/referral/generate-code'
+    | '/api/referral/stats'
     | '/api/stripe/checkout'
     | '/api/stripe/portal'
     | '/api/stripe/webhook'
@@ -229,10 +284,15 @@ export interface FileRouteTypes {
     | '/api/generate-status'
     | '/api/grs-webhook'
     | '/api/upload-url'
+    | '/r/$code'
+    | '/robots/txt'
+    | '/sitemap/xml'
     | '/cn/'
     | '/api/auth/$'
     | '/api/auth/google-one-tap'
     | '/api/files/$'
+    | '/api/referral/generate-code'
+    | '/api/referral/stats'
     | '/api/stripe/checkout'
     | '/api/stripe/portal'
     | '/api/stripe/webhook'
@@ -248,10 +308,15 @@ export interface RootRouteChildren {
   ApiGenerateStatusRoute: typeof ApiGenerateStatusRoute
   ApiGrsWebhookRoute: typeof ApiGrsWebhookRoute
   ApiUploadUrlRoute: typeof ApiUploadUrlRoute
+  RCodeRoute: typeof RCodeRoute
+  RobotsTxtRoute: typeof RobotsTxtRoute
+  SitemapXmlRoute: typeof SitemapXmlRoute
   CnIndexRoute: typeof CnIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAuthGoogleOneTapRoute: typeof ApiAuthGoogleOneTapRoute
   ApiFilesSplatRoute: typeof ApiFilesSplatRoute
+  ApiReferralGenerateCodeRoute: typeof ApiReferralGenerateCodeRoute
+  ApiReferralStatsRoute: typeof ApiReferralStatsRoute
   ApiStripeCheckoutRoute: typeof ApiStripeCheckoutRoute
   ApiStripePortalRoute: typeof ApiStripePortalRoute
   ApiStripeWebhookRoute: typeof ApiStripeWebhookRoute
@@ -278,6 +343,27 @@ declare module '@tanstack/react-router' {
       path: '/cn'
       fullPath: '/cn/'
       preLoaderRoute: typeof CnIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap/xml': {
+      id: '/sitemap/xml'
+      path: '/sitemap/xml'
+      fullPath: '/sitemap/xml'
+      preLoaderRoute: typeof SitemapXmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots/txt': {
+      id: '/robots/txt'
+      path: '/robots/txt'
+      fullPath: '/robots/txt'
+      preLoaderRoute: typeof RobotsTxtRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/r/$code': {
+      id: '/r/$code'
+      path: '/r/$code'
+      fullPath: '/r/$code'
+      preLoaderRoute: typeof RCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/upload-url': {
@@ -364,6 +450,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiStripeCheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/referral/stats': {
+      id: '/api/referral/stats'
+      path: '/api/referral/stats'
+      fullPath: '/api/referral/stats'
+      preLoaderRoute: typeof ApiReferralStatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/referral/generate-code': {
+      id: '/api/referral/generate-code'
+      path: '/api/referral/generate-code'
+      fullPath: '/api/referral/generate-code'
+      preLoaderRoute: typeof ApiReferralGenerateCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/files/$': {
       id: '/api/files/$'
       path: '/api/files/$'
@@ -412,10 +512,15 @@ const rootRouteChildren: RootRouteChildren = {
   ApiGenerateStatusRoute: ApiGenerateStatusRoute,
   ApiGrsWebhookRoute: ApiGrsWebhookRoute,
   ApiUploadUrlRoute: ApiUploadUrlRoute,
+  RCodeRoute: RCodeRoute,
+  RobotsTxtRoute: RobotsTxtRoute,
+  SitemapXmlRoute: SitemapXmlRoute,
   CnIndexRoute: CnIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAuthGoogleOneTapRoute: ApiAuthGoogleOneTapRoute,
   ApiFilesSplatRoute: ApiFilesSplatRoute,
+  ApiReferralGenerateCodeRoute: ApiReferralGenerateCodeRoute,
+  ApiReferralStatsRoute: ApiReferralStatsRoute,
   ApiStripeCheckoutRoute: ApiStripeCheckoutRoute,
   ApiStripePortalRoute: ApiStripePortalRoute,
   ApiStripeWebhookRoute: ApiStripeWebhookRoute,

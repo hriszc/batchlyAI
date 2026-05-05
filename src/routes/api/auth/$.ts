@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { processReferralAfterSignup } from "@/lib/referral/process";
 
 export const Route = createFileRoute("/api/auth/$")({
   server: {
@@ -10,23 +11,55 @@ export const Route = createFileRoute("/api/auth/$")({
       GET: async ({ request }) => {
         const auth = createAuth();
         if (!auth) return dbUnavailable();
-
-        const url = new URL(request.url);
-        const path = url.pathname.replace("/api/auth/", "");
-        return callApi(auth, path, request, "GET");
+        return auth.handler(request);
       },
       POST: async ({ request }) => {
         const auth = createAuth();
         if (!auth) return dbUnavailable();
 
+        // Rate limit sensitive endpoints
         const url = new URL(request.url);
         const path = url.pathname.replace("/api/auth/", "");
-        return callApi(auth, path, request, "POST");
+        const SENSITIVE_PATHS = [
+          "sign-in/email",
+          "sign-up/email",
+          "forget-password",
+          "reset-password",
+        ];
+        if (SENSITIVE_PATHS.includes(path)) {
+          const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+          const { allowed } = checkRateLimit(`${path}:${ip}`, 10, 60);
+          if (!allowed) {
+            return new Response(JSON.stringify({ error: "Too many requests" }), {
+              status: 429,
+              headers: { "Content-Type": "application/json" },
+            });
+          }
+        }
+
+        const response = await auth.handler(request);
+
+        // Post-signup referral processing
+        if (path === "sign-up/email" && response.ok) {
+          try {
+            const cloned = response.clone();
+            const body = (await cloned.json()) as {
+              user?: { id: string; email: string };
+            };
+            await processReferralAfterSignup(request, body);
+          } catch {
+            // Non-fatal: don't break signup if referral processing fails
+            console.error("[auth] Referral processing error");
+          }
+        }
+
+        return response;
       },
     },
   },
 });
 
+<<<<<<< HEAD
 export function getApiMethod(auth: NonNullable<ReturnType<typeof createAuth>>, path: string) {
   switch (path) {
     case "sign-up/email":
@@ -108,6 +141,8 @@ async function callApi(
   }
 }
 
+=======
+>>>>>>> 6f69f9d (Remove Free-plan workarounds after upgrading to Workers Paid)
 function dbUnavailable() {
   return jsonResponse({ error: "Database not available" }, 501);
 }

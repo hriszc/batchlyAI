@@ -2,7 +2,7 @@ import { SiGithub, SiGoogle } from "@icons-pack/react-simple-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { LoaderCircleIcon } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { SignInSocialButton } from "@/components/sign-in-social-button";
@@ -24,11 +24,29 @@ function SignupForm() {
   const { t } = useLanguage();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const refCode = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("ref") || "";
+  }, []);
+
   const { mutate: signupMutate, isPending } = useMutation({
-    mutationFn: async (data: { name: string; email: string; password: string }) => {
+    mutationFn: async (data: {
+      name: string;
+      email: string;
+      password: string;
+      ref: string;
+    }) => {
       const result = await authClient.signUp.email({
-        ...data,
+        name: data.name,
+        email: data.email,
+        password: data.password,
         callbackURL: redirectUrl,
+        ref: data.ref || undefined,
+      } as Record<string, unknown> & {
+        name: string;
+        email: string;
+        password: string;
+        callbackURL: string;
       });
       if (
         result &&
@@ -68,7 +86,7 @@ function SignupForm() {
       return;
     }
 
-    signupMutate({ name, email, password });
+    signupMutate({ name, email, password, ref: refCode });
   };
 
   return (

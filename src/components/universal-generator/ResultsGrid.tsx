@@ -1,3 +1,4 @@
+import { authClient } from "@/lib/auth/auth-client";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 import { ResultCard } from "./ResultCard";
@@ -22,6 +23,9 @@ function SkeletonCard() {
 
 export function ResultsGrid({ results, isGenerating }: ResultsGridProps) {
   const { t } = useLanguage();
+  const { data: session } = authClient.useSession();
+  const userCredits = ((session?.user as Record<string, unknown>)?.credits as number) ?? 0;
+  const showWatermark = userCredits <= 10;
 
   if (!isGenerating && results.length === 0) return null;
 
@@ -34,7 +38,7 @@ export function ResultsGrid({ results, isGenerating }: ResultsGridProps) {
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {isGenerating
           ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
-          : results.map((result) => <ResultCard key={result.id} result={result} />)}
+          : results.map((result) => <ResultCard key={result.id} result={result} showWatermark={showWatermark} />)}
       </div>
     </div>
   );
