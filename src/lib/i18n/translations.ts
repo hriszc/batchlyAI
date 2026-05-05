@@ -65,8 +65,7 @@ export const translations = {
     referralLinkCopied: "Referral link copied!",
     referralLinkCreated: "Referral link created!",
     referralEarned: "earned",
-    referralNeedGeneration:
-      "You must generate at least one image before creating a referral link",
+    referralNeedGeneration: "You must generate at least one image before creating a referral link",
   },
   zh: {
     siteTitle: "BatchlyAI",

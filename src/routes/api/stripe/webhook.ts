@@ -93,10 +93,7 @@ export const Route = createFileRoute("/api/stripe/webhook")({
                 .select()
                 .from(referral)
                 .where(
-                  and(
-                    eq(referral.refereeId, userId),
-                    eq(referral.purchaseCommissionAwarded, 0),
-                  ),
+                  and(eq(referral.refereeId, userId), eq(referral.purchaseCommissionAwarded, 0)),
                 );
 
               if (refRecord) {
@@ -106,8 +103,7 @@ export const Route = createFileRoute("/api/stripe/webhook")({
                   .where(eq(userTable.id, refRecord.referrerId));
 
                 const tier = referrer?.referralTier ?? "none";
-                const commissionRate =
-                  tier === "gold" ? 0.3 : tier === "silver" ? 0.25 : 0.2;
+                const commissionRate = tier === "gold" ? 0.3 : tier === "silver" ? 0.25 : 0.2;
                 const commission = Math.round(creditsGranted * commissionRate);
 
                 if (commission > 0) {
