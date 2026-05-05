@@ -67,7 +67,7 @@ async function callApi(
   const SENSITIVE_PATHS = ["sign-in/email", "sign-up/email", "forget-password", "reset-password"];
   if (SENSITIVE_PATHS.includes(path)) {
     const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-    const { allowed } = checkRateLimit(`${path}:${ip}`, 10, 60);
+    const { allowed } = await checkRateLimit(`${path}:${ip}`, 10, 60);
     if (!allowed) {
       return new Response(JSON.stringify({ error: "Too many requests" }), {
         status: 429,

@@ -25,6 +25,13 @@ export function createAuth(d1Binding?: D1Database) {
   const binding = d1Binding ?? getD1Binding();
   if (!binding) return null;
 
+  if (env.BETTER_AUTH_SECRET === "dev-secret") {
+    console.error(
+      "[auth] FATAL: BETTER_AUTH_SECRET is the dev default. Set a real secret via `wrangler secret put BETTER_AUTH_SECRET`.",
+    );
+    return null;
+  }
+
   try {
     const db = getDb(binding);
 
@@ -64,10 +71,18 @@ export function createAuth(d1Binding?: D1Database) {
           verify: verifyPassword,
         },
         sendEmailVerification: async ({ user, url }) => {
-          console.log("[auth] Verification email:", user.email, url);
+          await sendEmail({
+            to: user.email,
+            subject: "Verify your BatchlyAI email",
+            html: `<p>Click the link below to verify your email address:</p><p><a href="${url}">${url}</a></p>`,
+          });
         },
         sendResetPassword: async ({ user, url }) => {
-          console.log("[auth] Reset email:", user.email, url);
+          await sendEmail({
+            to: user.email,
+            subject: "Reset your BatchlyAI password",
+            html: `<p>Click the link below to reset your password:</p><p><a href="${url}">${url}</a></p>`,
+          });
         },
       },
     });

@@ -25,7 +25,7 @@ export function DefaultCatchBoundary({ error }: Readonly<ErrorComponentProps>) {
         <Button
           type="button"
           onClick={() => {
-            router.invalidate();
+            void router.invalidate();
           }}
         >
           Try Again

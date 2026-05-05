@@ -236,12 +236,16 @@ export function useGeneratorState() {
             ];
           }
         }),
-      ).then((resultGroups) => {
-        dispatch({
-          type: "FINISH_GENERATING",
-          payload: resultGroups.flat(),
+      )
+        .then((resultGroups) => {
+          dispatch({
+            type: "FINISH_GENERATING",
+            payload: resultGroups.flat(),
+          });
+        })
+        .catch((err) => {
+          dispatch({ type: "SET_ERROR", payload: String(err) });
         });
-      });
     } else {
       // Simulated generation for non-image models
       setTimeout(() => {

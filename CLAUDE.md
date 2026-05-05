@@ -1,5 +1,12 @@
 # CLAUDE.md
 
+## 本地开发
+
+- **数据库**：生产环境使用 Cloudflare D1 (SQLite)，本地开发需使用 `wrangler dev --local` 以匹配生产环境。不要使用 Docker PostgreSQL（`docker-compose.yml` 来自 TanStarter 模板，仅作参考）。
+- 本地 D1 初始化：`wrangler d1 execute batchlyai-db --local --file ./drizzle/0000_true_energizer.sql`
+- 部署前必须在本地 D1 上运行和验证所有迁移。
+- 不要修改 `docker-compose.yml` — 它保留用于参考原始的 TanStarter 模板结构。
+
 ## 自检规则
 
 - **部署后必须自检，禁止让用户检查结果。** 每次 `wrangler deploy` 后，用 `curl --max-time 30` 验证所有关键功能：
