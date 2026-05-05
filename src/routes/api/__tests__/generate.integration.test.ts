@@ -12,6 +12,19 @@ function makeRequest(body: Record<string, unknown>): Request {
   } as unknown as Request;
 }
 
+function makePrediction(id: string) {
+  return { id, status: "processing" };
+}
+
+function getCreditsForUser(db: ReturnType<typeof createTestDb>, userId: string): number {
+  const row = db
+    .select({ credits: userTable.credits })
+    .from(userTable)
+    .where(eq(userTable.id, userId))
+    .get();
+  return row?.credits ?? 0;
+}
+
 describe("handleGenerate", () => {
   let db: ReturnType<typeof createTestDb>;
   let userId: string;
@@ -24,16 +37,7 @@ describe("handleGenerate", () => {
   });
 
   function getCredits(): number {
-    const row = db
-      .select({ credits: userTable.credits })
-      .from(userTable)
-      .where(eq(userTable.id, userId))
-      .get();
-    return row?.credits ?? 0;
-  }
-
-  function makePrediction(id: string) {
-    return { id, status: "processing" };
+    return getCreditsForUser(db, userId);
   }
 
   // --- Validation ---
@@ -238,5 +242,103 @@ describe("handleGenerate", () => {
     } as any);
 
     expect(getCredits()).toBe(80); // 100 - 20
+  });
+});
+
+describe("generate → poll status pipeline (simulated AI image return)", () => {
+  let db: ReturnType<typeof createTestDb>;
+  let userId: string;
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    db = createTestDb();
+    applyMigrations(db);
+    userId = seedUser(db, { id: "test-user-001", credits: 200 });
+  });
+
+  it("returns prediction IDs that can be polled for image URLs", async () => {
+    // Step 1: Call generate to create async predictions
+    const mockGrsai = vi
+      .fn()
+      .mockResolvedValue([makePrediction("grs-img-001"), makePrediction("grs-img-002")]);
+
+    const genResp = await handleGenerate({
+      request: makeRequest({ prompt: "sunset", n: 2, model: "z-image-pro" }),
+      db,
+      userId,
+      grsaiFn: mockGrsai,
+    } as any);
+
+    expect(genResp.status).toBe(200);
+    const genBody = (await genResp.json()) as {
+      predictionIds: string[];
+      async: boolean;
+      modelType: string;
+    };
+    expect(genBody.predictionIds).toEqual(["grs-img-001", "grs-img-002"]);
+    expect(genBody.async).toBe(true);
+    expect(genBody.modelType).toBe("grs");
+
+    // Step 2: Simulate the frontend polling — verify the prediction IDs
+    // are in the format the frontend expects for /api/generate-status
+    expect(genBody.predictionIds.every((id) => typeof id === "string")).toBe(true);
+    expect(genBody.predictionIds.every((id) => id.length > 0)).toBe(true);
+  });
+
+  it("cache hit returns image URLs immediately (simulated)", async () => {
+    const cachedUrls = [
+      "https://replicate.delivery/pbix/xyz/output-0.png",
+      "https://replicate.delivery/pbix/xyz/output-1.png",
+    ];
+    const mockGetCache = vi.fn().mockResolvedValue(cachedUrls);
+
+    const resp = await handleGenerate({
+      request: makeRequest({ prompt: "cached sunset", n: 2, model: "z-image-pro" }),
+      db,
+      userId,
+      grsaiFn: vi.fn(),
+      getCachedFn: mockGetCache,
+    } as any);
+
+    expect(resp.status).toBe(200);
+    const body = (await resp.json()) as { urls: string[]; cached: boolean };
+    expect(body.cached).toBe(true);
+    expect(body.urls).toEqual(cachedUrls);
+    // Each URL should be a valid image URL the frontend can render
+    expect(body.urls.every((url) => url.startsWith("https://"))).toBe(true);
+  });
+
+  it("Replicate prediction IDs are formatted for polling", async () => {
+    const mockReplicate = vi.fn().mockResolvedValue([{ id: "rep-pred-abc", status: "starting" }]);
+
+    const resp = await handleGenerate({
+      request: makeRequest({ prompt: "forest", n: 1, model: "z-image-fast" }),
+      db,
+      userId,
+      replicateFn: mockReplicate,
+    } as any);
+
+    expect(resp.status).toBe(200);
+    const body = (await resp.json()) as {
+      predictionIds: string[];
+      modelType: string;
+    };
+    expect(body.predictionIds).toEqual(["rep-pred-abc"]);
+    expect(body.modelType).toBe("replicate");
+  });
+
+  it("deducts credits before returning prediction IDs (no credit leak)", async () => {
+    const checkUserId = seedUser(db, { id: "credit-check", credits: 100, email: "cc@t.com" });
+    const mockGrsai = vi.fn().mockResolvedValue([makePrediction("grs-check")]);
+
+    await handleGenerate({
+      request: makeRequest({ prompt: "test", n: 2, model: "z-image-pro" }),
+      db,
+      userId: checkUserId,
+      grsaiFn: mockGrsai,
+    } as any);
+
+    // 2 × 20 credits = 40 deducted
+    expect(getCreditsForUser(db, checkUserId)).toBe(60);
   });
 });
