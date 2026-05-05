@@ -88,6 +88,7 @@ export function createAuth(d1Binding?: D1Database) {
         }) => {
           await sendEmail({
             to: user.email,
+<<<<<<< HEAD
             subject: "Verify your email — BatchlyAI",
             html: [
               `<h1>Welcome to BatchlyAI${user.name ? `, ${user.name}` : ""}!</h1>`,
@@ -96,6 +97,10 @@ export function createAuth(d1Binding?: D1Database) {
               "<p>This link expires in 1 hour.</p>",
               "<p>If you did not create this account, please ignore this email.</p>",
             ].join(""),
+=======
+            subject: "Verify your BatchlyAI account",
+            html: `<p>Click <a href="${url}">here</a> to verify your email.</p>`,
+>>>>>>> 6f69f9d (Remove Free-plan workarounds after upgrading to Workers Paid)
           });
         },
         sendResetPassword: async ({
@@ -107,6 +112,7 @@ export function createAuth(d1Binding?: D1Database) {
         }) => {
           await sendEmail({
             to: user.email,
+<<<<<<< HEAD
             subject: "Reset your password — BatchlyAI",
             html: [
               "<h1>Password Reset Request</h1>",
@@ -115,6 +121,10 @@ export function createAuth(d1Binding?: D1Database) {
               "<p>This link expires in 1 hour.</p>",
               "<p>If you did not request a password reset, please ignore this email.</p>",
             ].join(""),
+=======
+            subject: "Reset your BatchlyAI password",
+            html: `<p>Click <a href="${url}">here</a> to reset your password.</p>`,
+>>>>>>> 6f69f9d (Remove Free-plan workarounds after upgrading to Workers Paid)
           });
         },
       },
