@@ -62,7 +62,8 @@ export const Route = createFileRoute("/api/referral/generate-code")({
         if (!userRecord || userRecord.credits >= 10) {
           return jsonResponse(
             {
-              error: "You must generate at least one image before creating a referral link",
+              error:
+                "You must generate at least one image before creating a referral link",
             },
             403,
           );
@@ -91,7 +92,10 @@ export const Route = createFileRoute("/api/referral/generate-code")({
         });
 
         const origin = new URL(request.url).origin;
-        return jsonResponse({ code, shareUrl: `${origin}/r/${code}` }, 200);
+        return jsonResponse(
+          { code, shareUrl: `${origin}/r/${code}` },
+          200,
+        );
       },
     },
   },

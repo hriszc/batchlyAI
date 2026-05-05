@@ -69,7 +69,7 @@ export function SettingsBar() {
 
   useEffect(() => {
     if (!session?.user) return;
-    void fetch("/api/referral/stats")
+    fetch("/api/referral/stats")
       .then((r) => r.json())
       .then((data: ReferralStats & { error?: string }) => {
         if (!data.error) setReferralStats(data);
@@ -109,7 +109,7 @@ export function SettingsBar() {
       await navigator.clipboard.writeText(referralStats.shareUrl);
       toast.success("Referral link copied!");
     }
-  }, [referralStats]);
+  }, [referralStats?.shareUrl]);
 
   const handleBuyCredits = async () => {
     try {

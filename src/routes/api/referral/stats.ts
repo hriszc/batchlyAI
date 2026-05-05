@@ -41,23 +41,29 @@ export const Route = createFileRoute("/api/referral/stats")({
         // Sum referrer credits from all credited referrals
         const [creditSum] = await db
           .select({
-            total: sql<number>`COALESCE(SUM(${referral.referrerCreditsAwarded}), 0)`.mapWith(
-              Number,
-            ),
+            total: sql<number>`COALESCE(SUM(${referral.referrerCreditsAwarded}), 0)`
+              .mapWith(Number),
           })
           .from(referral)
-          .where(and(eq(referral.referrerId, userId), eq(referral.status, "credited")));
+          .where(
+            and(
+              eq(referral.referrerId, userId),
+              eq(referral.status, "credited"),
+            ),
+          );
 
         // Sum purchase commissions
         const [commissionSum] = await db
           .select({
-            total: sql<number>`COALESCE(SUM(${referral.purchaseCommissionAwarded}), 0)`.mapWith(
-              Number,
-            ),
+            total: sql<number>`COALESCE(SUM(${referral.purchaseCommissionAwarded}), 0)`
+              .mapWith(Number),
           })
           .from(referral)
           .where(
-            and(eq(referral.referrerId, userId), sql`${referral.purchaseCommissionAwarded} > 0`),
+            and(
+              eq(referral.referrerId, userId),
+              sql`${referral.purchaseCommissionAwarded} > 0`,
+            ),
           );
 
         // Look up referral code
@@ -73,7 +79,9 @@ export const Route = createFileRoute("/api/referral/stats")({
             totalCreditsEarned: creditSum?.total ?? 0,
             commissionTotal: commissionSum?.total ?? 0,
             referralCode: codeRecord?.code ?? null,
-            shareUrl: codeRecord ? `${new URL(request.url).origin}/r/${codeRecord.code}` : null,
+            shareUrl: codeRecord
+              ? `${new URL(request.url).origin}/r/${codeRecord.code}`
+              : null,
           },
           200,
         );
