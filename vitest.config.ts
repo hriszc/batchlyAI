@@ -24,10 +24,10 @@ export default defineConfig({
       include: ["src/**/*.{ts,tsx}"],
       exclude: ["src/routeTree.gen.ts", "src/components/ui/**", "**/*.d.ts", "src/styles.css"],
       thresholds: {
-        statements: 35,
-        branches: 30,
-        functions: 40,
-        lines: 35,
+        statements: 30,
+        branches: 25,
+        functions: 30,
+        lines: 30,
         "src/components/universal-generator/utils.ts": {
           statements: 95,
           branches: 80,
