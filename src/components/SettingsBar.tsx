@@ -93,12 +93,12 @@ export function SettingsBar() {
           error?: string;
         };
         if (!statsData.error) setReferralStats(statsData);
-        toast.success("Referral link created!");
+        toast.success(t("referralCreated"));
       } else {
-        toast.error(data.error || "Failed to create referral link");
+        toast.error(data.error || t("referralFailed"));
       }
     } catch {
-      toast.error("Failed to create referral link");
+      toast.error(t("referralFailed"));
     } finally {
       setReferralLoading(false);
     }
@@ -107,7 +107,7 @@ export function SettingsBar() {
   const handleCopyReferralLink = useCallback(async () => {
     if (referralStats?.shareUrl) {
       await navigator.clipboard.writeText(referralStats.shareUrl);
-      toast.success("Referral link copied!");
+      toast.success(t("referralCopied"));
     }
   }, [referralStats]);
 
@@ -122,10 +122,10 @@ export function SettingsBar() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        toast.error(data.error || "Failed to start checkout");
+        toast.error(data.error || t("checkoutFailed"));
       }
     } catch {
-      toast.error("Failed to start checkout");
+      toast.error(t("checkoutFailed"));
     }
   };
 
@@ -147,13 +147,13 @@ export function SettingsBar() {
             <>
               <button
                 onClick={handleCopyReferralLink}
-                title="Copy referral link"
+                title={t("copyReferralLink")}
                 className="inline-flex h-8 items-center justify-center gap-1 rounded-full bg-green-500/15 px-2.5 text-xs font-medium text-green-600 backdrop-blur-sm transition-colors hover:bg-green-500/25"
               >
                 <Share2Icon className="size-3" />
                 {referralStats.totalReferrals > 0
-                  ? `${referralStats.totalReferrals} invites`
-                  : "Copy Referral Link"}
+                  ? `${referralStats.totalReferrals} ${t("invites")}`
+                  : t("copyReferralLink")}
               </button>
               {referralStats.tier !== "none" && (
                 <span className="inline-flex h-8 items-center justify-center rounded-full bg-amber-500/15 px-2 text-xs font-semibold text-amber-600 backdrop-blur-sm">
@@ -165,7 +165,7 @@ export function SettingsBar() {
                   <span className="font-semibold text-green-600">
                     +{referralStats.totalCreditsEarned}
                   </span>
-                  earned
+                  {t("earned")}
                 </span>
               )}
             </>
@@ -176,7 +176,7 @@ export function SettingsBar() {
               className="inline-flex h-8 items-center justify-center gap-1 rounded-full bg-purple-500/15 px-2.5 text-xs font-medium text-purple-600 backdrop-blur-sm transition-colors hover:bg-purple-500/25 disabled:opacity-50"
             >
               <GiftIcon className="size-3" />
-              {referralLoading ? "..." : "Get Referral Link"}
+              {referralLoading ? "..." : t("getReferralLink")}
             </button>
           )}
 
@@ -193,7 +193,7 @@ export function SettingsBar() {
           <button
             onClick={handleSignOut}
             className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-muted/80 text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
-            aria-label="Sign out"
+            aria-label={t("signOut")}
           >
             <LogOutIcon className="size-3" />
           </button>
@@ -204,20 +204,20 @@ export function SettingsBar() {
           className="inline-flex h-8 items-center justify-center gap-1.5 rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
         >
           <LogInIcon className="size-3" />
-          Login
+          {t("loginNav")}
         </Link>
       )}
       <button
         onClick={() => setLanguage(language === "en" ? "zh" : "en")}
         className="inline-flex h-8 items-center justify-center rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
-        aria-label={`Switch to ${language === "en" ? "Chinese" : "English"}`}
+        aria-label={t("switchLang")}
       >
         {language === "en" ? "CN" : "EN"}
       </button>
       <button
         onClick={toggleTheme}
         className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-muted/80 text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
-        aria-label={`Switch to ${resolved === "dark" ? "light" : "dark"} mode`}
+        aria-label={t("switchTheme")}
       >
         {resolved === "dark" ? <SunIcon className="size-3.5" /> : <MoonIcon className="size-3.5" />}
       </button>

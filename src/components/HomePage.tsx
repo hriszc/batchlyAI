@@ -91,9 +91,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
           className="hidden h-12 w-auto sm:h-14 md:h-16 dark:block"
         />
       </div>
-      <h1 className="mb-2 text-center text-[32px] leading-[1.07] font-semibold tracking-[-0.028em] text-foreground sm:text-[40px] md:text-[56px]">
-        {t("siteTitle")}
-      </h1>
+      <h1 className="sr-only">{t("siteTitle")}</h1>
       <p className="mb-8 text-center text-[17px] leading-[1.19] tracking-[-0.022em] text-muted-foreground sm:text-[21px]">
         {t("siteDescription")}
       </p>

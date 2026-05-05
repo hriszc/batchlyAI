@@ -14,9 +14,9 @@ export const Route = createFileRoute("/")({
       },
     ],
     links: [
-      { rel: "alternate", href: "https://batchlyai.hriszc.workers.dev/cn", hrefLang: "zh-CN" },
-      { rel: "alternate", href: "https://batchlyai.hriszc.workers.dev/", hrefLang: "en" },
-      { rel: "canonical", href: "https://batchlyai.hriszc.workers.dev/" },
+      { rel: "alternate", href: "https://batchlyai.com/cn", hrefLang: "zh-CN" },
+      { rel: "alternate", href: "https://batchlyai.com/", hrefLang: "en" },
+      { rel: "canonical", href: "https://batchlyai.com/" },
     ],
   }),
   component: () => <HomePage forceLanguage="en" />,
