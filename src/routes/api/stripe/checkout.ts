@@ -37,7 +37,7 @@ export async function handleCheckout(request: Request): Promise<Response> {
     // no body or invalid JSON, default to usd + quantity 1
   }
 
-  const priceId = env.STRIPE_PRICE_ID_USD;
+  const priceId = currency === "cny" ? env.STRIPE_PRICE_ID_CNY : env.STRIPE_PRICE_ID_USD;
 
   try {
     const stripe = getStripe();
