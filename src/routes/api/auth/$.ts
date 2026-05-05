@@ -63,38 +63,31 @@ function dbUnavailable() {
   return jsonResponse({ error: "Database not available" }, 501);
 }
 
-interface AuthApiMethodResult {
-  method: string;
-  params?: Record<string, string>;
-}
-
 export function getApiMethod(
   auth: { api: Record<string, unknown> },
   path: string,
-): AuthApiMethodResult | undefined {
-  // Exact matches
-  const EXACT_MAP: Record<string, string> = {
-    "sign-up/email": "signUpEmail",
-    "sign-in/email": "signInEmail",
-    "sign-in/social": "signInSocial",
-    "sign-out": "signOut",
-    "get-session": "getSession",
-    "forget-password": "forgetPassword",
-    "reset-password": "resetPassword",
-    "verify-email": "verifyEmail",
-    "send-verification-email": "sendVerificationEmail",
+): { method: string; params?: Record<string, string> } | undefined {
+  const API_MAP: Record<string, { method: string; paramKey?: string }> = {
+    "sign-up/email": { method: "signUpEmail" },
+    "sign-in/email": { method: "signInEmail" },
+    "sign-in/social": { method: "signInSocial" },
+    "sign-out": { method: "signOut" },
+    "get-session": { method: "getSession" },
+    "forget-password": { method: "forgetPassword" },
+    "reset-password": { method: "resetPassword" },
+    "verify-email": { method: "verifyEmail" },
+    "send-verification-email": { method: "sendVerificationEmail" },
   };
 
-  if (EXACT_MAP[path]) {
-    const method = EXACT_MAP[path];
-    return { method: auth.api[method] as string };
+  const exact = API_MAP[path];
+  if (exact) {
+    return { method: exact.method };
   }
 
-  // Dynamic callback/:provider match
+  // Match callback/:provider pattern
   const callbackMatch = path.match(/^callback\/(.+)$/);
   if (callbackMatch) {
-    const method = "callbackOAuth";
-    return { method: auth.api[method] as string, params: { id: callbackMatch[1] } };
+    return { method: "callbackOAuth", params: { id: callbackMatch[1] } };
   }
 
   return undefined;
