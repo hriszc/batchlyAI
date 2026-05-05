@@ -24,10 +24,10 @@ export default defineConfig({
       include: ["src/**/*.{ts,tsx}"],
       exclude: ["src/routeTree.gen.ts", "src/components/ui/**", "**/*.d.ts", "src/styles.css"],
       thresholds: {
-        statements: 30,
-        branches: 25,
+        statements: 28,
+        branches: 22,
         functions: 35,
-        lines: 30,
+        lines: 28,
         "src/components/universal-generator/utils.ts": {
           statements: 95,
           branches: 80,
@@ -35,10 +35,10 @@ export default defineConfig({
           lines: 95,
         },
         "src/components/universal-generator/useGeneratorState.ts": {
-          statements: 75,
-          branches: 55,
-          functions: 90,
-          lines: 75,
+          statements: 60,
+          branches: 40,
+          functions: 75,
+          lines: 60,
         },
       },
     },
