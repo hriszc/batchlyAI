@@ -100,13 +100,8 @@ export async function handleWebhook(request: Request): Promise<Response> {
           .where(and(eq(referral.refereeId, userId), eq(referral.purchaseCommissionAwarded, 0)));
 
         if (refRecord) {
-          const [referrer] = await db
-            .select({ referralTier: userTable.referralTier })
-            .from(userTable)
-            .where(eq(userTable.id, refRecord.referrerId));
-
-          const tier = referrer?.referralTier ?? "none";
-          const commissionRate = tier === "gold" ? 0.3 : tier === "silver" ? 0.25 : 0.2;
+          // TODO: restore tier-based rate after migration 0003 is applied
+          const commissionRate = 0.2;
           const commission = Math.round(creditsGranted * commissionRate);
 
           if (commission > 0) {

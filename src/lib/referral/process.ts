@@ -154,18 +154,18 @@ export async function processReferralAfterSignup(
     .set({ credits: sql`${userTable.credits} + ${REFEREE_CREDITS}` })
     .where(eq(userTable.id, userId));
 
-  // Update referrer tier
-  const [referrerRecord] = await db
-    .select({ totalReferrals: userTable.totalReferrals })
-    .from(userTable)
-    .where(eq(userTable.id, referrerId));
-
-  const newTotal = (referrerRecord?.totalReferrals ?? 0) + 1;
-  const newTier =
-    newTotal >= 21 ? "gold" : newTotal >= 6 ? "silver" : newTotal >= 1 ? "bronze" : "none";
-
-  await db
-    .update(userTable)
-    .set({ totalReferrals: newTotal, referralTier: newTier })
-    .where(eq(userTable.id, referrerId));
+  // TODO: re-enable tier tracking after migration 0003 is applied
+  // const [referrerRecord] = await db
+  //   .select({ totalReferrals: userTable.totalReferrals })
+  //   .from(userTable)
+  //   .where(eq(userTable.id, referrerId));
+  //
+  // const newTotal = (referrerRecord?.totalReferrals ?? 0) + 1;
+  // const newTier =
+  //   newTotal >= 21 ? "gold" : newTotal >= 6 ? "silver" : newTotal >= 1 ? "bronze" : "none";
+  //
+  // await db
+  //   .update(userTable)
+  //   .set({ totalReferrals: newTotal, referralTier: newTier })
+  //   .where(eq(userTable.id, referrerId));
 }

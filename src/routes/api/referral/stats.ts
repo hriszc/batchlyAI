@@ -31,14 +31,7 @@ export const Route = createFileRoute("/api/referral/stats")({
         const db = getDb(binding);
 
         try {
-          const [userRecord] = await db
-            .select({
-              referralTier: userTable.referralTier,
-              totalReferrals: userTable.totalReferrals,
-            })
-            .from(userTable)
-            .where(eq(userTable.id, userId));
-
+          // TODO: restore referralTier/totalReferrals after migration 0003 is applied
           const [creditSum] = await db
             .select({
               total: sql<number>`COALESCE(SUM(${referral.referrerCreditsAwarded}), 0)`.mapWith(
@@ -66,8 +59,8 @@ export const Route = createFileRoute("/api/referral/stats")({
 
           return jsonResponse(
             {
-              tier: userRecord?.referralTier ?? "none",
-              totalReferrals: userRecord?.totalReferrals ?? 0,
+              tier: "none",
+              totalReferrals: 0,
               totalCreditsEarned: creditSum?.total ?? 0,
               commissionTotal: commissionSum?.total ?? 0,
               referralCode: codeRecord?.code ?? null,

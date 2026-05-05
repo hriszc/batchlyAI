@@ -9,8 +9,6 @@ export const user = sqliteTable("user", {
   image: text("image"),
   credits: integer("credits").default(10).notNull(),
   stripeCustomerId: text("stripe_customer_id"),
-  referralTier: text("referral_tier").default("none").notNull(),
-  totalReferrals: integer("total_referrals").default(0).notNull(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .$defaultFn(() => new Date())
     .notNull(),
