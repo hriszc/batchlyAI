@@ -26,5 +26,9 @@ bucket_name = "batchlyai-uploads"
 #   REPLICATE_API_KEY
 #   R2_ENDPOINT
 #   R2_BUCKET
+[observability]
+enabled = true
+head_sampling_rate = 1
+
 [vars]
 VITE_BASE_URL = "https://batchlyai.com"
