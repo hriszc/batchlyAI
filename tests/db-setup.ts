@@ -64,6 +64,17 @@ export function applyMigrations(db: ReturnType<typeof createTestDb>) {
     "updated_at" integer NOT NULL
   )`);
   db.run(`CREATE INDEX "verification_identifier_idx" ON "verification" ("identifier")`);
+
+  // Payment tables
+  db.run(`CREATE TABLE "credit_purchase" (
+    "id" text PRIMARY KEY NOT NULL,
+    "user_id" text NOT NULL REFERENCES "user"("id"),
+    "amount" integer NOT NULL,
+    "credits" integer NOT NULL,
+    "status" text NOT NULL DEFAULT 'pending',
+    "created_at" integer NOT NULL,
+    "completed_at" integer
+  )`);
 }
 
 export function seedUser(
@@ -85,4 +96,14 @@ export function seedUser(
     })
     .run();
   return id;
+}
+
+export function setMockD1Binding(db: ReturnType<typeof createTestDb>) {
+  (globalThis as Record<string, unknown>).__env__ = {
+    batchlyai_db: db,
+  };
+}
+
+export function clearMockD1Binding() {
+  delete (globalThis as Record<string, unknown>).__env__;
 }

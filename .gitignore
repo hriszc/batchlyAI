@@ -10,7 +10,6 @@ node_modules
 .cache
 .env
 .env.*
-.dev.vars
 package-lock.json
 generator.html
 
@@ -26,4 +25,4 @@ dist
 /public/build
 
 .tanstack.claude/worktrees/
-coverage
+coverage/
