@@ -8,7 +8,7 @@ import { HomePage } from "../HomePage";
 describe("HomePage", () => {
   it("renders site title", () => {
     renderWithProviders(<HomePage />);
-    expect(screen.getByText("BatchlyAI")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "BatchlyAI" })).toBeInTheDocument();
   });
 
   it("renders site description", () => {

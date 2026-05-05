@@ -51,6 +51,10 @@ export const translations = {
     buyCreditsTitle: "10 USD = 1000 Credits",
     purchaseSuccess: "Purchase successful! Credits have been added.",
     purchaseCanceled: "Purchase canceled.",
+    shareScreenshot: "Share as Image",
+    shareLoading: "Generating share image...",
+    shareSuccess: "Screenshot saved!",
+    shareFailed: "Failed to generate share image",
   },
   zh: {
     siteTitle: "BatchlyAI",
@@ -103,6 +107,10 @@ export const translations = {
     buyCreditsTitle: "10美元 = 1000积分",
     purchaseSuccess: "购买成功！积分已到账。",
     purchaseCanceled: "购买已取消。",
+    shareScreenshot: "生成分享截图",
+    shareLoading: "正在生成分享图片...",
+    shareSuccess: "截图已保存！",
+    shareFailed: "生成分享图片失败",
   },
 } as const;
 
