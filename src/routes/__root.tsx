@@ -42,7 +42,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       { name: "twitter:image", content: "https://batchlyai.com/logo-light.png" },
     ],
     links: [
-      { rel: "icon", href: "/logo-light.png" },
+      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
       { rel: "stylesheet", href: appCss },
     ],
   }),
