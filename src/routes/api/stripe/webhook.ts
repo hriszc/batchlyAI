@@ -156,9 +156,7 @@ export async function handleWebhook(request: Request): Promise<Response> {
 export const Route = createFileRoute("/api/stripe/webhook")({
   server: {
     handlers: {
-      POST: async ({ request }) => {
-        return handleWebhook(request);
-      },
+      POST: async ({ request }) => handleWebhook(request),
     },
   },
 });

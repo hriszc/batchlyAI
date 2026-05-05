@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { blogPosts } from "@/content/blog";
+
 export const Route = createFileRoute("/sitemap/xml")({
   server: {
     handlers: {
@@ -10,7 +12,17 @@ export const Route = createFileRoute("/sitemap/xml")({
           { loc: `${origin}/cn`, priority: "0.9", changefreq: "daily" },
           { loc: `${origin}/login`, priority: "0.5", changefreq: "monthly" },
           { loc: `${origin}/signup`, priority: "0.7", changefreq: "monthly" },
+          { loc: `${origin}/blog`, priority: "0.8", changefreq: "weekly" },
+          { loc: `${origin}/templates`, priority: "0.8", changefreq: "daily" },
         ];
+
+        for (const post of blogPosts) {
+          urls.push({
+            loc: `${origin}/blog/${post.slug}`,
+            priority: "0.7",
+            changefreq: "monthly",
+          });
+        }
 
         const xml = [
           '<?xml version="1.0" encoding="UTF-8"?>',

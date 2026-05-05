@@ -67,18 +67,7 @@ export function applyMigrations(db: ReturnType<typeof createTestDb>) {
   )`);
   db.run(`CREATE INDEX "verification_identifier_idx" ON "verification" ("identifier")`);
 
-  // Payment tables
-  db.run(`CREATE TABLE "credit_purchase" (
-    "id" text PRIMARY KEY NOT NULL,
-    "user_id" text NOT NULL REFERENCES "user"("id"),
-    "amount" integer NOT NULL,
-    "credits" integer NOT NULL,
-    "status" text NOT NULL DEFAULT 'pending',
-    "created_at" integer NOT NULL,
-    "completed_at" integer
-  )`);
-
-  // Referral tables
+  // Referral tables (migration 0003)
   db.run(`CREATE TABLE "referral_code" (
     "id" text PRIMARY KEY NOT NULL,
     "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
@@ -93,10 +82,10 @@ export function applyMigrations(db: ReturnType<typeof createTestDb>) {
     "referrer_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
     "referee_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
     "code" text NOT NULL,
-    "status" text NOT NULL DEFAULT 'pending',
-    "referrer_credits_awarded" integer NOT NULL DEFAULT 0,
-    "referee_credits_awarded" integer NOT NULL DEFAULT 0,
-    "purchase_commission_awarded" integer NOT NULL DEFAULT 0,
+    "status" text DEFAULT 'pending' NOT NULL,
+    "referrer_credits_awarded" integer DEFAULT 0 NOT NULL,
+    "referee_credits_awarded" integer DEFAULT 0 NOT NULL,
+    "purchase_commission_awarded" integer DEFAULT 0 NOT NULL,
     "ip_address" text,
     "created_at" integer NOT NULL,
     "credited_at" integer
@@ -104,6 +93,17 @@ export function applyMigrations(db: ReturnType<typeof createTestDb>) {
   db.run(`CREATE UNIQUE INDEX "referral_referee_id_unique" ON "referral" ("referee_id")`);
   db.run(`CREATE INDEX "referral_referrer_id_idx" ON "referral" ("referrer_id")`);
   db.run(`CREATE INDEX "referral_referee_id_idx" ON "referral" ("referee_id")`);
+
+  // Payment tables
+  db.run(`CREATE TABLE "credit_purchase" (
+    "id" text PRIMARY KEY NOT NULL,
+    "user_id" text NOT NULL REFERENCES "user"("id"),
+    "amount" integer NOT NULL,
+    "credits" integer NOT NULL,
+    "status" text NOT NULL DEFAULT 'pending',
+    "created_at" integer NOT NULL,
+    "completed_at" integer
+  )`);
 }
 
 export function seedUser(
