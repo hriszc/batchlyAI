@@ -159,6 +159,8 @@ async function pollForResults(
             id: string;
             combination: PromptCombination;
             imageUrl: string | null;
+            textContent: string | null;
+            watermark: boolean;
             status: "complete" | "error";
           }[] => {
             if (r.status === "succeeded" && r.urls) {
@@ -166,6 +168,8 @@ async function pollForResults(
                 id: generateResultId(),
                 combination,
                 imageUrl: url,
+                textContent: null,
+                watermark: false,
                 status: "complete" as const,
               }));
             }
@@ -174,6 +178,8 @@ async function pollForResults(
                 id: generateResultId(),
                 combination,
                 imageUrl: null,
+                textContent: null,
+                watermark: false,
                 status: "error" as const,
               },
             ];
@@ -191,6 +197,8 @@ async function pollForResults(
       id: generateResultId(),
       combination,
       imageUrl: null,
+      textContent: null,
+      watermark: false,
       status: "error" as const,
     },
   ];
@@ -247,12 +255,21 @@ export function useGeneratorState() {
       currentState.variableGroups,
     );
 
+    if (combinations.length > 500) {
+      dispatch({
+        type: "SET_ERROR",
+        payload: "Too many combinations (max 500). Remove some variable values.",
+      });
+      return;
+    }
+
     const model = MODELS.find((m) => m.id === currentState.model);
     const isImageModel = model?.category === "image";
 
     if (isImageModel) {
       let globalError: string | null = null;
       let creditsRemaining: number | null = null;
+      let isWatermarked = false;
 
       Promise.all(
         combinations.map(async (combination) => {
@@ -276,6 +293,7 @@ export function useGeneratorState() {
               required?: number;
               available?: number;
               creditsRemaining?: number;
+              watermark?: boolean;
             };
 
             if (resp.status === 401) {
@@ -294,12 +312,17 @@ export function useGeneratorState() {
                 id: generateResultId(),
                 combination,
                 imageUrl: null,
+                textContent: null,
+                watermark: false,
                 status: "error" as const,
               };
             }
 
             if (json.creditsRemaining != null) {
               creditsRemaining = json.creditsRemaining;
+            }
+            if (json.watermark) {
+              isWatermarked = true;
             }
 
             // Sync response (cached)
@@ -308,6 +331,8 @@ export function useGeneratorState() {
                 id: generateResultId(),
                 combination,
                 imageUrl: url,
+                textContent: null,
+                watermark: false,
                 status: "complete" as const,
               }));
             }
@@ -325,36 +350,92 @@ export function useGeneratorState() {
                 id: generateResultId(),
                 combination,
                 imageUrl: null,
+                textContent: null,
+                watermark: false,
                 status: "error" as const,
               },
             ];
           }
         }),
-      )
-        .then((resultGroups) => {
-          const results = resultGroups.flat();
-          dispatch({ type: "FINISH_GENERATING", payload: results });
-          if (globalError) {
-            dispatch({ type: "SET_ERROR", payload: globalError });
-          }
-          if (creditsRemaining != null) {
-            dispatch({ type: "SET_CREDITS_REMAINING", payload: creditsRemaining });
-          }
-        })
-        .catch((err) => {
-          /* v8 ignore next 3 -- safety net: .flat() can't throw since every path returns an array */
-          dispatch({ type: "SET_ERROR", payload: String(err) });
-        });
-    } else {
-      setTimeout(() => {
-        const results = combinations.map((combination) => ({
-          id: generateResultId(),
-          combination,
-          imageUrl: null,
-          status: "complete" as const,
-        }));
+      ).then((resultGroups) => {
+        let results = resultGroups.flat();
+        if (isWatermarked) {
+          results = results.map((r) => ({ ...r, watermark: true }));
+        }
         dispatch({ type: "FINISH_GENERATING", payload: results });
-      }, 1500);
+        if (globalError) {
+          dispatch({ type: "SET_ERROR", payload: globalError });
+        }
+        if (creditsRemaining != null) {
+          dispatch({ type: "SET_CREDITS_REMAINING", payload: creditsRemaining });
+        }
+      });
+    } else {
+      // Text generation via DeepSeek
+      Promise.all(
+        combinations.map(async (combination) => {
+          try {
+            const resp = await fetch("/api/generate", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                prompt: combination.prompt,
+                n: 1,
+                model: currentState.model,
+              }),
+            });
+            const json = (await resp.json()) as {
+              texts?: string[];
+              urls?: string[];
+              error?: string;
+              creditsRemaining?: number;
+              watermark?: boolean;
+            };
+
+            const textWatermark = json.watermark ?? false;
+
+            if (!resp.ok || json.error) {
+              return {
+                id: generateResultId(),
+                combination,
+                imageUrl: null,
+                textContent: null,
+                watermark: textWatermark,
+                status: "error" as const,
+              };
+            }
+
+            if (json.creditsRemaining != null) {
+              dispatch({ type: "SET_CREDITS_REMAINING", payload: json.creditsRemaining });
+            }
+
+            return (json.texts || json.urls || []).map((text) => ({
+              id: generateResultId(),
+              combination,
+              imageUrl: null,
+              textContent: json.texts ? text : null,
+              watermark: textWatermark,
+              status: "complete" as const,
+            }));
+          } catch {
+            return [
+              {
+                id: generateResultId(),
+                combination,
+                imageUrl: null,
+                textContent: null,
+                watermark: false,
+                status: "error" as const,
+              },
+            ];
+          }
+        }),
+      ).then((resultGroups) => {
+        dispatch({
+          type: "FINISH_GENERATING",
+          payload: resultGroups.flat(),
+        });
+      });
     }
   }, []);
 

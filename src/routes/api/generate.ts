@@ -1,14 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, eq, gte, sql } from "drizzle-orm";
 
-import { createGrsaiPredictions, createReplicatePredictions } from "@/lib/ai";
-import { jsonResponse } from "@/lib/api-helpers";
+import { createGrsaiPredictions, createReplicatePredictions, generateText } from "@/lib/ai";
 import { createAuth } from "@/lib/auth/auth";
 import { getCachedResult, setCachedResult } from "@/lib/cache/prompt-cache";
 import { getDb } from "@/lib/db";
 import { user as userTable } from "@/lib/db/schema/auth.schema";
-import { checkRateLimit } from "@/lib/rate-limit";
-import { generateRequestSchema } from "@/lib/validation/schemas";
 
 export const CREDIT_COST: Record<string, number> = {
   "z-image-fast": 10,
@@ -37,8 +34,10 @@ export interface GenerateContext {
   request: Request;
   db: ReturnType<typeof getDb>;
   userId: string;
+  stripeCustomerId?: string | null;
   replicateFn?: typeof createReplicatePredictions;
   grsaiFn?: typeof createGrsaiPredictions;
+  textFn?: typeof generateText;
   getCachedFn?: typeof getCachedResult;
   setCachedFn?: typeof setCachedResult;
 }
@@ -50,29 +49,36 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
     userId,
     replicateFn = createReplicatePredictions,
     grsaiFn = createGrsaiPredictions,
+    textFn = generateText,
     getCachedFn = getCachedResult,
     setCachedFn = setCachedResult,
   } = ctx;
 
   try {
-    const rawBody = await request.json();
-    const parsed = generateRequestSchema.safeParse(rawBody);
+    const body = (await request.json()) as {
+      prompt: string;
+      aspectRatio?: string;
+      n?: number;
+      model?: string;
+    };
 
-    if (!parsed.success) {
-      return jsonResponse(
-        { error: "Invalid request", details: parsed.error.flatten().fieldErrors },
-        400,
-      );
+    if (!body.prompt) {
+      return jsonResponse({ error: "Missing prompt" }, 400);
     }
 
-    const { prompt, aspectRatio, n, model } = parsed.data;
+    const model = body.model || "z-image-pro";
+    const n = body.n ?? 1;
     const costPerUnit = CREDIT_COST[model] ?? 20;
     const maxCost = costPerUnit * n;
+    const watermark = !ctx.stripeCustomerId;
 
     // Check prompt cache first
-    const cachedUrls = await getCachedFn(prompt, model, aspectRatio, n);
+    const cachedUrls = await getCachedFn(body.prompt, model, body.aspectRatio || "1:1", n);
     if (cachedUrls) {
-      return jsonResponse({ urls: cachedUrls, creditsRemaining: null, cached: true }, 200);
+      return jsonResponse(
+        { urls: cachedUrls, creditsRemaining: null, cached: true, watermark },
+        200,
+      );
     }
 
     // Atomically check and deduct credits before generation
@@ -86,15 +92,51 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
       return jsonResponse({ error: "Insufficient credits", required: maxCost }, 402);
     }
 
-    // All generation is now async
+    // Text generation via DeepSeek (synchronous)
+    if (model === "z-text-fast" || model === "z-text-pro") {
+      try {
+        const textModel = model === "z-text-pro" ? "deepseek-reasoner" : "deepseek-chat";
+        const texts = await Promise.all(
+          Array.from({ length: n }, () => textFn({ prompt: body.prompt, model: textModel })),
+        );
+        const newBalance = deducted.credits - maxCost;
+
+        if (texts.length > 0) {
+          await setCachedFn(body.prompt, model, body.aspectRatio || "1:1", texts.length, texts);
+        }
+
+        return jsonResponse({ texts, creditsRemaining: newBalance, isText: true, watermark }, 200);
+      } catch (err) {
+        await db
+          .update(userTable)
+          .set({ credits: sql`${userTable.credits} + ${maxCost}` })
+          .where(eq(userTable.id, userId));
+        const message = err instanceof Error ? err.message : "Text generation failed";
+        return jsonResponse({ error: message }, 500);
+      }
+    }
+
+    // Image/Video generation (async via Replicate or GRS AI)
     let predictions: { id: string; status: string }[];
+    let isVideo = false;
 
     try {
-      if (model === "z-image-fast") {
-        predictions = await replicateFn({ prompt, aspectRatio, n });
+      if (model === "z-image-fast" || model === "z-video-fast" || model === "z-video-pro") {
+        predictions = await replicateFn({
+          prompt: body.prompt,
+          aspectRatio: body.aspectRatio,
+          n,
+          model,
+        });
+        isVideo = model.startsWith("z-video");
       } else {
         // GRS AI async via webhook
-        predictions = await grsaiFn({ prompt, aspectRatio, n, model });
+        predictions = await grsaiFn({
+          prompt: body.prompt,
+          aspectRatio: body.aspectRatio,
+          n,
+          model: body.model,
+        });
 
         // Store GRS task info in KV for webhook/poll to access
         const kv = getKvBinding();
@@ -106,8 +148,8 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
                 JSON.stringify({
                   userId,
                   status: "processing",
-                  prompt,
-                  aspectRatio,
+                  prompt: body.prompt,
+                  aspectRatio: body.aspectRatio,
                   createdAt: Date.now(),
                 }),
                 { expirationTtl: 3600 },
@@ -135,7 +177,9 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
         status: "processing",
         async: true,
         creditsRemaining: newBalance,
-        modelType: model === "z-image-fast" ? "replicate" : "grs",
+        modelType: model === "z-image-fast" || model.startsWith("z-video") ? "replicate" : "grs",
+        isVideo,
+        watermark,
       },
       200,
     );
@@ -157,34 +201,32 @@ export const Route = createFileRoute("/api/generate")({
           return jsonResponse({ error: "Unauthorized" }, 401);
         }
 
-        const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-        const userId = session.user.id;
-
-        const userLimit = checkRateLimit(`generate:user:${userId}`, 30, 60);
-        if (!userLimit.allowed) {
-          return jsonResponse(
-            { error: "Rate limit exceeded. Please wait before generating more." },
-            429,
-          );
-        }
-
-        const ipLimit = checkRateLimit(`generate:ip:${ip}`, 60, 60);
-        if (!ipLimit.allowed) {
-          return jsonResponse({ error: "Too many requests from this IP" }, 429);
-        }
-
         const binding = getD1Binding();
         if (!binding) return dbUnavailable();
 
+        const db = getDb(binding);
+        const user = await db.query.user.findFirst({
+          where: eq(userTable.id, session.user.id),
+          columns: { stripeCustomerId: true },
+        });
+
         return handleGenerate({
           request,
-          db: getDb(binding),
+          db,
           userId: session.user.id,
+          stripeCustomerId: user?.stripeCustomerId,
         });
       },
     },
   },
 });
+
+function jsonResponse(data: unknown, status: number) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
 
 function dbUnavailable() {
   return jsonResponse({ error: "Database not available" }, 501);

@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 
 import type { VariableGroup } from "../types";
 import {
+  extractAiBlocks,
+  replaceAiBlock,
   extractVariableGroups,
   computeCombinations,
   interpolatePrompt,
@@ -253,5 +255,91 @@ describe("getCombinationCount", () => {
       { id: "var_1", values: [] },
     ];
     expect(getCombinationCount(groups)).toBe(2);
+  });
+});
+
+// ============================================================
+// extractAiBlocks
+// ============================================================
+describe("extractAiBlocks", () => {
+  it("returns empty array for empty string", () => {
+    expect(extractAiBlocks("")).toEqual([]);
+  });
+
+  it("returns empty array for string with no ai blocks", () => {
+    expect(extractAiBlocks("A beautiful landscape")).toEqual([]);
+  });
+
+  it("extracts a single ai block", () => {
+    expect(extractAiBlocks("{*three colors*}")).toEqual([
+      { raw: "{*three colors*}", description: "three colors" },
+    ]);
+  });
+
+  it("extracts multiple ai blocks", () => {
+    expect(extractAiBlocks("{*a*} and {*b c*}")).toEqual([
+      { raw: "{*a*}", description: "a" },
+      { raw: "{*b c*}", description: "b c" },
+    ]);
+  });
+
+  it("extracts ai blocks mixed with text", () => {
+    const result = extractAiBlocks("A {*three colors*} watch on {*white*} background");
+    expect(result).toHaveLength(2);
+    expect(result[0]).toEqual({ raw: "{*three colors*}", description: "three colors" });
+    expect(result[1]).toEqual({ raw: "{*white*}", description: "white" });
+  });
+
+  it("skips whitespace-only description", () => {
+    expect(extractAiBlocks("{*  *}")).toEqual([]);
+  });
+
+  it("skips unclosed block", () => {
+    expect(extractAiBlocks("{*unclosed")).toEqual([]);
+  });
+
+  it("trims whitespace in description", () => {
+    expect(extractAiBlocks("{*  hello world  *}")).toEqual([
+      { raw: "{*  hello world  *}", description: "hello world" },
+    ]);
+  });
+
+  it("works alongside standard variable groups", () => {
+    const template = "{*three colors*} {{cat, dog}}";
+    const aiBlocks = extractAiBlocks(template);
+    const varGroups = extractVariableGroups(template);
+    expect(aiBlocks).toEqual([{ raw: "{*three colors*}", description: "three colors" }]);
+    expect(varGroups).toEqual([{ id: "var_0", values: ["cat", "dog"] }]);
+  });
+
+  it("handles Chinese descriptions", () => {
+    expect(extractAiBlocks("{*三种颜色*}")).toEqual([
+      { raw: "{*三种颜色*}", description: "三种颜色" },
+    ]);
+  });
+});
+
+// ============================================================
+// replaceAiBlock
+// ============================================================
+describe("replaceAiBlock", () => {
+  it("replaces an ai block with variable syntax", () => {
+    expect(replaceAiBlock("A {*x*} here", "{*x*}", ["a", "b"])).toBe("A {{a, b}} here");
+  });
+
+  it("replaces with single value", () => {
+    expect(replaceAiBlock("{*x*}", "{*x*}", ["only"])).toBe("{{only}}");
+  });
+
+  it("replaces with multiple values", () => {
+    expect(replaceAiBlock("{*x*}", "{*x*}", ["red", "yellow", "blue"])).toBe(
+      "{{red, yellow, blue}}",
+    );
+  });
+
+  it("replaces middle block in multi-block template", () => {
+    expect(
+      replaceAiBlock("A {*colors*} watch in {{leather, steel}}", "{*colors*}", ["red", "blue"]),
+    ).toBe("A {{red, blue}} watch in {{leather, steel}}");
   });
 });

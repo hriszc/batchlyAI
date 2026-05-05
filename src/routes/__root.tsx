@@ -5,6 +5,7 @@ import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 
+import { GoogleOneTap } from "@/components/GoogleOneTap";
 import { SettingsBar } from "@/components/SettingsBar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -59,6 +60,7 @@ function RootDocument({ children }: { readonly children: React.ReactNode }) {
         <ThemeProvider>
           <LanguageProvider>
             <SettingsBar />
+            <GoogleOneTap />
             {children}
             <Toaster richColors />
           </LanguageProvider>

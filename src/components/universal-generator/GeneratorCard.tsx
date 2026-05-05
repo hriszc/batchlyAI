@@ -1,11 +1,20 @@
-import { WandSparklesIcon, PaperclipIcon, Settings2Icon, ChevronDownIcon } from "lucide-react";
+import {
+  WandSparklesIcon,
+  PaperclipIcon,
+  Settings2Icon,
+  ChevronDownIcon,
+  Loader2Icon,
+  Undo2Icon,
+} from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
+import { getRandomPrompt } from "./inspire-prompts";
 import { MODELS, MODEL_CATEGORIES } from "./models";
 import type { ModelInfo } from "./models";
 import type { GeneratorState, GroupId } from "./types";
+import { useExpandVariables } from "./useExpandVariables";
 import { computePromptCombinations } from "./utils";
 import { VariableGroupCard } from "./VariableGroupCard";
 
@@ -50,6 +59,8 @@ export function GeneratorCard({ state, actions }: GeneratorCardProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useLanguage();
 
+  const expand = useExpandVariables(state.promptTemplate, actions.setPromptTemplate);
+
   // Close model picker on outside click
   useEffect(() => {
     if (!showModelPicker) return;
@@ -81,6 +92,49 @@ export function GeneratorCard({ state, actions }: GeneratorCardProps) {
           className="min-h-[80px] w-full resize-none border-0 bg-transparent text-base placeholder:text-muted-foreground/60 focus:ring-0 focus:outline-none"
           rows={3}
         />
+        {/* Expand hint */}
+        {expand.expandBlocks.length > 0 && (
+          <div className="mt-1 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground/50">
+              {expand.expandBlocks.length} {t("groups")} detected — AI can expand
+            </span>
+            <div className="flex items-center gap-1">
+              {expand.hasExpanded && (
+                <button
+                  type="button"
+                  onClick={expand.undoExpand}
+                  disabled={expand.isExpanding}
+                  className="flex h-7 items-center gap-1 rounded-lg px-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  title="Undo"
+                >
+                  <Undo2Icon className="size-3" />
+                  Undo
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={expand.doExpand}
+                disabled={expand.isExpanding || expand.expandBlocks.length === 0}
+                className="inline-flex h-7 items-center justify-center gap-1.5 rounded-lg bg-muted/50 px-3 text-xs font-medium text-foreground transition-all hover:bg-muted disabled:opacity-40"
+              >
+                {expand.isExpanding ? (
+                  <>
+                    <Loader2Icon className="size-3 animate-spin" />
+                    {t("expanding")}
+                  </>
+                ) : (
+                  <>
+                    <WandSparklesIcon className="size-3" />
+                    {t("expandAi")}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+        {expand.expandBlocks.length === 0 && state.promptTemplate && (
+          <div className="mt-1 text-xs text-muted-foreground/40">{t("promptHint")}</div>
+        )}
       </div>
 
       {/* Error banner */}
@@ -129,6 +183,7 @@ export function GeneratorCard({ state, actions }: GeneratorCardProps) {
         <div className="flex items-center gap-2">
           <button
             type="button"
+            onClick={() => actions.setPromptTemplate(getRandomPrompt())}
             className="flex h-9 w-9 items-center justify-center rounded-lg border bg-muted/30 transition-colors hover:bg-muted"
             title={t("inspire")}
           >
@@ -156,7 +211,7 @@ export function GeneratorCard({ state, actions }: GeneratorCardProps) {
 
         <button
           onClick={actions.startGenerating}
-          disabled={comboCount === 0 || state.isGenerating}
+          disabled={comboCount === 0 || comboCount > 500 || state.isGenerating}
           className="inline-flex h-9 items-center justify-center gap-2 rounded-[980px] bg-[#0071e3] px-5 py-2 text-[17px] leading-[1.0] font-normal whitespace-nowrap text-white transition-all hover:bg-[#0077ed] focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
         >
           {state.isGenerating ? t("generating") : t("generate")}
@@ -266,8 +321,17 @@ export function GeneratorCard({ state, actions }: GeneratorCardProps) {
 
         <span className="text-muted-foreground/40">|</span>
 
-        <span className="whitespace-nowrap text-muted-foreground">
-          {t("variants")}: {comboCount}
+        <span
+          className={`whitespace-nowrap ${
+            comboCount > 500
+              ? "font-medium text-red-500"
+              : comboCount > 100
+                ? "text-yellow-600"
+                : "text-muted-foreground"
+          }`}
+        >
+          {hasGroups && `${state.variableGroups.length} ${t("groups")} · `}
+          {comboCount} {t("variants")}
         </span>
 
         <span className="text-muted-foreground/40">|</span>
@@ -275,6 +339,15 @@ export function GeneratorCard({ state, actions }: GeneratorCardProps) {
         <span className="whitespace-nowrap text-muted-foreground">
           {t("estimatedCredits")}：{creditEstimate} {t("credits")}
         </span>
+
+        {comboCount > 500 && (
+          <span className="text-xs font-medium whitespace-nowrap text-red-500">
+            {t("tooManyCombinations")}
+          </span>
+        )}
+        {comboCount > 100 && comboCount <= 500 && (
+          <span className="text-xs whitespace-nowrap text-yellow-600">{t("manyCombinations")}</span>
+        )}
 
         {state.creditsRemaining != null && (
           <>

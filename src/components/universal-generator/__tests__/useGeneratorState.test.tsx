@@ -193,35 +193,40 @@ describe("useGeneratorState", () => {
     expect(result.current.state.isGenerating).toBe(false);
   });
 
-  it("startGenerating with text model finishes after timeout", () => {
-    vi.useFakeTimers();
+  it("startGenerating with text model calls API and returns results", async () => {
+    const mockTexts = { texts: ["Hello generated text"], creditsRemaining: 90, isText: true };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(mockTexts),
+      }),
+    );
+
     const { result } = renderHook(() => useGeneratorState(), {
       wrapper: createWrapper(),
     });
 
-    // Set a text model (simulated generation)
+    // Set a text model
     act(() => {
       result.current.actions.setModel("z-text-fast");
     });
     act(() => {
       result.current.actions.setPromptTemplate("{{hello}}");
     });
-    act(() => {
-      vi.advanceTimersByTime(500);
-    });
-    act(() => {
-      result.current.actions.startGenerating();
-    });
-    expect(result.current.state.isGenerating).toBe(true);
 
-    // Text model simulates generation with 1500ms timeout
-    act(() => {
-      vi.advanceTimersByTime(1500);
+    await act(async () => {
+      result.current.actions.startGenerating();
+      // Wait for the Promise.all to resolve
+      await new Promise((r) => setTimeout(r, 100));
     });
+
     expect(result.current.state.isGenerating).toBe(false);
     expect(result.current.state.results.length).toBe(1);
+    expect(result.current.state.results[0].textContent).toBe("Hello generated text");
 
-    vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
 
   it("uploadFile adds attachment and removes it on failure", async () => {
