@@ -48,7 +48,6 @@ export const Route = createFileRoute("/api/auth/$")({
             };
             await processReferralAfterSignup(request, body);
           } catch {
-            // Non-fatal: don't break signup if referral processing fails
             console.error("[auth] Referral processing error");
           }
         }
@@ -84,7 +83,6 @@ export function getApiMethod(
     return { method: exact.method };
   }
 
-  // Match callback/:provider pattern
   const callbackMatch = path.match(/^callback\/(.+)$/);
   if (callbackMatch) {
     return { method: "callbackOAuth", params: { id: callbackMatch[1] } };

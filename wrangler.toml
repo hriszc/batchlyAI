@@ -3,6 +3,10 @@ compatibility_date = "2026-05-04"
 compatibility_flags = ["nodejs_compat"]
 main = ".output/server/index.mjs"
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 6f69f9d (Remove Free-plan workarounds after upgrading to Workers Paid)
 
 [assets]
 binding = "ASSETS"
