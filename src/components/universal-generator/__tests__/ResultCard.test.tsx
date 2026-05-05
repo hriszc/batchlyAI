@@ -1,7 +1,9 @@
-import { describe, it, expect } from "vitest";
 import { screen } from "@testing-library/react";
-import { ResultCard } from "../ResultCard";
+import { describe, it, expect } from "vitest";
+
 import { renderWithProviders } from "#test/test-utils";
+
+import { ResultCard } from "../ResultCard";
 import type { GeneratedResult } from "../types";
 
 const completeResult: GeneratedResult = {

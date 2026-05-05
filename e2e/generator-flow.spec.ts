@@ -48,7 +48,10 @@ test.describe("Generator E2E", () => {
     const initialClass = await html.getAttribute("class");
 
     // Toggle theme
-    const themeButton = page.locator("button").filter({ has: page.locator("svg") }).first();
+    const themeButton = page
+      .locator("button")
+      .filter({ has: page.locator("svg") })
+      .first();
     if (await themeButton.isVisible()) {
       await themeButton.click();
       // Wait for any transition
@@ -65,7 +68,9 @@ test.describe("Generator E2E", () => {
 
   test("signup page loads", async ({ page }) => {
     await page.goto("/signup");
-    await expect(page.locator('input[id="name"]').or(page.locator('input[name="name"]'))).toBeVisible();
+    await expect(
+      page.locator('input[id="name"]').or(page.locator('input[name="name"]')),
+    ).toBeVisible();
     await expect(page.locator('input[type="email"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
   });

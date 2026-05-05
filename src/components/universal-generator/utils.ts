@@ -8,7 +8,10 @@ export function extractVariableGroups(template: string): VariableGroup[] {
   while ((match = regex.exec(template)) !== null) {
     const raw = match[1].trim();
     if (!raw) continue;
-    const values = raw.split(",").map((v) => v.trim()).filter(Boolean);
+    const values = raw
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean);
     groups.push({ id: `var_${idx++}`, values });
   }
   return groups;
@@ -35,10 +38,7 @@ export function computeCombinations(groups: VariableGroup[]): Record<string, str
   return combinations;
 }
 
-export function interpolatePrompt(
-  template: string,
-  variables: Record<string, string>,
-): string {
+export function interpolatePrompt(template: string, variables: Record<string, string>): string {
   const groups = extractVariableGroups(template);
   let result = template;
   groups.forEach((group, idx) => {

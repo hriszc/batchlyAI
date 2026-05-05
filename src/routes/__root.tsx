@@ -5,11 +5,11 @@ import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 
-import { ThemeProvider } from "@/components/theme-provider";
 import { SettingsBar } from "@/components/SettingsBar";
-import { LanguageProvider } from "@/lib/i18n/LanguageContext";
+import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import type { AuthQueryResult } from "@/lib/auth/queries";
+import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 
 import appCss from "@/styles.css?url";
 
@@ -24,7 +24,11 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "BatchlyAI" },
-      { name: "description", content: "Universal AI Generator — batch generate all combinations from multi-variable prompts" },
+      {
+        name: "description",
+        content:
+          "Universal AI Generator — batch generate all combinations from multi-variable prompts",
+      },
     ],
     links: [
       { rel: "icon", href: "https://mugnavo.com/favicon.ico" },

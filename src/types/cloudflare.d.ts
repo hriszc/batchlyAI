@@ -25,8 +25,15 @@ declare interface D1Result<T = unknown> {
 declare class KVNamespace {
   get(key: string, options?: { type: "text" }): Promise<string | null>;
   get(key: string, options: { type: "json" }): Promise<unknown>;
-  get(key: string, options?: { type?: "text" | "json" | "arrayBuffer" | "stream" }): Promise<unknown>;
-  put(key: string, value: string | ArrayBuffer | ReadableStream, options?: KVNamespacePutOptions): Promise<void>;
+  get(
+    key: string,
+    options?: { type?: "text" | "json" | "arrayBuffer" | "stream" },
+  ): Promise<unknown>;
+  put(
+    key: string,
+    value: string | ArrayBuffer | ReadableStream,
+    options?: KVNamespacePutOptions,
+  ): Promise<void>;
   delete(key: string): Promise<void>;
   list(options?: KVNamespaceListOptions): Promise<KVNamespaceListResult>;
 }

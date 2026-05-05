@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
-import { useGeneratorState } from "@/components/universal-generator/useGeneratorState";
+
 import { GeneratorCard } from "@/components/universal-generator/GeneratorCard";
 import { ResultsGrid } from "@/components/universal-generator/ResultsGrid";
+import { useGeneratorState } from "@/components/universal-generator/useGeneratorState";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 interface HomePageProps {
@@ -30,14 +31,14 @@ export function HomePage({ forceLanguage }: HomePageProps) {
 
   return (
     <main
-      className={`max-w-[980px] mx-auto px-4 pb-16 ${
-        hasResults ? "pt-8" : "min-h-[90vh] flex flex-col justify-center"
+      className={`mx-auto max-w-[980px] px-4 pb-16 ${
+        hasResults ? "pt-8" : "flex min-h-[90vh] flex-col justify-center"
       }`}
     >
-      <h1 className="text-foreground text-[32px] sm:text-[40px] md:text-[56px] font-semibold leading-[1.07] tracking-[-0.028em] text-center mb-2">
+      <h1 className="mb-2 text-center text-[32px] leading-[1.07] font-semibold tracking-[-0.028em] text-foreground sm:text-[40px] md:text-[56px]">
         {t("siteTitle")}
       </h1>
-      <p className="text-muted-foreground text-[17px] sm:text-[21px] leading-[1.19] tracking-[-0.022em] text-center mb-8">
+      <p className="mb-8 text-center text-[17px] leading-[1.19] tracking-[-0.022em] text-muted-foreground sm:text-[21px]">
         {t("siteDescription")}
       </p>
 

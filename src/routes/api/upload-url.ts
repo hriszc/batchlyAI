@@ -40,10 +40,10 @@ export const Route = createFileRoute("/api/upload-url")({
 
         const proxyUrl = `${new URL(request.url).origin}/api/files/${key}`;
 
-        return new Response(
-          JSON.stringify({ publicUrl: proxyUrl, key }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
-        );
+        return new Response(JSON.stringify({ publicUrl: proxyUrl, key }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
       },
     },
   },

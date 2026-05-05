@@ -3,14 +3,18 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createAuth } from "@/lib/auth/auth";
 
 interface R2Binding {
-  get(key: string): Promise<{ body: ReadableStream; writeHttpMetadata(headers: Headers): void } | null>;
+  get(
+    key: string,
+  ): Promise<{ body: ReadableStream; writeHttpMetadata(headers: Headers): void } | null>;
 }
 
 export const Route = createFileRoute("/api/files/$")({
   server: {
     handlers: {
       GET: async ({ request, params }) => {
-        const env = (globalThis as Record<string, unknown>).__env__ as Record<string, unknown> | undefined;
+        const env = (globalThis as Record<string, unknown>).__env__ as
+          | Record<string, unknown>
+          | undefined;
         const r2 = env?.batchlyai_r2 as R2Binding | undefined;
         if (!r2) return new Response("R2 not available", { status: 501 });
 

@@ -1,10 +1,12 @@
-import { describe, it, expect, vi } from "vitest";
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { GeneratorCard } from "../GeneratorCard";
+import { describe, it, expect, vi } from "vitest";
+
 import { renderWithProviders } from "#test/test-utils";
-import type { GeneratorState } from "../types";
+
+import { GeneratorCard } from "../GeneratorCard";
 import { DEFAULT_MODEL } from "../models";
+import type { GeneratorState } from "../types";
 
 const mockActions = {
   setPromptTemplate: vi.fn(),
@@ -35,25 +37,17 @@ const baseState: GeneratorState = {
 
 describe("GeneratorCard", () => {
   it("renders textarea with placeholder", () => {
-    renderWithProviders(
-      <GeneratorCard state={baseState} actions={mockActions} />,
-    );
-    expect(
-      screen.getByPlaceholderText(/batch generation/),
-    ).toBeInTheDocument();
+    renderWithProviders(<GeneratorCard state={baseState} actions={mockActions} />);
+    expect(screen.getByPlaceholderText(/batch generation/)).toBeInTheDocument();
   });
 
   it("renders generate button", () => {
-    renderWithProviders(
-      <GeneratorCard state={baseState} actions={mockActions} />,
-    );
+    renderWithProviders(<GeneratorCard state={baseState} actions={mockActions} />);
     expect(screen.getByText("Generate")).toBeInTheDocument();
   });
 
   it("generate button is disabled when no prompt combinations", () => {
-    renderWithProviders(
-      <GeneratorCard state={baseState} actions={mockActions} />,
-    );
+    renderWithProviders(<GeneratorCard state={baseState} actions={mockActions} />);
     const btn = screen.getByText("Generate");
     expect(btn).toBeDisabled();
   });
@@ -64,9 +58,7 @@ describe("GeneratorCard", () => {
       promptTemplate: "{{cat, dog}}",
       variableGroups: [{ id: "var_0", values: ["cat", "dog"] }],
     };
-    renderWithProviders(
-      <GeneratorCard state={stateWithVars} actions={mockActions} />,
-    );
+    renderWithProviders(<GeneratorCard state={stateWithVars} actions={mockActions} />);
     const btn = screen.getByText("Generate");
     expect(btn).not.toBeDisabled();
   });
@@ -93,9 +85,7 @@ describe("GeneratorCard", () => {
       ...baseState,
       error: "Something went wrong",
     };
-    renderWithProviders(
-      <GeneratorCard state={errorState} actions={mockActions} />,
-    );
+    renderWithProviders(<GeneratorCard state={errorState} actions={mockActions} />);
     expect(screen.getByText("Something went wrong")).toBeInTheDocument();
   });
 
@@ -106,10 +96,7 @@ describe("GeneratorCard", () => {
       error: "Something went wrong",
     };
     renderWithProviders(
-      <GeneratorCard
-        state={errorState}
-        actions={{ ...mockActions, setError }}
-      />,
+      <GeneratorCard state={errorState} actions={{ ...mockActions, setError }} />,
     );
     // Click the × dismiss button inside the error banner
     const dismissBtn = screen.getByText("×");
@@ -122,9 +109,7 @@ describe("GeneratorCard", () => {
       ...baseState,
       isGenerating: true,
     };
-    renderWithProviders(
-      <GeneratorCard state={generatingState} actions={mockActions} />,
-    );
+    renderWithProviders(<GeneratorCard state={generatingState} actions={mockActions} />);
     expect(screen.getByText("Generating...")).toBeInTheDocument();
   });
 
@@ -136,9 +121,7 @@ describe("GeneratorCard", () => {
         { id: "f2", name: "sketch.jpg", uploading: true },
       ],
     };
-    renderWithProviders(
-      <GeneratorCard state={stateWithFiles} actions={mockActions} />,
-    );
+    renderWithProviders(<GeneratorCard state={stateWithFiles} actions={mockActions} />);
     expect(screen.getByText("reference.png")).toBeInTheDocument();
     expect(screen.getByText("sketch.jpg")).toBeInTheDocument();
   });
@@ -150,10 +133,7 @@ describe("GeneratorCard", () => {
       attachedFiles: [{ id: "f1", name: "ref.png", uploading: false }],
     };
     renderWithProviders(
-      <GeneratorCard
-        state={stateWithFile}
-        actions={{ ...mockActions, removeAttachment }}
-      />,
+      <GeneratorCard state={stateWithFile} actions={{ ...mockActions, removeAttachment }} />,
     );
     // Click the × button on the file chip
     const buttons = screen.getAllByText("×");
@@ -176,18 +156,14 @@ describe("GeneratorCard", () => {
   });
 
   it("renders aspect ratio buttons", () => {
-    renderWithProviders(
-      <GeneratorCard state={baseState} actions={mockActions} />,
-    );
+    renderWithProviders(<GeneratorCard state={baseState} actions={mockActions} />);
     expect(screen.getByText("16:9")).toBeInTheDocument();
     expect(screen.getByText("1:1")).toBeInTheDocument();
     expect(screen.getByText("9:16")).toBeInTheDocument();
   });
 
   it("renders quantity buttons", () => {
-    renderWithProviders(
-      <GeneratorCard state={baseState} actions={mockActions} />,
-    );
+    renderWithProviders(<GeneratorCard state={baseState} actions={mockActions} />);
     expect(screen.getByText(/qty/i)).toBeInTheDocument();
   });
 
@@ -197,9 +173,7 @@ describe("GeneratorCard", () => {
       promptTemplate: "{{cat, dog}}",
       variableGroups: [{ id: "var_0", values: ["cat", "dog"] }],
     };
-    renderWithProviders(
-      <GeneratorCard state={stateWithVars} actions={mockActions} />,
-    );
+    renderWithProviders(<GeneratorCard state={stateWithVars} actions={mockActions} />);
 
     // Click the settings button to toggle variable editor
     const settingsBtn = screen.getByTitle("Advanced settings");
@@ -213,26 +187,21 @@ describe("GeneratorCard", () => {
       ...baseState,
       creditsRemaining: 42,
     };
-    renderWithProviders(
-      <GeneratorCard state={stateWithCredits} actions={mockActions} />,
-    );
+    renderWithProviders(<GeneratorCard state={stateWithCredits} actions={mockActions} />);
     expect(screen.getByText(/42/)).toBeInTheDocument();
   });
 
   it("does not show credits remaining when null", () => {
-    renderWithProviders(
-      <GeneratorCard state={baseState} actions={mockActions} />,
-    );
+    renderWithProviders(<GeneratorCard state={baseState} actions={mockActions} />);
     // The word "credits" appears in the estimate line but not as a standalone value
     const creditsTexts = screen.getAllByText(/credits/i);
     expect(creditsTexts.length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders in Chinese", () => {
-    renderWithProviders(
-      <GeneratorCard state={baseState} actions={mockActions} />,
-      { language: "zh" },
-    );
+    renderWithProviders(<GeneratorCard state={baseState} actions={mockActions} />, {
+      language: "zh",
+    });
     expect(screen.getByText("开始生成")).toBeInTheDocument();
   });
 });

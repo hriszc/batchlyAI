@@ -157,7 +157,11 @@ export async function pollReplicatePrediction(predictionId: string): Promise<Pol
     return { status: "succeeded", urls: prediction.output || [], error: null };
   }
   if (prediction.status === "failed" || prediction.status === "canceled") {
-    return { status: prediction.status, urls: null, error: prediction.error || "Prediction failed" };
+    return {
+      status: prediction.status,
+      urls: null,
+      error: prediction.error || "Prediction failed",
+    };
   }
   return { status: prediction.status, urls: null, error: null };
 }

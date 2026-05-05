@@ -1,7 +1,8 @@
 import { useReducer, useCallback, useRef, useEffect } from "react";
+
+import { DEFAULT_MODEL, MODELS } from "./models";
 import type { GeneratorState, GeneratorAction, GroupId } from "./types";
 import { extractVariableGroups, computePromptCombinations } from "./utils";
-import { DEFAULT_MODEL, MODELS } from "./models";
 
 function generateResultId(): string {
   return `result_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -51,9 +52,7 @@ export function reducer(state: GeneratorState, action: GeneratorAction): Generat
       return {
         ...state,
         variableGroups: state.variableGroups.map((g) =>
-          g.id === action.payload.groupId
-            ? { ...g, values: [...g.values, ""] }
-            : g,
+          g.id === action.payload.groupId ? { ...g, values: [...g.values, ""] } : g,
         ),
       };
 

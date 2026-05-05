@@ -4,10 +4,10 @@ import { betterAuth } from "better-auth";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 
 import { env } from "@/env/server";
-import { getDb } from "@/lib/db";
-import { sendEmail } from "@/lib/email";
-import * as schema from "@/lib/db/schema";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
+import { getDb } from "@/lib/db";
+import * as schema from "@/lib/db/schema";
+import { sendEmail } from "@/lib/email";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _auth: any = null;

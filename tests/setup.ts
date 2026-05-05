@@ -14,10 +14,7 @@ vi.mock("drizzle-orm/d1", () => ({
 // Suppress React 19 act() warnings in test output
 const originalConsoleError = console.error;
 console.error = (...args: unknown[]) => {
-  if (
-    typeof args[0] === "string" &&
-    args[0].includes("ReactDOMTestUtils.act")
-  ) {
+  if (typeof args[0] === "string" && args[0].includes("ReactDOMTestUtils.act")) {
     return;
   }
   originalConsoleError(...args);

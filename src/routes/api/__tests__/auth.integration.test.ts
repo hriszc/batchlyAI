@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+
 import { getApiMethod } from "../auth/$";
 
 // We can't fully instantiate Better Auth in tests, but we can verify the routing table.

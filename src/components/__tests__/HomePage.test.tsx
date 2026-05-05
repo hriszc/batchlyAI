@@ -1,7 +1,9 @@
-import { describe, it, expect } from "vitest";
 import { screen } from "@testing-library/react";
-import { HomePage } from "../HomePage";
+import { describe, it, expect } from "vitest";
+
 import { renderWithProviders } from "#test/test-utils";
+
+import { HomePage } from "../HomePage";
 
 describe("HomePage", () => {
   it("renders site title", () => {
@@ -11,25 +13,17 @@ describe("HomePage", () => {
 
   it("renders site description", () => {
     renderWithProviders(<HomePage />);
-    expect(
-      screen.getByText(/Universal AI Generator/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Universal AI Generator/)).toBeInTheDocument();
   });
 
   it("renders GeneratorCard", () => {
     renderWithProviders(<HomePage />);
-    expect(
-      screen.getByPlaceholderText(
-        /Use {{vars}} for batch generation/,
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Use {{vars}} for batch generation/)).toBeInTheDocument();
   });
 
   it("renders title in Chinese when forceLanguage is zh", () => {
     renderWithProviders(<HomePage forceLanguage="zh" />, { language: "zh" });
-    expect(
-      screen.getByText(/万能 AI 生成器/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/万能 AI 生成器/)).toBeInTheDocument();
   });
 
   it("renders with no results initially", () => {

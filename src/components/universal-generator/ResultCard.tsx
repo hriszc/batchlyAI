@@ -1,4 +1,5 @@
 import { ImageIcon, AlertCircleIcon } from "lucide-react";
+
 import type { GeneratedResult } from "./types";
 
 interface ResultCardProps {
@@ -9,13 +10,13 @@ export function ResultCard({ result }: ResultCardProps) {
   const { combination } = result;
 
   return (
-    <div className="bg-card rounded-[8px] overflow-hidden border shadow-sm">
-      <div className="aspect-square bg-muted flex items-center justify-center">
+    <div className="overflow-hidden rounded-[8px] border bg-card shadow-sm">
+      <div className="flex aspect-square items-center justify-center bg-muted">
         {result.imageUrl ? (
           <img
             src={result.imageUrl}
             alt={combination.prompt}
-            className="w-full h-full object-cover"
+            className="h-full w-full object-cover"
           />
         ) : result.status === "error" ? (
           <div className="flex flex-col items-center gap-1 text-muted-foreground/40">
@@ -26,10 +27,10 @@ export function ResultCard({ result }: ResultCardProps) {
           <ImageIcon className="size-8 text-muted-foreground/30" />
         )}
       </div>
-      <p className="text-foreground/80 text-sm leading-[1.29] px-4 pt-4 line-clamp-2">
+      <p className="line-clamp-2 px-4 pt-4 text-sm leading-[1.29] text-foreground/80">
         {combination.prompt}
       </p>
-      <div className="text-muted-foreground text-xs leading-[1.33] px-4 pt-2 pb-4 flex flex-wrap gap-x-3 gap-y-0.5">
+      <div className="flex flex-wrap gap-x-3 gap-y-0.5 px-4 pt-2 pb-4 text-xs leading-[1.33] text-muted-foreground">
         {Object.entries(combination.variables).map(([key, val]) => (
           <span key={key}>
             {key}: {val}
