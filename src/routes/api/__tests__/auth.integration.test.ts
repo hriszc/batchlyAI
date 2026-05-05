@@ -25,56 +25,56 @@ describe("getApiMethod — auth routing table", () => {
 
   it("maps sign-up/email to signUpEmail", () => {
     const auth = mockAuth();
-    const method = getApiMethod(auth, "sign-up/email");
-    expect(method).toBe(auth.api.signUpEmail);
+    const result = getApiMethod(auth, "sign-up/email");
+    expect(result?.method).toBe(auth.api.signUpEmail);
   });
 
   it("maps sign-in/email to signInEmail", () => {
     const auth = mockAuth();
-    const method = getApiMethod(auth, "sign-in/email");
-    expect(method).toBe(auth.api.signInEmail);
+    const result = getApiMethod(auth, "sign-in/email");
+    expect(result?.method).toBe(auth.api.signInEmail);
   });
 
   it("maps sign-out to signOut", () => {
     const auth = mockAuth();
-    const method = getApiMethod(auth, "sign-out");
-    expect(method).toBe(auth.api.signOut);
+    const result = getApiMethod(auth, "sign-out");
+    expect(result?.method).toBe(auth.api.signOut);
   });
 
   it("maps get-session to getSession", () => {
     const auth = mockAuth();
-    const method = getApiMethod(auth, "get-session");
-    expect(method).toBe(auth.api.getSession);
+    const result = getApiMethod(auth, "get-session");
+    expect(result?.method).toBe(auth.api.getSession);
   });
 
   it("maps forget-password to forgetPassword", () => {
     const auth = mockAuth();
-    const method = getApiMethod(auth, "forget-password");
-    expect(method).toBe(auth.api.forgetPassword);
+    const result = getApiMethod(auth, "forget-password");
+    expect(result?.method).toBe(auth.api.forgetPassword);
   });
 
   it("maps reset-password to resetPassword", () => {
     const auth = mockAuth();
-    const method = getApiMethod(auth, "reset-password");
-    expect(method).toBe(auth.api.resetPassword);
+    const result = getApiMethod(auth, "reset-password");
+    expect(result?.method).toBe(auth.api.resetPassword);
   });
 
   it("maps verify-email to verifyEmail", () => {
     const auth = mockAuth();
-    const method = getApiMethod(auth, "verify-email");
-    expect(method).toBe(auth.api.verifyEmail);
+    const result = getApiMethod(auth, "verify-email");
+    expect(result?.method).toBe(auth.api.verifyEmail);
   });
 
   it("maps send-verification-email to sendVerificationEmail", () => {
     const auth = mockAuth();
-    const method = getApiMethod(auth, "send-verification-email");
-    expect(method).toBe(auth.api.sendVerificationEmail);
+    const result = getApiMethod(auth, "send-verification-email");
+    expect(result?.method).toBe(auth.api.sendVerificationEmail);
   });
 
   it("returns undefined for unknown path", () => {
     const auth = mockAuth();
-    const method = getApiMethod(auth, "unknown/path");
-    expect(method).toBeUndefined();
+    const result = getApiMethod(auth, "unknown/path");
+    expect(result).toBeUndefined();
   });
 
   it("all mapped paths are covered", () => {
