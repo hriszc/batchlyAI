@@ -27,8 +27,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem("language") as Language | null;
-    void setLanguageState(stored === "en" || stored === "zh" ? stored : detectBrowserLanguage());
-    void setMounted(true);
+    setLanguageState(stored === "en" || stored === "zh" ? stored : detectBrowserLanguage());
+    setMounted(true);
   }, []);
 
   const setLanguage = useCallback((lang: Language) => {
