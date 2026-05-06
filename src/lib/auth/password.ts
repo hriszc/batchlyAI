@@ -1,4 +1,4 @@
-const PBKDF2_ITERATIONS = 600_000;
+const PBKDF2_ITERATIONS = 100_000; // Cloudflare Workers WebCrypto max is 100K. NIST recommends >= 10K for SHA-256.
 const PBKDF2_HASH = "SHA-256";
 const SALT_BYTES = 16;
 const KEY_BYTES = 64;
