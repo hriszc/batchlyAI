@@ -37,3 +37,6 @@ strategy = "canary"
 
 [vars]
 VITE_BASE_URL = "https://batchlyai.com"
+
+[deployments]
+strategy = "canary"
