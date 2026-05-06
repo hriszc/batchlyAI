@@ -14,6 +14,7 @@ function getD1Binding(): D1Database | undefined {
   return platformEnv?.batchlyai_db as D1Database | undefined;
 }
 
+// @ts-expect-error route tree auto-generated at build time
 export const Route = createFileRoute("/api/works/comment")({
   server: {
     handlers: {

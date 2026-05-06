@@ -24,6 +24,7 @@ const meta = createPageMeta({
   noIndex: true,
 });
 
+// @ts-expect-error route tree auto-generated at build time
 export const Route = createFileRoute("/my/works")({
   head: () => ({
     htmlAttrs: { lang: "en" },

@@ -17,6 +17,7 @@ function getD1Binding(): D1Database | undefined {
   return platformEnv?.batchlyai_db as D1Database | undefined;
 }
 
+// @ts-expect-error route tree auto-generated at build time
 export const Route = createFileRoute("/works/$workId")({
   loader: async ({ params }) => {
     const binding = getD1Binding();
@@ -75,7 +76,7 @@ function WorkDetailPage() {
     return (
       <main className="mx-auto max-w-[980px] px-4 py-16 text-center">
         <p className="text-muted-foreground">Work not found</p>
-        <Link to="/discover" className="mt-2 inline-block text-[#0071e3]">Discover more</Link>
+        <a href="/discover" className="mt-2 inline-block text-[#0071e3]">Discover more</Link>
       </main>
     );
   }
@@ -100,7 +101,7 @@ function WorkDetailPage() {
 
   return (
     <main className="mx-auto max-w-[980px] px-4 py-8">
-      <Link to="/discover" className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+      <a href="/discover" className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeftIcon className="size-4" /> {t("discover")}
       </Link>
 
