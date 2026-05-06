@@ -15,7 +15,7 @@ const DEEPSEEK_DIRECT = "https://api.deepseek.com/v1/chat/completions";
 const REPLICATE_DIRECT = "https://api.replicate.com/v1/predictions";
 const DRAW_API_DIRECT = "https://grsaiapi.com/v1/draw/completions";
 
-const DEEPSEEK_HOST = `${AI_GATEWAY}/deepseek/v1/chat/completions`;
+const DEEPSEEK_HOST = `${AI_GATEWAY}/DeepSeek/v1/chat/completions`;
 const REPLICATE_API_BASE = `${AI_GATEWAY}/replicate`;
 const DRAW_API_HOST = `${AI_GATEWAY}/grsai/v1/draw/completions`;
 
