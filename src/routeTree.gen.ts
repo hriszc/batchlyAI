@@ -195,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof GuestForgotPasswordRoute
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
+  '/forgot-password': typeof GuestForgotPasswordRoute
   '/api/expand-vars': typeof ApiExpandVarsRoute
   '/api/generate': typeof ApiGenerateRoute
   '/api/generate-status': typeof ApiGenerateStatusRoute
@@ -226,6 +227,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof GuestForgotPasswordRoute
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
+  '/forgot-password': typeof GuestForgotPasswordRoute
   '/api/expand-vars': typeof ApiExpandVarsRoute
   '/api/generate': typeof ApiGenerateRoute
   '/api/generate-status': typeof ApiGenerateStatusRoute
@@ -259,6 +261,7 @@ export interface FileRoutesById {
   '/_guest/forgot-password': typeof GuestForgotPasswordRoute
   '/_guest/login': typeof GuestLoginRoute
   '/_guest/signup': typeof GuestSignupRoute
+  '/_guest/forgot-password': typeof GuestForgotPasswordRoute
   '/api/expand-vars': typeof ApiExpandVarsRoute
   '/api/generate': typeof ApiGenerateRoute
   '/api/generate-status': typeof ApiGenerateStatusRoute
@@ -292,6 +295,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/signup'
+    | '/forgot-password'
     | '/api/expand-vars'
     | '/api/generate'
     | '/api/generate-status'
@@ -323,6 +327,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/signup'
+    | '/forgot-password'
     | '/api/expand-vars'
     | '/api/generate'
     | '/api/generate-status'
@@ -355,6 +360,7 @@ export interface FileRouteTypes {
     | '/_guest/forgot-password'
     | '/_guest/login'
     | '/_guest/signup'
+    | '/_guest/forgot-password'
     | '/api/expand-vars'
     | '/api/generate'
     | '/api/generate-status'
@@ -630,12 +636,14 @@ interface GuestRouteRouteChildren {
   GuestForgotPasswordRoute: typeof GuestForgotPasswordRoute
   GuestLoginRoute: typeof GuestLoginRoute
   GuestSignupRoute: typeof GuestSignupRoute
+  GuestForgotPasswordRoute: typeof GuestForgotPasswordRoute
 }
 
 const GuestRouteRouteChildren: GuestRouteRouteChildren = {
   GuestForgotPasswordRoute: GuestForgotPasswordRoute,
   GuestLoginRoute: GuestLoginRoute,
   GuestSignupRoute: GuestSignupRoute,
+  GuestForgotPasswordRoute: GuestForgotPasswordRoute,
 }
 
 const GuestRouteRouteWithChildren = GuestRouteRoute._addFileChildren(
