@@ -220,7 +220,9 @@ export async function pollReplicatePrediction(predictionId: string): Promise<Pol
   const prediction = (await resp.json()) as ReplicatePrediction;
 
   if (prediction.status === "succeeded") {
-    return { status: "succeeded", urls: prediction.output || [], error: null };
+    const raw = prediction.output;
+    const urls = Array.isArray(raw) ? raw : raw ? [raw] : [];
+    return { status: "succeeded", urls, error: null };
   }
   if (prediction.status === "failed" || prediction.status === "canceled") {
     return {
