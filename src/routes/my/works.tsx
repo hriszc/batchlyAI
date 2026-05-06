@@ -58,7 +58,7 @@ function WorksPage() {
         <p className="text-muted-foreground">Please log in to view your works.</p>
         <Link to="/login" className="mt-2 inline-block text-[#0071e3]">
           Login
-        </Link>
+        </a>
       </main>
     );
   }
@@ -70,7 +70,7 @@ function WorksPage() {
         className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeftIcon className="size-4" /> Back to Generator
-      </Link>
+      </a>
       <h1 className="mb-6 text-2xl font-semibold text-foreground">{t("myWorks")}</h1>
 
       {loading ? (
@@ -107,7 +107,7 @@ function WorksPage() {
                   {w.likeCount} likes
                 </span>
               </div>
-            </Link>
+            </a>
           ))}
         </div>
       )}

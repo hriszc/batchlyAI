@@ -77,7 +77,7 @@ function PromptsPage() {
   const handleLoad = (prompt: PromptRecord) => {
     const params = new URLSearchParams();
     if (prompt.model) params.set("model", prompt.model);
-    navigate({ to: `/?${params.toString()}`, state: { loadPrompt: prompt } });
+    navigate({ to: `/?${params.toString()}` } as any);
   };
 
   return (

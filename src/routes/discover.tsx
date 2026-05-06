@@ -77,7 +77,7 @@ function DiscoverPage() {
                   <span>{w.likeCount} likes</span>
                 </div>
               </div>
-            </Link>
+            </a>
           ))}
         </div>
       )}
