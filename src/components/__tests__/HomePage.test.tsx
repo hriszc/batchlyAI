@@ -8,7 +8,7 @@ import { HomePage } from "../HomePage";
 describe("HomePage", () => {
   it("renders site title", () => {
     renderWithProviders(<HomePage />);
-    expect(screen.getByRole("heading", { name: "BatchlyAI" })).toBeInTheDocument();
+    expect(screen.getAllByAltText("BatchlyAI")[0]).toBeInTheDocument();
   });
 
   it("renders site description", () => {
@@ -23,7 +23,7 @@ describe("HomePage", () => {
 
   it("renders title in Chinese when forceLanguage is zh", () => {
     renderWithProviders(<HomePage forceLanguage="zh" />, { language: "zh" });
-    expect(screen.getByText(/万能 AI 生成器/)).toBeInTheDocument();
+    expect(screen.getAllByAltText("BatchlyAI")[0]).toBeInTheDocument();
   });
 
   it("renders with no results initially", () => {

@@ -31,7 +31,7 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
   }
 
   const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-  const limit = checkRateLimit(`generate-status:ip:${ip}`, 60, 60);
+  const limit = checkRateLimit(`generate-status:ip:${ip}`, 30, 10);
   if (!limit.allowed) {
     return jsonResponse({ error: "Too many status checks. Please slow down." }, 429);
   }
