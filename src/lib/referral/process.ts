@@ -58,7 +58,9 @@ export async function processReferralAfterSignup(
     .where(eq(userTable.id, referrerId));
   if (!referrer) return;
 
-  const isSelfReferral = referrer.email.toLowerCase() === userEmail.toLowerCase();
+  const normalizedReferrer = referrer.email.toLowerCase().replace(/\+.*@/, "@");
+  const normalizedReferee = userEmail.toLowerCase().replace(/\+.*@/, "@");
+  const isSelfReferral = normalizedReferrer === normalizedReferee;
 
   // Check if referee already referred (UNIQUE constraint)
   const [existing] = await db

@@ -45,6 +45,35 @@ export const Route = createFileRoute("/blog/$slug")({
   component: BlogPostPage,
 });
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function InlineMarkdown({ text }: { text: string }) {
+  const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*)/g);
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (part.startsWith("`") && part.endsWith("`")) {
+          return (
+            <code key={i} className="rounded bg-muted px-1 py-0.5 font-mono text-sm">
+              {escapeHtml(part.slice(1, -1))}
+            </code>
+          );
+        }
+        if (part.startsWith("**") && part.endsWith("**")) {
+          return <strong key={i}>{escapeHtml(part.slice(2, -2))}</strong>;
+        }
+        return <span key={i}>{escapeHtml(part)}</span>;
+      })}
+    </>
+  );
+}
+
 function BlogPostPage() {
   const post = Route.useLoaderData();
 
@@ -114,20 +143,10 @@ function BlogPostPage() {
                 </pre>
               );
             }
-            // Handle inline code in paragraphs
-            const html = block
-              .replace(
-                /`([^`]+)`/g,
-                '<code class="rounded bg-muted px-1 py-0.5 text-sm font-mono">$1</code>',
-              )
-              .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-
             return (
-              <p
-                key={i}
-                className="mb-4 leading-relaxed text-foreground/85"
-                dangerouslySetInnerHTML={{ __html: html }}
-              />
+              <p key={i} className="mb-4 leading-relaxed text-foreground/85">
+                <InlineMarkdown text={block} />
+              </p>
             );
           })}
         </div>

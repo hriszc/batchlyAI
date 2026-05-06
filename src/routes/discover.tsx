@@ -24,7 +24,6 @@ const meta = createPageMeta({
   locale: "en",
 });
 
-// @ts-expect-error route tree auto-generated at build time
 export const Route = createFileRoute("/discover")({
   head: () => ({
     htmlAttrs: { lang: "en" },

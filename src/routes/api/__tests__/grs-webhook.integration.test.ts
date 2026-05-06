@@ -6,10 +6,32 @@ vi.mock("@/env/server", () => ({
 
 import { handleGrsWebhook } from "@/routes/api/grs-webhook";
 
-function makeRequest(overrides?: { body?: Record<string, unknown>; url?: string }): Request {
+async function signBody(body: string, secret: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
+  return Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function makeRequest(overrides?: { body?: Record<string, unknown> }): Promise<Request> {
+  const rawBody = JSON.stringify(overrides?.body ?? {});
+  const sig = await signBody(rawBody, "test-secret");
   return {
     json: () => Promise.resolve(overrides?.body ?? {}),
-    url: overrides?.url ?? "https://batchlyai.com/api/grs-webhook?secret=test-secret",
+    text: () => Promise.resolve(rawBody),
+    clone: () => ({
+      text: () => Promise.resolve(rawBody),
+    }),
+    url: "https://batchlyai.com/api/grs-webhook",
+    headers: new Headers({ "x-grs-signature": sig }),
   } as unknown as Request;
 }
 
@@ -29,15 +51,19 @@ describe("handleGrsWebhook", () => {
     delete (globalThis as Record<string, unknown>).__env__;
   });
 
-  it("returns 401 when secret is missing or wrong", async () => {
-    const resp = await handleGrsWebhook(
-      makeRequest({ url: "https://batchlyai.com/api/grs-webhook?secret=wrong" }),
-    );
+  it("returns 401 when signature is wrong", async () => {
+    const rawBody = JSON.stringify({ id: "test", status: "succeeded" });
+    const resp = await handleGrsWebhook({
+      text: () => Promise.resolve(rawBody),
+      clone: () => ({ text: () => Promise.resolve(rawBody) }),
+      url: "https://batchlyai.com/api/grs-webhook",
+      headers: new Headers({ "x-grs-signature": "bad" }),
+    } as unknown as Request);
     expect(resp.status).toBe(401);
   });
 
   it("returns 400 when id is missing from body", async () => {
-    const resp = await handleGrsWebhook(makeRequest({ body: {} }));
+    const resp = await handleGrsWebhook(await makeRequest({ body: {} }));
     expect(resp.status).toBe(400);
     const body = (await resp.json()) as { error: string };
     expect(body.error).toBe("Missing task id");
@@ -46,7 +72,7 @@ describe("handleGrsWebhook", () => {
   it("returns 404 when KV entry does not exist", async () => {
     mockKv.get.mockResolvedValue(null);
     const resp = await handleGrsWebhook(
-      makeRequest({ body: { id: "grs-nonexistent", status: "succeeded" } }),
+      await makeRequest({ body: { id: "grs-nonexistent", status: "succeeded" } }),
     );
     expect(resp.status).toBe(404);
   });
@@ -62,7 +88,7 @@ describe("handleGrsWebhook", () => {
     );
 
     const resp = await handleGrsWebhook(
-      makeRequest({
+      await makeRequest({
         body: {
           id: "grs-task-001",
           status: "succeeded",
@@ -77,7 +103,6 @@ describe("handleGrsWebhook", () => {
     const body = (await resp.json()) as { received: boolean };
     expect(body.received).toBe(true);
 
-    // Verify KV was updated with URLs
     expect(mockKv.put).toHaveBeenCalled();
     const putValue = JSON.parse(mockKv.put.mock.calls[0][1] as string);
     expect(putValue.status).toBe("succeeded");
@@ -98,7 +123,7 @@ describe("handleGrsWebhook", () => {
     );
 
     const resp = await handleGrsWebhook(
-      makeRequest({
+      await makeRequest({
         body: {
           id: "grs-task-002",
           status: "failed",
@@ -124,7 +149,7 @@ describe("handleGrsWebhook", () => {
     mockKv.get.mockResolvedValue(JSON.stringify(originalTask));
 
     await handleGrsWebhook(
-      makeRequest({
+      await makeRequest({
         body: {
           id: "grs-task-003",
           status: "succeeded",
@@ -146,7 +171,7 @@ describe("handleGrsWebhook", () => {
     );
 
     await handleGrsWebhook(
-      makeRequest({
+      await makeRequest({
         body: {
           id: "grs-task-kv-key",
           status: "succeeded",
@@ -155,7 +180,6 @@ describe("handleGrsWebhook", () => {
       }),
     );
 
-    // Verify KV was written with the correct grs: prefix key
     expect(mockKv.put).toHaveBeenCalledWith("grs:grs-task-kv-key", expect.any(String), {
       expirationTtl: 3600,
     });

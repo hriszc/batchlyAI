@@ -90,7 +90,7 @@ export async function handleWebhook(request: Request): Promise<Response> {
           .where(eq(userTable.id, userId));
       }
 
-      console.log(`[stripe] Credited ${creditsGranted} credits to user ${userId}`);
+      console.log(`[stripe] Credited ${creditsGranted} credits`);
 
       // Referral purchase commission (first purchase only)
       try {
@@ -115,9 +115,7 @@ export async function handleWebhook(request: Request): Promise<Response> {
               .set({ purchaseCommissionAwarded: commission })
               .where(eq(referral.id, refRecord.id));
 
-            console.log(
-              `[stripe] Referral commission: ${commission} credits to user ${refRecord.referrerId}`,
-            );
+            console.log(`[stripe] Referral commission: ${commission} credits awarded`);
           }
         }
       } catch (refErr) {

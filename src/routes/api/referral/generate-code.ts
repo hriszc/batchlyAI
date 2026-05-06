@@ -15,9 +15,10 @@ function getD1Binding(): D1Database | undefined {
 
 function generateCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  const random = crypto.getRandomValues(new Uint8Array(8));
   let code = "";
   for (let i = 0; i < 8; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
+    code += chars[random[i] % chars.length];
   }
   return code;
 }
@@ -60,7 +61,7 @@ export const Route = createFileRoute("/api/referral/generate-code")({
             .from(userTable)
             .where(eq(userTable.id, userId));
 
-          if (!userRecord || userRecord.credits >= 10) {
+          if (!userRecord || userRecord.credits === 10) {
             return jsonResponse(
               {
                 error: "You must generate at least one image before creating a referral link",
@@ -84,7 +85,7 @@ export const Route = createFileRoute("/api/referral/generate-code")({
 
           const now = Math.floor(Date.now() / 1000);
           await db.insert(referralCode).values({
-            id: `refcode_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            id: `refcode_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
             userId,
             code,
             createdAt: now,
