@@ -1,10 +1,4 @@
-import {
-  WandSparklesIcon,
-  PaperclipIcon,
-  Loader2Icon,
-  Undo2Icon,
-  SaveIcon,
-} from "lucide-react";
+import { WandSparklesIcon, PaperclipIcon, Loader2Icon, Undo2Icon, SaveIcon } from "lucide-react";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 
