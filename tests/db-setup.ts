@@ -94,6 +94,18 @@ export function applyMigrations(db: ReturnType<typeof createTestDb>) {
   db.run(`CREATE INDEX "referral_referrer_id_idx" ON "referral" ("referrer_id")`);
   db.run(`CREATE INDEX "referral_referee_id_idx" ON "referral" ("referee_id")`);
 
+  // Share table
+  db.run(`CREATE TABLE "shared_batch" (
+    "id" text PRIMARY KEY NOT NULL,
+    "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+    "prompt_template" text NOT NULL,
+    "variable_groups" text NOT NULL,
+    "result_image_urls" text NOT NULL,
+    "model" text NOT NULL,
+    "aspect_ratio" text NOT NULL,
+    "created_at" integer NOT NULL
+  )`);
+
   // Payment tables
   db.run(`CREATE TABLE "credit_purchase" (
     "id" text PRIMARY KEY NOT NULL,
