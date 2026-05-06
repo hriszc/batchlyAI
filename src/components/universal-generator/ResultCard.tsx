@@ -21,8 +21,7 @@ export function ResultCard({ result, showWatermark = false }: ResultCardProps) {
   const { combination } = result;
   const { t } = useLanguage();
 
-  const hasDownloadable =
-    (result.imageUrl || result.textContent) && result.status === "complete";
+  const hasDownloadable = (result.imageUrl || result.textContent) && result.status === "complete";
 
   return (
     <div className="group relative overflow-hidden rounded-[8px] border bg-card shadow-sm">
