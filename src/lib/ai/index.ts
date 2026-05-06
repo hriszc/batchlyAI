@@ -17,7 +17,7 @@ const DRAW_API_DIRECT = "https://grsaiapi.com/v1/draw/completions";
 
 const DEEPSEEK_HOST = `${AI_GATEWAY}/deepseek/v1/chat/completions`;
 const REPLICATE_API_BASE = `${AI_GATEWAY}/replicate`;
-const DRAW_API_HOST = `${AI_GATEWAY}/grsai/v1/draw/completions`;
+const DRAW_API_HOST = `${AI_GATEWAY}/custom-grsai/v1/draw/completions`;
 
 /**
  * Try gateway first; fall back to direct API on any failure.
@@ -33,7 +33,13 @@ async function fetchWithFallback(
   try {
     const resp = await fetch(gatewayUrl, init);
     if (resp.ok) return resp;
-    console.warn(`[ai] Gateway ${provider} returned ${resp.status}, falling back to direct.`);
+    const errBody = await resp.text();
+    console.warn(
+      `[ai] Gateway ${provider} returned ${resp.status}, falling back to direct. Body: ${errBody.slice(0, 500)}`,
+    );
+    // Clone init with fresh body since we consumed the response
+    const fallbackInit = { ...init, body: init.body };
+    return fetch(directUrl, fallbackInit);
   } catch (err) {
     console.warn(`[ai] Gateway ${provider} unreachable (${err}), falling back to direct.`);
   }
@@ -74,6 +80,11 @@ export async function createGrsaiPredictions({
       ).then(async (resp) => {
         if (!resp.ok) {
           const errText = await resp.text();
+          if (resp.status === 401 && env.GRSAI_API_KEY === "dev-key") {
+            throw new Error(
+              `grsai API error 401: Using dev API key. Set real key via: wrangler secret put GRSAI_API_KEY. Details: ${errText}`,
+            );
+          }
           throw new Error(`grsai API error ${resp.status}: ${errText}`);
         }
         const data = (await resp.json()) as {
@@ -112,6 +123,26 @@ const REPLICATE_MODEL_VERSIONS: Record<string, string> = {
   "z-video-pro": "alibaba/happyhorse-1.0",
 };
 
+async function fetchWithRetry(
+  url: string,
+  directUrl: string,
+  init: RequestInit,
+  provider: string,
+  maxRetries = 4,
+): Promise<Response> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const resp = await fetchWithFallback(url, directUrl, init, provider);
+    if (resp.status !== 429 || attempt === maxRetries) return resp;
+    const delay = Math.min(1000 * 2 ** attempt, 16000);
+    console.warn(
+      `[ai] ${provider} 429 throttled, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`,
+    );
+    await new Promise((r) => setTimeout(r, delay));
+  }
+  // unreachable but TS needs it
+  return fetchWithFallback(url, directUrl, init, provider);
+}
+
 export async function createReplicatePredictions({
   prompt,
   aspectRatio = "1:1",
@@ -138,29 +169,28 @@ export async function createReplicatePredictions({
     }
   }
 
-  const predictions = await Promise.all(
-    Array.from({ length: n }, () =>
-      fetchWithFallback(
-        `${REPLICATE_API_BASE}/v1/predictions`,
-        `${REPLICATE_DIRECT}`,
-        {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            version,
-            input: { prompt, width, height, num_outputs: 1 },
-          }),
-        },
-        "replicate",
-      ).then(async (resp) => {
-        if (!resp.ok) {
-          const errText = await resp.text();
-          throw new Error(`Replicate API error ${resp.status}: ${errText}`);
-        }
-        return (await resp.json()) as ReplicateCreateResult;
-      }),
-    ),
-  );
+  // Run predictions sequentially to stay within Replicate's burst limit (5 req/s for low-balance accounts)
+  const predictions: ReplicateCreateResult[] = [];
+  for (let i = 0; i < n; i++) {
+    const resp = await fetchWithRetry(
+      `${REPLICATE_API_BASE}/v1/predictions`,
+      `${REPLICATE_DIRECT}`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          version,
+          input: { prompt, width, height, num_outputs: 1 },
+        }),
+      },
+      "replicate",
+    );
+    if (!resp.ok) {
+      const errText = await resp.text();
+      throw new Error(`Replicate API error ${resp.status}: ${errText}`);
+    }
+    predictions.push((await resp.json()) as ReplicateCreateResult);
+  }
 
   return predictions;
 }
@@ -206,10 +236,14 @@ async function chatDeepseek(
   messages: Array<{ role: string; content: string }>,
   opts?: { maxTokens?: number; temperature?: number; model?: string },
 ): Promise<string> {
-  const key = env.DEEPSEEK_API_KEY; // optional: Gateway handles auth in managed mode
+  const key = env.DEEPSEEK_API_KEY;
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (key) headers.Authorization = `Bearer ${key}`;
 
+  // Try Gateway first, then direct API. If Gateway returns 401, it means
+  // the provider isn't configured or the API key is wrong. Check:
+  //   https://dash.cloudflare.com/b06ef09426453ac00c27f343d05a0a23/ai/ai-gateway/gateways
+  // The provider name in the Gateway must match the URL path (case-sensitive).
   const resp = await fetchWithFallback(
     DEEPSEEK_HOST,
     DEEPSEEK_DIRECT,
@@ -217,7 +251,7 @@ async function chatDeepseek(
       method: "POST",
       headers,
       body: JSON.stringify({
-        model: opts?.model ?? "deepseek-chat",
+        model: opts?.model ?? "deepseek-v4-flash",
         max_tokens: opts?.maxTokens ?? 256,
         temperature: opts?.temperature ?? 0.7,
         messages,
@@ -228,6 +262,12 @@ async function chatDeepseek(
 
   if (!resp.ok) {
     const errText = await resp.text();
+    if (resp.status === 401 && !key) {
+      throw new Error(
+        `DeepSeek API error 401: Gateway auth failed and no DEEPSEEK_API_KEY fallback. ` +
+          `Set via: wrangler secret put DEEPSEEK_API_KEY. Details: ${errText}`,
+      );
+    }
     throw new Error(`DeepSeek API error ${resp.status}: ${errText}`);
   }
 
@@ -256,7 +296,7 @@ export async function runExpandLLM(description: string): Promise<string[]> {
       { role: "system", content: EXPAND_SYSTEM_PROMPT },
       { role: "user", content: description },
     ],
-    { maxTokens: 100, temperature: 0.7, model: "deepseek-chat" },
+    { maxTokens: 100, temperature: 0.7, model: "deepseek-v4-flash" },
   );
 
   return text
@@ -272,7 +312,7 @@ export interface TextGenerationParams {
 
 export async function generateText({ prompt, model }: TextGenerationParams): Promise<string> {
   return chatDeepseek([{ role: "user", content: prompt }], {
-    model: model ?? "deepseek-chat",
+    model: model ?? "deepseek-v4-flash",
     maxTokens: 2048,
     temperature: 0.8,
   });
