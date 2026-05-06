@@ -11,32 +11,32 @@ import { createPageMeta } from "@/lib/seo/meta";
 import { creativeWorkLd } from "@/lib/seo/structured-data";
 
 const loadWork = createServerFn({ method: "GET" }).handler(async ({ data: workId }) => {
-    const { eq } = await import("drizzle-orm");
-    const { getDb } = await import("@/lib/db");
-    const { work } = await import("@/lib/db/schema/data-flywheel.schema");
-    const { user } = await import("@/lib/db/schema/auth.schema");
+  const { eq } = await import("drizzle-orm");
+  const { getDb } = await import("@/lib/db");
+  const { work } = await import("@/lib/db/schema/data-flywheel.schema");
+  const { user } = await import("@/lib/db/schema/auth.schema");
 
-    const platformEnv = (globalThis as Record<string, unknown>).__env__ as
-      | Record<string, unknown>
-      | undefined;
-    const binding = platformEnv?.batchlyai_db as D1Database | undefined;
-    if (!binding) return null;
-    const db = getDb(binding);
+  const platformEnv = (globalThis as Record<string, unknown>).__env__ as
+    | Record<string, unknown>
+    | undefined;
+  const binding = platformEnv?.batchlyai_db as D1Database | undefined;
+  if (!binding) return null;
+  const db = getDb(binding);
 
-    const [row] = await db
-      .select({ w: work, author: { name: user.name } })
-      .from(work)
-      .leftJoin(user, eq(work.userId, user.id))
-      .where(eq(work.id, workId));
-    if (!row) return null;
+  const [row] = await db
+    .select({ w: work, author: { name: user.name } })
+    .from(work)
+    .leftJoin(user, eq(work.userId, user.id))
+    .where(eq(work.id, workId));
+  if (!row) return null;
 
-    return {
-      ...row.w,
-      authorName: row.author?.name || "Unknown",
-      variableGroups: JSON.parse(row.w.variableGroups),
-      resultUrls: JSON.parse(row.w.resultUrls),
-    };
-  });
+  return {
+    ...row.w,
+    authorName: row.author?.name || "Unknown",
+    variableGroups: JSON.parse(row.w.variableGroups),
+    resultUrls: JSON.parse(row.w.resultUrls),
+  };
+});
 
 export const Route = createFileRoute("/works/$workId")({
   loader: async ({ params }) => loadWork({ data: params.workId }),
