@@ -5,6 +5,7 @@ import { createGrsaiPredictions, createReplicatePredictions, generateText } from
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getCachedResult, setCachedResult } from "@/lib/cache/prompt-cache";
+import { getD1Binding, getKvBinding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
 import { user as userTable } from "@/lib/db/schema/auth.schema";
 import { generation } from "@/lib/db/schema/data-flywheel.schema";
@@ -18,20 +19,6 @@ export const CREDIT_COST: Record<string, number> = {
   "z-video-fast": 40,
   "z-video-pro": 80,
 };
-
-function getD1Binding(): D1Database | undefined {
-  const platformEnv = (globalThis as Record<string, unknown>).__env__ as
-    | Record<string, unknown>
-    | undefined;
-  return platformEnv?.batchlyai_db as D1Database | undefined;
-}
-
-function getKvBinding(): KVNamespace | undefined {
-  const platformEnv = (globalThis as Record<string, unknown>).__env__ as
-    | Record<string, unknown>
-    | undefined;
-  return platformEnv?.batchlyai_kv as KVNamespace | undefined;
-}
 
 export interface GenerateContext {
   request: Request;

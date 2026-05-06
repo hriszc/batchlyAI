@@ -2,16 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { and, eq, sql } from "drizzle-orm";
 
 import { env } from "@/env/server";
+import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
 import { user as userTable, creditPurchase, referral } from "@/lib/db/schema";
 import { getStripe } from "@/lib/stripe";
-
-function getD1Binding(): D1Database | undefined {
-  const platformEnv = (globalThis as Record<string, unknown>).__env__ as
-    | Record<string, unknown>
-    | undefined;
-  return platformEnv?.batchlyai_db as D1Database | undefined;
-}
 
 export async function handleWebhook(request: Request): Promise<Response> {
   const binding = getD1Binding();

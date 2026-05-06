@@ -2,14 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 
+import { getD1Binding } from "@/lib/cloudflare/bindings";
 import * as schema from "@/lib/db/schema";
-
-function getD1Binding(): D1Database | undefined {
-  const platformEnv = (globalThis as Record<string, unknown>).__env__ as
-    | Record<string, unknown>
-    | undefined;
-  return platformEnv?.batchlyai_db as D1Database | undefined;
-}
 
 export const Route = createFileRoute("/g/$shareId")({
   loader: async ({ params }) => {

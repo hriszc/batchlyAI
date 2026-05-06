@@ -1,15 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
 
+import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
 import { referralCode } from "@/lib/db/schema";
-
-function getD1Binding(): D1Database | undefined {
-  const platformEnv = (globalThis as Record<string, unknown>).__env__ as
-    | Record<string, unknown>
-    | undefined;
-  return platformEnv?.batchlyai_db as D1Database | undefined;
-}
 
 function redirectToSignup(origin: string, refCode?: string) {
   const headers = new Headers();

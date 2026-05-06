@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { pollReplicatePrediction } from "@/lib/ai";
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
+import { getKvBinding } from "@/lib/cloudflare/bindings";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 interface GrsTaskData {
@@ -10,13 +11,6 @@ interface GrsTaskData {
   status: string;
   urls?: string[];
   error?: string;
-}
-
-function getKvBinding(): KVNamespace | undefined {
-  const platformEnv = (globalThis as Record<string, unknown>).__env__ as
-    | Record<string, unknown>
-    | undefined;
-  return platformEnv?.batchlyai_kv as KVNamespace | undefined;
 }
 
 export async function handleGenerateStatus(request: Request): Promise<Response> {
