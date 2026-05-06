@@ -10,9 +10,7 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { createPageMeta } from "@/lib/seo/meta";
 import { creativeWorkLd } from "@/lib/seo/structured-data";
 
-const loadWork = createServerFn({ method: "GET" })
-  .validator((workId: string) => workId)
-  .handler(async ({ data: workId }) => {
+const loadWork = createServerFn({ method: "GET" }).handler(async ({ data: workId }) => {
     const { eq } = await import("drizzle-orm");
     const { getDb } = await import("@/lib/db");
     const { work } = await import("@/lib/db/schema/data-flywheel.schema");
