@@ -122,6 +122,10 @@ export const translations = {
     resetPasswordButton: "Reset Password",
     resettingPassword: "Resetting...",
     invalidResetLink: "Invalid or expired reset link.",
+    sendResetLink: "Send Reset Link",
+    checkEmailInbox: "Check your email inbox",
+    returnToLogin: "Return to log in",
+    rememberPassword: "Remember your password?",
     requestNewLink: "Request a new reset link",
   },
   zh: {
