@@ -29,6 +29,7 @@ import { Route as ApiGenerateRouteImport } from './routes/api/generate'
 import { Route as ApiExpandVarsRouteImport } from './routes/api/expand-vars'
 import { Route as GuestSignupRouteImport } from './routes/_guest/signup'
 import { Route as GuestLoginRouteImport } from './routes/_guest/login'
+import { Route as GuestForgotPasswordRouteImport } from './routes/_guest/forgot-password'
 import { Route as ApiTemplatesSlugRouteImport } from './routes/api/templates/$slug'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
 import { Route as ApiStripePortalRouteImport } from './routes/api/stripe/portal'
@@ -138,6 +139,11 @@ const GuestLoginRoute = GuestLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => GuestRouteRoute,
 } as any)
+const GuestForgotPasswordRoute = GuestForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => GuestRouteRoute,
+} as any)
 const ApiTemplatesSlugRoute = ApiTemplatesSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -186,6 +192,7 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/forgot-password': typeof GuestForgotPasswordRoute
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
   '/api/expand-vars': typeof ApiExpandVarsRoute
@@ -216,6 +223,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/forgot-password': typeof GuestForgotPasswordRoute
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
   '/api/expand-vars': typeof ApiExpandVarsRoute
@@ -248,6 +256,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_guest': typeof GuestRouteRouteWithChildren
+  '/_guest/forgot-password': typeof GuestForgotPasswordRoute
   '/_guest/login': typeof GuestLoginRoute
   '/_guest/signup': typeof GuestSignupRoute
   '/api/expand-vars': typeof ApiExpandVarsRoute
@@ -280,6 +289,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/forgot-password'
     | '/login'
     | '/signup'
     | '/api/expand-vars'
@@ -310,6 +320,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/forgot-password'
     | '/login'
     | '/signup'
     | '/api/expand-vars'
@@ -341,6 +352,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_guest'
+    | '/_guest/forgot-password'
     | '/_guest/login'
     | '/_guest/signup'
     | '/api/expand-vars'
@@ -541,6 +553,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuestLoginRouteImport
       parentRoute: typeof GuestRouteRoute
     }
+    '/_guest/forgot-password': {
+      id: '/_guest/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof GuestForgotPasswordRouteImport
+      parentRoute: typeof GuestRouteRoute
+    }
     '/api/templates/$slug': {
       id: '/api/templates/$slug'
       path: '/$slug'
@@ -608,11 +627,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface GuestRouteRouteChildren {
+  GuestForgotPasswordRoute: typeof GuestForgotPasswordRoute
   GuestLoginRoute: typeof GuestLoginRoute
   GuestSignupRoute: typeof GuestSignupRoute
 }
 
 const GuestRouteRouteChildren: GuestRouteRouteChildren = {
+  GuestForgotPasswordRoute: GuestForgotPasswordRoute,
   GuestLoginRoute: GuestLoginRoute,
   GuestSignupRoute: GuestSignupRoute,
 }
