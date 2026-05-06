@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 
+import { reducer, initialState } from "../reducer";
 import type { GeneratorState } from "../types";
-import { reducer, initialState } from "../useGeneratorState";
 
 function state(overrides?: Partial<GeneratorState>): GeneratorState {
   return { ...initialState, ...overrides };
