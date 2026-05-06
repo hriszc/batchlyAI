@@ -104,6 +104,21 @@ export function applyMigrations(db: ReturnType<typeof createTestDb>) {
     "created_at" integer NOT NULL,
     "completed_at" integer
   )`);
+
+  // Saved prompts table
+  db.run(`CREATE TABLE "saved_prompt" (
+    "id" text PRIMARY KEY NOT NULL,
+    "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+    "name" text NOT NULL,
+    "prompt_template" text NOT NULL,
+    "variable_groups" text NOT NULL DEFAULT '[]',
+    "model" text NOT NULL DEFAULT 'z-image-pro',
+    "tags" text NOT NULL DEFAULT '[]',
+    "usage_count" integer NOT NULL DEFAULT 0,
+    "created_at" integer NOT NULL
+  )`);
+  db.run(`CREATE INDEX "saved_prompt_user_id_idx" ON "saved_prompt" ("user_id")`);
+  db.run(`CREATE INDEX "saved_prompt_name_idx" ON "saved_prompt" ("name")`);
 }
 
 export function seedUser(

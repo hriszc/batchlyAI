@@ -5,8 +5,10 @@ import {
   ChevronDownIcon,
   Loader2Icon,
   Undo2Icon,
+  SaveIcon,
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { toast } from "sonner";
 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -58,6 +60,61 @@ export function GeneratorCard({ state, actions }: GeneratorCardProps) {
   const modelPickerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useLanguage();
+
+  // Save prompt modal state
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveName, setSaveName] = useState("");
+  const [saveTags, setSaveTags] = useState("");
+  const [saving, setSaving] = useState(false);
+  const saveModalRef = useRef<HTMLDivElement>(null);
+
+  const handleSavePrompt = async () => {
+    if (!saveName.trim() || !state.promptTemplate.trim()) return;
+    setSaving(true);
+    try {
+      const resp = await fetch("/api/prompts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: saveName.trim(),
+          promptTemplate: state.promptTemplate,
+          variableGroups: state.variableGroups,
+          model: state.model,
+          tags: saveTags
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean),
+        }),
+      });
+      if (resp.ok) {
+        toast.success(t("savedSuccessfully"));
+        setShowSaveModal(false);
+        setSaveName("");
+        setSaveTags("");
+      } else {
+        const data = (await resp.json().catch(() => ({ error: "Failed" }))) as {
+          error?: string;
+        };
+        toast.error(data.error || "Failed to save");
+      }
+    } catch {
+      toast.error("Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Close save modal on outside click
+  useEffect(() => {
+    if (!showSaveModal) return;
+    const handler = (e: MouseEvent) => {
+      if (saveModalRef.current && !saveModalRef.current.contains(e.target as Node)) {
+        setShowSaveModal(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showSaveModal]);
 
   const expand = useExpandVariables(state.promptTemplate, actions.setPromptTemplate);
 
@@ -206,6 +263,19 @@ export function GeneratorCard({ state, actions }: GeneratorCardProps) {
             title={t("attach")}
           >
             <PaperclipIcon className="h-4 w-4 text-muted-foreground" />
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setSaveName("");
+              setSaveTags("");
+              setShowSaveModal(true);
+            }}
+            disabled={!state.promptTemplate.trim()}
+            className="flex h-9 w-9 items-center justify-center rounded-lg border bg-muted/30 transition-colors hover:bg-muted disabled:opacity-30"
+            title={t("savePrompt")}
+          >
+            <SaveIcon className="h-4 w-4 text-muted-foreground" />
           </button>
         </div>
 
@@ -375,6 +445,66 @@ export function GeneratorCard({ state, actions }: GeneratorCardProps) {
               onRemoveValue={(i) => actions.removeValue(group.id, i)}
             />
           ))}
+        </div>
+      )}
+
+      {/* Save Prompt Modal */}
+      {showSaveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20">
+          <div
+            ref={saveModalRef}
+            className="w-full max-w-sm rounded-2xl border bg-card p-6 shadow-[rgba(0,0,0,0.22)_3px_5px_30px_0px]"
+          >
+            <h3 className="mb-4 text-lg font-semibold">{t("savePrompt")}</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  {t("promptName")}
+                </label>
+                <input
+                  type="text"
+                  value={saveName}
+                  onChange={(e) => setSaveName(e.target.value)}
+                  className="w-full rounded-lg border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-[#0071e3]"
+                  placeholder={t("promptName")}
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSavePrompt();
+                  }}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  Tags (optional)
+                </label>
+                <input
+                  type="text"
+                  value={saveTags}
+                  onChange={(e) => setSaveTags(e.target.value)}
+                  className="w-full rounded-lg border bg-muted/30 px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-[#0071e3]"
+                  placeholder="e.g. portrait, landscape"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleSavePrompt();
+                  }}
+                />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button
+                  onClick={handleSavePrompt}
+                  disabled={saving || !saveName.trim()}
+                  className="flex-1 rounded-lg bg-[#0071e3] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#0077ed] disabled:opacity-50"
+                >
+                  {saving ? "Saving..." : t("savePrompt")}
+                </button>
+                <button
+                  onClick={() => setShowSaveModal(false)}
+                  className="rounded-lg border px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -65,6 +65,48 @@ export function HomePage({ forceLanguage }: HomePageProps) {
     })();
   }, []);
 
+  // Handle ?loadPrompt=<id> for "Load" from /my/prompts
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const loadId = params.get("loadPrompt");
+    if (!loadId) return;
+
+    (async () => {
+      try {
+        const resp = await fetch(`/api/prompts?search=${encodeURIComponent(loadId)}`);
+        const data = (await resp.json()) as {
+          prompts?: Array<{
+            id: string;
+            promptTemplate: string;
+            variableGroups?: Array<{ values: string[] }>;
+            model?: string;
+          }>;
+        };
+        const prompt = data.prompts?.find((p) => p.id === loadId);
+        if (!prompt?.promptTemplate) return;
+
+        actions.setPromptTemplate(prompt.promptTemplate);
+        setTimeout(() => {
+          const groups = prompt.variableGroups;
+          if (!groups) return;
+          groups.forEach((group, i) => {
+            group.values.forEach((value, j) => {
+              actions.updateValue(`var_${i}`, j, value);
+            });
+          });
+          if (prompt.model) actions.setModel(prompt.model);
+        }, 600);
+
+        const url = new URL(window.location.href);
+        url.searchParams.delete("loadPrompt");
+        window.history.replaceState({}, "", url.toString());
+      } catch {
+        // Non-critical
+      }
+    })();
+  }, []);
+
   useEffect(() => {
     if (!state.isGenerating && state.results.length > 0 && resultsRef.current) {
       resultsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
