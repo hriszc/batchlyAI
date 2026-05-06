@@ -93,17 +93,13 @@ export const Route = createFileRoute("/api/referral/generate-code")({
           const origin = new URL(request.url).origin;
           return jsonResponse({ code, shareUrl: `${origin}/r/${code}` }, 200);
         } catch (err) {
-          const message = err instanceof Error ? err.message : String(err);
-          // Table-not-found means the 0003 migration hasn't been applied yet.
-          // Return a graceful error that doesn't alarm users.
-          if (message.includes("no such table") || message.includes("does not exist")) {
-            console.warn(
-              "[referral] Referral tables not found. Run migration 0003 to enable referrals.",
-            );
-          } else {
-            console.error("[referral] generate-code error:", err);
-          }
-          return jsonResponse({ error: "Referral feature coming soon" }, 503);
+          console.error("[referral] generate-code error:", err);
+          return jsonResponse(
+            {
+              error: "Referral system unavailable. The database may not be migrated yet.",
+            },
+            503,
+          );
         }
       },
     },
