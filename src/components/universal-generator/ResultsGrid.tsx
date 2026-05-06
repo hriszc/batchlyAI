@@ -1,4 +1,3 @@
-import { authClient } from "@/lib/auth/auth-client";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 import { ResultCard } from "./ResultCard";
@@ -7,6 +6,7 @@ import type { GeneratedResult } from "./types";
 interface ResultsGridProps {
   results: GeneratedResult[];
   isGenerating: boolean;
+  showWatermark?: boolean;
   onShare?: () => void;
 }
 
@@ -22,11 +22,8 @@ function SkeletonCard() {
   );
 }
 
-export function ResultsGrid({ results, isGenerating }: ResultsGridProps) {
+export function ResultsGrid({ results, isGenerating, showWatermark = false }: ResultsGridProps) {
   const { t } = useLanguage();
-  const { data: session } = authClient.useSession();
-  const userCredits = ((session?.user as Record<string, unknown>)?.credits as number) ?? 0;
-  const showWatermark = userCredits <= 10;
 
   if (!isGenerating && results.length === 0) return null;
 
