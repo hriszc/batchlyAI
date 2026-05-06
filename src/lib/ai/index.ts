@@ -33,7 +33,13 @@ async function fetchWithFallback(
   try {
     const resp = await fetch(gatewayUrl, init);
     if (resp.ok) return resp;
-    console.warn(`[ai] Gateway ${provider} returned ${resp.status}, falling back to direct.`);
+    const errBody = await resp.text();
+    console.warn(
+      `[ai] Gateway ${provider} returned ${resp.status}, falling back to direct. Body: ${errBody.slice(0, 500)}`,
+    );
+    // Clone init with fresh body since we consumed the response
+    const fallbackInit = { ...init, body: init.body };
+    return fetch(directUrl, fallbackInit);
   } catch (err) {
     console.warn(`[ai] Gateway ${provider} unreachable (${err}), falling back to direct.`);
   }
@@ -74,6 +80,11 @@ export async function createGrsaiPredictions({
       ).then(async (resp) => {
         if (!resp.ok) {
           const errText = await resp.text();
+          if (resp.status === 401 && env.GRSAI_API_KEY === "dev-key") {
+            throw new Error(
+              `grsai API error 401: Using dev API key. Set real key via: wrangler secret put GRSAI_API_KEY. Details: ${errText}`,
+            );
+          }
           throw new Error(`grsai API error ${resp.status}: ${errText}`);
         }
         const data = (await resp.json()) as {
@@ -223,10 +234,14 @@ async function chatDeepseek(
   messages: Array<{ role: string; content: string }>,
   opts?: { maxTokens?: number; temperature?: number; model?: string },
 ): Promise<string> {
-  const key = env.DEEPSEEK_API_KEY; // optional: Gateway handles auth in managed mode
+  const key = env.DEEPSEEK_API_KEY;
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (key) headers.Authorization = `Bearer ${key}`;
 
+  // Try Gateway first, then direct API. If Gateway returns 401, it means
+  // the provider isn't configured or the API key is wrong. Check:
+  //   https://dash.cloudflare.com/b06ef09426453ac00c27f343d05a0a23/ai/ai-gateway/gateways
+  // The provider name in the Gateway must match the URL path (case-sensitive).
   const resp = await fetchWithFallback(
     DEEPSEEK_HOST,
     DEEPSEEK_DIRECT,
@@ -234,7 +249,7 @@ async function chatDeepseek(
       method: "POST",
       headers,
       body: JSON.stringify({
-        model: opts?.model ?? "deepseek-chat",
+        model: opts?.model ?? "deepseek-v4-flash",
         max_tokens: opts?.maxTokens ?? 256,
         temperature: opts?.temperature ?? 0.7,
         messages,
@@ -245,6 +260,12 @@ async function chatDeepseek(
 
   if (!resp.ok) {
     const errText = await resp.text();
+    if (resp.status === 401 && !key) {
+      throw new Error(
+        `DeepSeek API error 401: Gateway auth failed and no DEEPSEEK_API_KEY fallback. ` +
+        `Set via: wrangler secret put DEEPSEEK_API_KEY. Details: ${errText}`,
+      );
+    }
     throw new Error(`DeepSeek API error ${resp.status}: ${errText}`);
   }
 
@@ -273,7 +294,7 @@ export async function runExpandLLM(description: string): Promise<string[]> {
       { role: "system", content: EXPAND_SYSTEM_PROMPT },
       { role: "user", content: description },
     ],
-    { maxTokens: 100, temperature: 0.7, model: "deepseek-chat" },
+    { maxTokens: 100, temperature: 0.7, model: "deepseek-v4-flash" },
   );
 
   return text
@@ -289,7 +310,7 @@ export interface TextGenerationParams {
 
 export async function generateText({ prompt, model }: TextGenerationParams): Promise<string> {
   return chatDeepseek([{ role: "user", content: prompt }], {
-    model: model ?? "deepseek-chat",
+    model: model ?? "deepseek-v4-flash",
     maxTokens: 2048,
     temperature: 0.8,
   });
