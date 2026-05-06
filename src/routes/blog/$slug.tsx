@@ -60,7 +60,7 @@ function InlineMarkdown({ text }: { text: string }) {
       {parts.map((part, i) => {
         if (part.startsWith("`") && part.endsWith("`")) {
           return (
-            <code key={i} className="rounded bg-muted px-1 py-0.5 text-sm font-mono">
+            <code key={i} className="rounded bg-muted px-1 py-0.5 font-mono text-sm">
               {escapeHtml(part.slice(1, -1))}
             </code>
           );
