@@ -5,6 +5,31 @@ import { createAuth } from "@/lib/auth/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { processReferralAfterSignup } from "@/lib/referral/process";
 
+type ApiMethod = (ctx: {
+  body: unknown;
+  headers: Headers;
+  request: Request;
+  asResponse: true;
+}) => Promise<Response>;
+
+// Map URL paths to Better Auth internal API methods.
+// auth.handler() is too CPU-heavy for Workers Free (10ms limit).
+// We bypass it and call auth.api directly instead.
+const API_MAP: Record<string, string> = {
+  "sign-up/email": "signUpEmail",
+  "sign-in/email": "signInEmail",
+  "sign-out": "signOut",
+  "get-session": "getSession",
+  "forget-password": "forgetPassword",
+  "reset-password": "resetPassword",
+  "send-verification-email": "sendVerificationEmail",
+  "verify-email": "verifyEmail",
+};
+
+function dbUnavailable() {
+  return jsonResponse({ error: "Database not available" }, 501);
+}
+
 export const Route = createFileRoute("/api/auth/$")({
   server: {
     handlers: {
@@ -23,9 +48,10 @@ export const Route = createFileRoute("/api/auth/$")({
           const auth = createAuth();
           if (!auth) return dbUnavailable();
 
-          // Rate limit sensitive endpoints
           const url = new URL(request.url);
           const path = url.pathname.replace("/api/auth/", "");
+
+          // Rate limit sensitive endpoints
           const SENSITIVE_PATHS = [
             "sign-in/email",
             "sign-up/email",
@@ -40,22 +66,41 @@ export const Route = createFileRoute("/api/auth/$")({
             }
           }
 
-          const response = await auth.handler(request);
+          // Direct API call — bypass auth.handler() to avoid CPU timeout
+          const methodName = API_MAP[path];
+          if (methodName) {
+            const apiMethod = (auth.api as Record<string, ApiMethod | undefined>)[methodName];
+            if (apiMethod) {
+              const body = await request
+                .clone()
+                .json()
+                .catch(() => ({}));
+              const response = await apiMethod.call(auth.api, {
+                body,
+                headers: request.headers,
+                request,
+                asResponse: true,
+              });
 
-          // Post-signup referral processing
-          if (path === "sign-up/email" && response.ok) {
-            try {
-              const cloned = response.clone();
-              const body = (await cloned.json()) as {
-                user?: { id: string; email: string };
-              };
-              await processReferralAfterSignup(request, body);
-            } catch {
-              console.error("[auth] Referral processing error");
+              // Post-signup referral processing
+              if (path === "sign-up/email" && response.ok) {
+                try {
+                  const cloned = response.clone();
+                  const body = (await cloned.json()) as {
+                    user?: { id: string; email: string };
+                  };
+                  await processReferralAfterSignup(request, body);
+                } catch {
+                  console.error("[auth] Referral processing error");
+                }
+              }
+
+              return response;
             }
           }
 
-          return response;
+          // Fallback to handler for unknown paths
+          return auth.handler(request);
         } catch (err) {
           console.error("[auth] POST handler error:", err);
           return jsonResponse({ error: "Internal server error" }, 500);
@@ -64,7 +109,3 @@ export const Route = createFileRoute("/api/auth/$")({
     },
   },
 });
-
-function dbUnavailable() {
-  return jsonResponse({ error: "Database not available" }, 501);
-}
