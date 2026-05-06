@@ -11,8 +11,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth/auth-client";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { createPageMeta } from "@/lib/seo/meta";
+
+const loginSeo = createPageMeta({
+  title: "Login — BatchlyAI",
+  description: "Log in to your BatchlyAI account to generate AI images",
+  path: "/login",
+  locale: "en",
+  noIndex: true,
+});
 
 export const Route = createFileRoute("/_guest/login")({
+  head: () => ({
+    htmlAttrs: { lang: "en" },
+    meta: loginSeo.meta,
+    links: [{ rel: "canonical", href: "https://batchlyai.com/login" }],
+  }),
   component: LoginForm,
 });
 
