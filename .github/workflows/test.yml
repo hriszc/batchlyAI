@@ -75,3 +75,13 @@ jobs:
         with:
           name: playwright-report
           path: e2e-report/
+
+  smoke:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    needs: [unit-and-integration]
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Smoke test production APIs
+        run: bash scripts/smoke-test.sh
