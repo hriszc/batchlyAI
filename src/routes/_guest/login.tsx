@@ -126,6 +126,14 @@ function LoginForm() {
               {isPending && <LoaderCircleIcon className="animate-spin" />}
               {isPending ? t("loggingIn") : t("loginButton")}
             </Button>
+            <div className="text-center">
+              <Link
+                to="/forgot-password"
+                className="text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+              >
+                {t("forgotPassword")}
+              </Link>
+            </div>
           </div>
           <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
             <span className="relative z-10 bg-background px-2 text-muted-foreground">

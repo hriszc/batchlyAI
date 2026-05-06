@@ -15,7 +15,6 @@ import { Route as TemplatesIndexRouteImport } from './routes/templates/index'
 import { Route as CnIndexRouteImport } from './routes/cn/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as TemplatesSlugRouteImport } from './routes/templates/$slug'
-import { Route as SitemapXmlRouteImport } from './routes/sitemap.xml'
 import { Route as RobotsTxtRouteImport } from './routes/robots.txt'
 import { Route as RCodeRouteImport } from './routes/r/$code'
 import { Route as GShareIdRouteImport } from './routes/g/$shareId'
@@ -30,6 +29,7 @@ import { Route as ApiGenerateRouteImport } from './routes/api/generate'
 import { Route as ApiExpandVarsRouteImport } from './routes/api/expand-vars'
 import { Route as GuestSignupRouteImport } from './routes/_guest/signup'
 import { Route as GuestLoginRouteImport } from './routes/_guest/login'
+import { Route as GuestForgotPasswordRouteImport } from './routes/_guest/forgot-password'
 import { Route as ApiTemplatesSlugRouteImport } from './routes/api/templates/$slug'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
 import { Route as ApiStripePortalRouteImport } from './routes/api/stripe/portal'
@@ -67,11 +67,6 @@ const BlogIndexRoute = BlogIndexRouteImport.update({
 const TemplatesSlugRoute = TemplatesSlugRouteImport.update({
   id: '/templates/$slug',
   path: '/templates/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SitemapXmlRoute = SitemapXmlRouteImport.update({
-  id: '/sitemap/xml',
-  path: '/sitemap/xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RobotsTxtRoute = RobotsTxtRouteImport.update({
@@ -144,6 +139,11 @@ const GuestLoginRoute = GuestLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => GuestRouteRoute,
 } as any)
+const GuestForgotPasswordRoute = GuestForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => GuestRouteRoute,
+} as any)
 const ApiTemplatesSlugRoute = ApiTemplatesSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -192,6 +192,7 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/forgot-password': typeof GuestForgotPasswordRoute
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
   '/api/expand-vars': typeof ApiExpandVarsRoute
@@ -206,7 +207,6 @@ export interface FileRoutesByFullPath {
   '/g/$shareId': typeof GShareIdRoute
   '/r/$code': typeof RCodeRoute
   '/robots/txt': typeof RobotsTxtRoute
-  '/sitemap/xml': typeof SitemapXmlRoute
   '/templates/$slug': typeof TemplatesSlugRoute
   '/blog/': typeof BlogIndexRoute
   '/cn/': typeof CnIndexRoute
@@ -223,6 +223,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/forgot-password': typeof GuestForgotPasswordRoute
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
   '/api/expand-vars': typeof ApiExpandVarsRoute
@@ -237,7 +238,6 @@ export interface FileRoutesByTo {
   '/g/$shareId': typeof GShareIdRoute
   '/r/$code': typeof RCodeRoute
   '/robots/txt': typeof RobotsTxtRoute
-  '/sitemap/xml': typeof SitemapXmlRoute
   '/templates/$slug': typeof TemplatesSlugRoute
   '/blog': typeof BlogIndexRoute
   '/cn': typeof CnIndexRoute
@@ -256,6 +256,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_guest': typeof GuestRouteRouteWithChildren
+  '/_guest/forgot-password': typeof GuestForgotPasswordRoute
   '/_guest/login': typeof GuestLoginRoute
   '/_guest/signup': typeof GuestSignupRoute
   '/api/expand-vars': typeof ApiExpandVarsRoute
@@ -270,7 +271,6 @@ export interface FileRoutesById {
   '/g/$shareId': typeof GShareIdRoute
   '/r/$code': typeof RCodeRoute
   '/robots/txt': typeof RobotsTxtRoute
-  '/sitemap/xml': typeof SitemapXmlRoute
   '/templates/$slug': typeof TemplatesSlugRoute
   '/blog/': typeof BlogIndexRoute
   '/cn/': typeof CnIndexRoute
@@ -289,6 +289,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/forgot-password'
     | '/login'
     | '/signup'
     | '/api/expand-vars'
@@ -303,7 +304,6 @@ export interface FileRouteTypes {
     | '/g/$shareId'
     | '/r/$code'
     | '/robots/txt'
-    | '/sitemap/xml'
     | '/templates/$slug'
     | '/blog/'
     | '/cn/'
@@ -320,6 +320,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/forgot-password'
     | '/login'
     | '/signup'
     | '/api/expand-vars'
@@ -334,7 +335,6 @@ export interface FileRouteTypes {
     | '/g/$shareId'
     | '/r/$code'
     | '/robots/txt'
-    | '/sitemap/xml'
     | '/templates/$slug'
     | '/blog'
     | '/cn'
@@ -352,6 +352,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_guest'
+    | '/_guest/forgot-password'
     | '/_guest/login'
     | '/_guest/signup'
     | '/api/expand-vars'
@@ -366,7 +367,6 @@ export interface FileRouteTypes {
     | '/g/$shareId'
     | '/r/$code'
     | '/robots/txt'
-    | '/sitemap/xml'
     | '/templates/$slug'
     | '/blog/'
     | '/cn/'
@@ -397,7 +397,6 @@ export interface RootRouteChildren {
   GShareIdRoute: typeof GShareIdRoute
   RCodeRoute: typeof RCodeRoute
   RobotsTxtRoute: typeof RobotsTxtRoute
-  SitemapXmlRoute: typeof SitemapXmlRoute
   TemplatesSlugRoute: typeof TemplatesSlugRoute
   BlogIndexRoute: typeof BlogIndexRoute
   CnIndexRoute: typeof CnIndexRoute
@@ -454,13 +453,6 @@ declare module '@tanstack/react-router' {
       path: '/templates/$slug'
       fullPath: '/templates/$slug'
       preLoaderRoute: typeof TemplatesSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sitemap/xml': {
-      id: '/sitemap/xml'
-      path: '/sitemap/xml'
-      fullPath: '/sitemap/xml'
-      preLoaderRoute: typeof SitemapXmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/robots/txt': {
@@ -561,6 +553,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuestLoginRouteImport
       parentRoute: typeof GuestRouteRoute
     }
+    '/_guest/forgot-password': {
+      id: '/_guest/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof GuestForgotPasswordRouteImport
+      parentRoute: typeof GuestRouteRoute
+    }
     '/api/templates/$slug': {
       id: '/api/templates/$slug'
       path: '/$slug'
@@ -628,11 +627,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface GuestRouteRouteChildren {
+  GuestForgotPasswordRoute: typeof GuestForgotPasswordRoute
   GuestLoginRoute: typeof GuestLoginRoute
   GuestSignupRoute: typeof GuestSignupRoute
 }
 
 const GuestRouteRouteChildren: GuestRouteRouteChildren = {
+  GuestForgotPasswordRoute: GuestForgotPasswordRoute,
   GuestLoginRoute: GuestLoginRoute,
   GuestSignupRoute: GuestSignupRoute,
 }
@@ -668,7 +669,6 @@ const rootRouteChildren: RootRouteChildren = {
   GShareIdRoute: GShareIdRoute,
   RCodeRoute: RCodeRoute,
   RobotsTxtRoute: RobotsTxtRoute,
-  SitemapXmlRoute: SitemapXmlRoute,
   TemplatesSlugRoute: TemplatesSlugRoute,
   BlogIndexRoute: BlogIndexRoute,
   CnIndexRoute: CnIndexRoute,
