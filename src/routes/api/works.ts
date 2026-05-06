@@ -40,20 +40,21 @@ export const Route = createFileRoute("/api/works")({
             return jsonResponse({ ...w, variableGroups: JSON.parse(w.variableGroups), resultUrls: JSON.parse(w.resultUrls) }, 200);
           }
 
-          let query = db.select().from(work).where(eq(work.isPublished, 1));
-
-          if (category) query = query.where(eq(work.category, category)) as typeof query;
-          if (userId) query = query.where(eq(work.userId, userId)) as typeof query;
-
+          const conditions = [eq(work.isPublished, 1)];
+          if (category) conditions.push(eq(work.category, category));
+          if (userId) conditions.push(eq(work.userId, userId));
           if (type === "hot") {
             const weekAgo = Math.floor(Date.now() / 1000) - 7 * 86400;
-            query = query.where(gte(work.publishedAt, weekAgo)) as typeof query;
-            query = query.orderBy(desc(work.likeCount));
-          } else {
-            query = query.orderBy(desc(work.createdAt));
+            conditions.push(gte(work.publishedAt, weekAgo));
           }
 
-          const rows = await query.limit(limit).offset(offset);
+          const rows = await db
+            .select()
+            .from(work)
+            .where(and(...conditions))
+            .orderBy(desc(type === "hot" ? work.likeCount : work.createdAt))
+            .limit(limit)
+            .offset(offset);
 
           return jsonResponse({
             works: rows.map((w) => ({

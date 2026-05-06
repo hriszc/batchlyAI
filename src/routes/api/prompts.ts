@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { desc, eq, like, or } from "drizzle-orm";
+import { and, desc, eq, like } from "drizzle-orm";
 
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
@@ -31,13 +31,16 @@ export const Route = createFileRoute("/api/prompts")({
         const tag = url.searchParams.get("tag") || "";
 
         try {
-          let query = db.select().from(savedPrompt).where(eq(savedPrompt.userId, session.user.id));
-
+          const conditions = [eq(savedPrompt.userId, session.user.id)];
           if (search) {
-            query = query.where(like(savedPrompt.name, `%${search}%`)) as typeof query;
+            conditions.push(like(savedPrompt.name, `%${search}%`));
           }
 
-          const rows = await query.orderBy(desc(savedPrompt.updatedAt));
+          const rows = await db
+            .select()
+            .from(savedPrompt)
+            .where(and(...conditions))
+            .orderBy(desc(savedPrompt.updatedAt));
 
           let result = rows;
           if (tag) {
@@ -114,8 +117,7 @@ export const Route = createFileRoute("/api/prompts")({
 
           await db
             .delete(savedPrompt)
-            .where(eq(savedPrompt.id, id))
-            .where(eq(savedPrompt.userId, session.user.id));
+            .where(and(eq(savedPrompt.id, id), eq(savedPrompt.userId, session.user.id)));
 
           return jsonResponse({ success: true }, 200);
         } catch (err) {
