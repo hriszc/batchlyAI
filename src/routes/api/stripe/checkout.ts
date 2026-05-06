@@ -1,25 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { env } from "@/env/server";
+import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getStripe } from "@/lib/stripe";
 
 export async function handleCheckout(request: Request): Promise<Response> {
   const auth = createAuth();
-  if (!auth) {
-    return new Response(JSON.stringify({ error: "Auth unavailable" }), {
-      status: 501,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+  if (!auth) return jsonResponse({ error: "Auth unavailable" }, 501);
 
   const session = await auth.api.getSession({ headers: request.headers });
-  if (!session?.user?.id) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+  if (!session?.user?.id) return jsonResponse({ error: "Unauthorized" }, 401);
 
   const userId = session.user.id;
   const userEmail = session.user.email;
@@ -43,29 +34,18 @@ export async function handleCheckout(request: Request): Promise<Response> {
     const stripe = getStripe();
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: "payment",
-      line_items: [
-        {
-          price: priceId,
-          quantity,
-        },
-      ],
+      line_items: [{ price: priceId, quantity }],
       customer_email: userEmail,
       metadata: { userId },
       success_url: `${origin}/?purchase=success`,
       cancel_url: `${origin}/?purchase=canceled`,
     });
 
-    return new Response(JSON.stringify({ url: checkoutSession.url }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonResponse({ url: checkoutSession.url }, 200);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to create checkout";
     console.error("[stripe] checkout error:", message);
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: message }, 500);
   }
 }
 
