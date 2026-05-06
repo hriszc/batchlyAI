@@ -8,6 +8,7 @@ import {
   PlusIcon,
   Share2Icon,
   GiftIcon,
+  ChevronDownIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -68,6 +69,7 @@ export function SettingsBar() {
   const [referralStats, setReferralStats] = useState<ReferralStats | null>(null);
   const [referralLoading, setReferralLoading] = useState(false);
   const [showPurchase, setShowPurchase] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   useEffect(() => {
     if (!session?.user) return;
@@ -173,17 +175,36 @@ export function SettingsBar() {
             </span>
             {t("credits")}
           </span>
-          <span className="inline-flex h-8 items-center justify-center gap-1.5 rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground backdrop-blur-sm">
-            <UserIcon className="size-3" />
-            {session.user.name || session.user.email}
-          </span>
-          <button
-            onClick={handleSignOut}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-muted/80 text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
-            aria-label={t("signOut")}
-          >
-            <LogOutIcon className="size-3" />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="inline-flex h-8 items-center justify-center gap-1.5 rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <UserIcon className="size-3" />
+              {session.user.name || session.user.email}
+              <ChevronDownIcon className="size-3" />
+            </button>
+            {showUserMenu && (
+              <div className="absolute right-0 top-full z-10 mt-1 w-44 rounded-xl border bg-popover shadow-lg">
+                <a href="/my/generations" className="block px-3 py-2 text-xs hover:bg-muted">
+                  {t("myGenerations")}
+                </a>
+                <a href="/my/prompts" className="block px-3 py-2 text-xs hover:bg-muted">
+                  {t("myPrompts")}
+                </a>
+                <a href="/my/works" className="block px-3 py-2 text-xs hover:bg-muted">
+                  {t("myWorks")}
+                </a>
+                <div className="border-t" />
+                <button
+                  onClick={handleSignOut}
+                  className="block w-full px-3 py-2 text-left text-xs hover:bg-muted"
+                >
+                  {t("signOut")}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         <Link
