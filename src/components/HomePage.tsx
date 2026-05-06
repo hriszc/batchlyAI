@@ -5,6 +5,7 @@ import { GeneratorCard } from "@/components/universal-generator/GeneratorCard";
 import { ResultsGrid } from "@/components/universal-generator/ResultsGrid";
 import { ShareScreenshot } from "@/components/universal-generator/ShareScreenshot";
 import { useGeneratorState } from "@/components/universal-generator/useGeneratorState";
+import { authClient } from "@/lib/auth/auth-client";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 interface HomePageProps {
@@ -62,6 +63,39 @@ export function HomePage({ forceLanguage }: HomePageProps) {
       } catch {
         // Non-critical
       }
+    })();
+  }, []);
+
+  // Handle ?remix=<workId> for remix flow
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const remixId = params.get("remix");
+    if (!remixId) return;
+
+    (async () => {
+      try {
+        const resp = await fetch(`/api/works?remix=${remixId}`);
+        const data = (await resp.json()) as { promptTemplate?: string; variableGroups?: string; model?: string };
+        if (!data.promptTemplate) return;
+
+        actions.setPromptTemplate(data.promptTemplate);
+        setTimeout(() => {
+          try {
+            const groups = JSON.parse(data.variableGroups || "[]") as Array<{ values: string[] }>;
+            groups.forEach((group, i) => {
+              group.values.forEach((value, j) => {
+                actions.updateValue(`var_${i}`, j, value);
+              });
+            });
+          } catch {}
+          if (data.model) actions.setModel(data.model);
+        }, 600);
+
+        const url = new URL(window.location.href);
+        url.searchParams.delete("remix");
+        window.history.replaceState({}, "", url.toString());
+      } catch { /* Non-critical */ }
     })();
   }, []);
 
