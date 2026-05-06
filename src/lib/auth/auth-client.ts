@@ -11,5 +11,6 @@ import { env } from "@/env/client";
  * For server/SSR operations, prefer `auth.api` instead, and wrap in a serverFn if needed.
  */
 export const authClient = createAuthClient({
-  baseURL: env.VITE_BASE_URL,
+  // Use same origin - works on both custom domain and workers.dev
+  baseURL: typeof window !== "undefined" ? window.location.origin : "",
 });
