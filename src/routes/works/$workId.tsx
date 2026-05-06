@@ -117,7 +117,7 @@ function WorkDetailPage() {
       <img
         src={data.coverUrl}
         alt={data.title}
-        className="mb-6 w-full rounded-2xl object-cover max-h-96"
+        className="mb-6 max-h-96 w-full rounded-2xl object-cover"
       />
 
       <h1 className="text-2xl font-bold text-foreground">{data.title}</h1>
@@ -157,19 +157,19 @@ function WorkDetailPage() {
         <summary className="cursor-pointer text-sm text-muted-foreground">
           View prompt template
         </summary>
-        <pre className="mt-2 whitespace-pre-wrap rounded-lg bg-muted/20 p-3 text-xs">
+        <pre className="mt-2 rounded-lg bg-muted/20 p-3 text-xs whitespace-pre-wrap">
           {data.promptTemplate}
         </pre>
       </details>
 
-      <h2 className="mb-4 mt-8 text-lg font-semibold">Results</h2>
+      <h2 className="mt-8 mb-4 text-lg font-semibold">Results</h2>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
         {resultUrls.map((url, i) => (
           <img
             key={i}
             src={url}
             alt={`Result ${i + 1}`}
-            className="rounded-lg object-cover aspect-square"
+            className="aspect-square rounded-lg object-cover"
           />
         ))}
       </div>

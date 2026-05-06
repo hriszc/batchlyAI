@@ -185,7 +185,7 @@ export function SettingsBar() {
               <ChevronDownIcon className="size-3" />
             </button>
             {showUserMenu && (
-              <div className="absolute right-0 top-full z-10 mt-1 w-44 rounded-xl border bg-popover shadow-lg">
+              <div className="absolute top-full right-0 z-10 mt-1 w-44 rounded-xl border bg-popover shadow-lg">
                 <a href="/my/generations" className="block px-3 py-2 text-xs hover:bg-muted">
                   {t("myGenerations")}
                 </a>

@@ -92,13 +92,13 @@ function PromptsPage() {
 
       <div className="mb-6 flex gap-2">
         <div className="relative flex-1">
-          <SearchIcon className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <SearchIcon className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
             placeholder="Search..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border bg-muted/30 py-2 pl-9 pr-3 text-sm focus:outline-none"
+            className="w-full rounded-lg border bg-muted/30 py-2 pr-3 pl-9 text-sm focus:outline-none"
           />
         </div>
       </div>
