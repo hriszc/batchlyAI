@@ -27,7 +27,7 @@ bucket_name = "batchlyai-uploads"
 #   R2_BUCKET
 [observability]
 enabled = true
-head_sampling_rate = 1
+head_sampling_rate = 0.1
 
 # Canary deployment: new versions start at 0% traffic.
 # Test via: https://batchlyai.com/?cwv_debug=2
