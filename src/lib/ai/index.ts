@@ -7,12 +7,39 @@ interface ImageGenerationParams {
   model?: string;
 }
 
-// Cloudflare AI Gateway — all AI API calls route through here for caching, retries, analytics
+// Cloudflare AI Gateway — provides caching, retries, analytics.
+// If a gateway provider returns an error, we fall back to the direct API.
 const AI_GATEWAY =
   "https://gateway.ai.cloudflare.com/v1/b06ef09426453ac00c27f343d05a0a23/ai-draw-guess";
+const DEEPSEEK_DIRECT = "https://api.deepseek.com/v1/chat/completions";
+const REPLICATE_DIRECT = "https://api.replicate.com/v1/predictions";
+const DRAW_API_DIRECT = "https://grsaiapi.com/v1/draw/completions";
+
 const DEEPSEEK_HOST = `${AI_GATEWAY}/deepseek/v1/chat/completions`;
 const REPLICATE_API_BASE = `${AI_GATEWAY}/replicate`;
 const DRAW_API_HOST = `${AI_GATEWAY}/grsai/v1/draw/completions`;
+
+/**
+ * Try gateway first; fall back to direct API on any failure.
+ * This makes all 3 providers resilient to gateway misconfiguration.
+ */
+async function fetchWithFallback(
+  gatewayUrl: string,
+  directUrl: string,
+  init: RequestInit,
+  provider: string,
+): Promise<Response> {
+  // Try gateway
+  try {
+    const resp = await fetch(gatewayUrl, init);
+    if (resp.ok) return resp;
+    console.warn(`[ai] Gateway ${provider} returned ${resp.status}, falling back to direct.`);
+  } catch (err) {
+    console.warn(`[ai] Gateway ${provider} unreachable (${err}), falling back to direct.`);
+  }
+  // Fall back to direct
+  return fetch(directUrl, init);
+}
 
 export interface GrsaiCreateResult {
   id: string;
@@ -26,20 +53,25 @@ export async function createGrsaiPredictions({
 }: ImageGenerationParams): Promise<GrsaiCreateResult[]> {
   const predictions = await Promise.all(
     Array.from({ length: n }, () =>
-      fetch(DRAW_API_HOST, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${env.GRSAI_API_KEY}`,
+      fetchWithFallback(
+        DRAW_API_HOST,
+        DRAW_API_DIRECT,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(env.GRSAI_API_KEY ? { Authorization: `Bearer ${env.GRSAI_API_KEY}` } : {}),
+          },
+          body: JSON.stringify({
+            model: "gpt-image-2",
+            prompt,
+            aspectRatio,
+            urls: [],
+            webHook: `${env.VITE_BASE_URL}/api/grs-webhook${env.GRS_WEBHOOK_SECRET ? `?secret=${env.GRS_WEBHOOK_SECRET}` : ""}`,
+          }),
         },
-        body: JSON.stringify({
-          model: "gpt-image-2",
-          prompt,
-          aspectRatio,
-          urls: [],
-          webHook: `${env.VITE_BASE_URL}/api/grs-webhook${env.GRS_WEBHOOK_SECRET ? `?secret=${env.GRS_WEBHOOK_SECRET}` : ""}`,
-        }),
-      }).then(async (resp) => {
+        "grsai",
+      ).then(async (resp) => {
         if (!resp.ok) {
           const errText = await resp.text();
           throw new Error(`grsai API error ${resp.status}: ${errText}`);
@@ -60,7 +92,6 @@ export async function createGrsaiPredictions({
   return predictions;
 }
 
-// Async helpers for Replicate
 interface ReplicatePrediction {
   id: string;
   status: "starting" | "processing" | "succeeded" | "failed" | "canceled";
@@ -69,8 +100,6 @@ interface ReplicatePrediction {
   urls: { get: string; cancel: string };
 }
 
-// All image generation uses async prediction flow (create + poll via webhook/status endpoint).
-// Server-side busy-wait polling is incompatible with Cloudflare Workers CPU/timeout limits.
 interface ReplicateCreateResult {
   id: string;
   status: string;
@@ -91,8 +120,9 @@ export async function createReplicatePredictions({
 }: ImageGenerationParams): Promise<ReplicateCreateResult[]> {
   const version =
     (model ? REPLICATE_MODEL_VERSIONS[model] : null) ?? REPLICATE_MODEL_VERSIONS["z-image-fast"];
-  const key = env.REPLICATE_API_KEY;
-  if (!key) throw new Error("REPLICATE_API_KEY is not configured");
+  const key = env.REPLICATE_API_KEY; // optional: Gateway handles auth in managed mode
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (key) headers.Authorization = `Bearer ${key}`;
 
   const [w, h] = aspectRatio.split(":").map(Number);
   const baseSize = 1024;
@@ -110,22 +140,19 @@ export async function createReplicatePredictions({
 
   const predictions = await Promise.all(
     Array.from({ length: n }, () =>
-      fetch(`${REPLICATE_API_BASE}/v1/predictions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${key}`,
+      fetchWithFallback(
+        `${REPLICATE_API_BASE}/v1/predictions`,
+        `${REPLICATE_DIRECT}`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            version,
+            input: { prompt, width, height, num_outputs: 1 },
+          }),
         },
-        body: JSON.stringify({
-          version,
-          input: {
-            prompt,
-            width,
-            height,
-            num_outputs: 1,
-          },
-        }),
-      }).then(async (resp) => {
+        "replicate",
+      ).then(async (resp) => {
         if (!resp.ok) {
           const errText = await resp.text();
           throw new Error(`Replicate API error ${resp.status}: ${errText}`);
@@ -145,12 +172,16 @@ interface PollResult {
 }
 
 export async function pollReplicatePrediction(predictionId: string): Promise<PollResult> {
-  const key = env.REPLICATE_API_KEY;
-  if (!key) throw new Error("REPLICATE_API_KEY is not configured");
+  const key = env.REPLICATE_API_KEY; // optional: Gateway handles auth in managed mode
+  const pollHeaders: Record<string, string> = {};
+  if (key) pollHeaders.Authorization = `Bearer ${key}`;
 
-  const resp = await fetch(`${REPLICATE_API_BASE}/v1/predictions/${predictionId}`, {
-    headers: { Authorization: `Bearer ${key}` },
-  });
+  const resp = await fetchWithFallback(
+    `${REPLICATE_API_BASE}/v1/predictions/${predictionId}`,
+    `${REPLICATE_DIRECT}/${predictionId}`,
+    { headers: pollHeaders },
+    "replicate",
+  );
 
   if (!resp.ok) {
     throw new Error(`Replicate poll error ${resp.status}`);
@@ -171,30 +202,29 @@ export async function pollReplicatePrediction(predictionId: string): Promise<Pol
   return { status: prediction.status, urls: null, error: null };
 }
 
-function getDeepseekKey(): string {
-  const key = env.DEEPSEEK_API_KEY;
-  if (!key) throw new Error("DEEPSEEK_API_KEY is not configured");
-  return key;
-}
-
 async function chatDeepseek(
   messages: Array<{ role: string; content: string }>,
   opts?: { maxTokens?: number; temperature?: number; model?: string },
 ): Promise<string> {
-  const key = getDeepseekKey();
-  const resp = await fetch(DEEPSEEK_HOST, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${key}`,
+  const key = env.DEEPSEEK_API_KEY; // optional: Gateway handles auth in managed mode
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (key) headers.Authorization = `Bearer ${key}`;
+
+  const resp = await fetchWithFallback(
+    DEEPSEEK_HOST,
+    DEEPSEEK_DIRECT,
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        model: opts?.model ?? "deepseek-chat",
+        max_tokens: opts?.maxTokens ?? 256,
+        temperature: opts?.temperature ?? 0.7,
+        messages,
+      }),
     },
-    body: JSON.stringify({
-      model: opts?.model ?? "deepseek-chat",
-      max_tokens: opts?.maxTokens ?? 256,
-      temperature: opts?.temperature ?? 0.7,
-      messages,
-    }),
-  });
+    "deepseek",
+  );
 
   if (!resp.ok) {
     const errText = await resp.text();
