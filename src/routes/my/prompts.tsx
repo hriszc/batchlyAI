@@ -82,7 +82,10 @@ function PromptsPage() {
 
   return (
     <main className="mx-auto max-w-[980px] px-4 py-8">
-      <Link to="/" className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+      <Link
+        to="/"
+        className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      >
         <ArrowLeftIcon className="size-4" /> Back to Generator
       </Link>
       <h1 className="mb-6 text-2xl font-semibold text-foreground">{t("myPrompts")}</h1>
@@ -103,7 +106,9 @@ function PromptsPage() {
       {loading ? (
         <p className="text-muted-foreground">Loading...</p>
       ) : prompts.length === 0 ? (
-        <p className="text-muted-foreground">No saved prompts. Use the Save button in the generator.</p>
+        <p className="text-muted-foreground">
+          No saved prompts. Use the Save button in the generator.
+        </p>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {prompts.map((p) => (
@@ -132,7 +137,10 @@ function PromptsPage() {
                     >
                       Save
                     </button>
-                    <button onClick={() => setEditing(null)} className="rounded bg-muted px-3 py-1 text-xs">
+                    <button
+                      onClick={() => setEditing(null)}
+                      className="rounded bg-muted px-3 py-1 text-xs"
+                    >
                       Cancel
                     </button>
                   </div>
@@ -146,7 +154,15 @@ function PromptsPage() {
                         onClick={() => {
                           setEditing(p);
                           setEditName(p.name);
-                          setEditTags((() => { try { return (JSON.parse(p.tags || "[]") as string[]).join(", "); } catch { return ""; } })());
+                          setEditTags(
+                            (() => {
+                              try {
+                                return (JSON.parse(p.tags || "[]") as string[]).join(", ");
+                              } catch {
+                                return "";
+                              }
+                            })(),
+                          );
                         }}
                         className="rounded p-1 text-muted-foreground hover:text-foreground"
                       >
@@ -165,12 +181,23 @@ function PromptsPage() {
                   </p>
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">
                     {p.model && (
-                      <span className="rounded bg-muted/50 px-1.5 py-0.5 text-[10px]">{p.model}</span>
+                      <span className="rounded bg-muted/50 px-1.5 py-0.5 text-[10px]">
+                        {p.model}
+                      </span>
                     )}
                     {(() => {
-                      try { return (JSON.parse(p.tags || "[]") as string[]).map((tag: string) => (
-                        <span key={tag} className="rounded bg-[#0071e3]/10 px-1.5 py-0.5 text-[10px] text-[#0071e3]">{tag}</span>
-                      )); } catch { return null; }
+                      try {
+                        return (JSON.parse(p.tags || "[]") as string[]).map((tag: string) => (
+                          <span
+                            key={tag}
+                            className="rounded bg-[#0071e3]/10 px-1.5 py-0.5 text-[10px] text-[#0071e3]"
+                          >
+                            {tag}
+                          </span>
+                        ));
+                      } catch {
+                        return null;
+                      }
                     })()}
                   </div>
                   <button

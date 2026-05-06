@@ -76,9 +76,7 @@ function WorksPage() {
       {loading ? (
         <p className="text-muted-foreground">Loading...</p>
       ) : works.length === 0 ? (
-        <p className="text-muted-foreground">
-          No works yet. Publish from your generations.
-        </p>
+        <p className="text-muted-foreground">No works yet. Publish from your generations.</p>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {works.map((w) => (
@@ -98,13 +96,9 @@ function WorksPage() {
                   <span className="rounded bg-muted/50 px-1.5 py-0.5">{w.category}</span>
                 )}
                 {!w.isPublished && (
-                  <span className="rounded bg-yellow-100 px-1.5 py-0.5 text-yellow-700">
-                    Draft
-                  </span>
+                  <span className="rounded bg-yellow-100 px-1.5 py-0.5 text-yellow-700">Draft</span>
                 )}
-                <span>
-                  {w.likeCount} likes
-                </span>
+                <span>{w.likeCount} likes</span>
               </div>
             </a>
           ))}

@@ -18,7 +18,9 @@ const loadWork = createServerFn({ method: "GET" })
     const { work } = await import("@/lib/db/schema/data-flywheel.schema");
     const { user } = await import("@/lib/db/schema/auth.schema");
 
-    const platformEnv = (globalThis as Record<string, unknown>).__env__ as Record<string, unknown> | undefined;
+    const platformEnv = (globalThis as Record<string, unknown>).__env__ as
+      | Record<string, unknown>
+      | undefined;
     const binding = platformEnv?.batchlyai_db as D1Database | undefined;
     if (!binding) return null;
     const db = getDb(binding);
@@ -80,7 +82,9 @@ function WorkDetailPage() {
     return (
       <main className="mx-auto max-w-[980px] px-4 py-16 text-center">
         <p className="text-muted-foreground">Work not found</p>
-        <a href="/discover" className="mt-2 inline-block text-[#0071e3]">Discover more</a>
+        <a href="/discover" className="mt-2 inline-block text-[#0071e3]">
+          Discover more
+        </a>
       </main>
     );
   }
@@ -105,40 +109,70 @@ function WorkDetailPage() {
 
   return (
     <main className="mx-auto max-w-[980px] px-4 py-8">
-      <a href="/discover" className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+      <a
+        href="/discover"
+        className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      >
         <ArrowLeftIcon className="size-4" /> {t("discover")}
       </a>
 
-      <img src={data.coverUrl} alt={data.title} className="mb-6 w-full rounded-2xl object-cover max-h-96" />
+      <img
+        src={data.coverUrl}
+        alt={data.title}
+        className="mb-6 w-full rounded-2xl object-cover max-h-96"
+      />
 
       <h1 className="text-2xl font-bold text-foreground">{data.title}</h1>
       <div className="mt-2 flex items-center gap-3 text-sm text-muted-foreground">
         <span>{data.authorName}</span>
-        {data.category && <span className="rounded bg-muted/50 px-1.5 py-0.5 text-xs">{data.category}</span>}
+        {data.category && (
+          <span className="rounded bg-muted/50 px-1.5 py-0.5 text-xs">{data.category}</span>
+        )}
         {data.publishedAt && <span>{new Date(data.publishedAt * 1000).toLocaleDateString()}</span>}
       </div>
 
       <div className="mt-6 flex items-center gap-4">
-        <button onClick={handleLike} className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm ${liked ? "bg-red-50 text-red-500" : "bg-muted/30 text-muted-foreground hover:text-red-500"}`}>
+        <button
+          onClick={handleLike}
+          className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm ${liked ? "bg-red-50 text-red-500" : "bg-muted/30 text-muted-foreground hover:text-red-500"}`}
+        >
           <HeartIcon className={`size-4 ${liked ? "fill-red-500" : ""}`} /> {t("like")} {likeCount}
         </button>
-        <button onClick={handleRemix} className="inline-flex items-center gap-1.5 rounded-lg bg-muted/30 px-3 py-2 text-sm text-muted-foreground hover:text-[#0071e3]">
+        <button
+          onClick={handleRemix}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-muted/30 px-3 py-2 text-sm text-muted-foreground hover:text-[#0071e3]"
+        >
           <Repeat2Icon className="size-4" /> {t("remix")} {data.remixCount}
         </button>
-        <button onClick={() => { navigator.clipboard.writeText(data.promptTemplate); toast.success("Copied!"); }} className="inline-flex items-center gap-1.5 rounded-lg bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+        <button
+          onClick={() => {
+            navigator.clipboard.writeText(data.promptTemplate);
+            toast.success("Copied!");
+          }}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-muted/30 px-3 py-2 text-sm text-muted-foreground"
+        >
           <CopyIcon className="size-4" /> Copy prompt
         </button>
       </div>
 
       <details className="mt-4">
-        <summary className="cursor-pointer text-sm text-muted-foreground">View prompt template</summary>
-        <pre className="mt-2 whitespace-pre-wrap rounded-lg bg-muted/20 p-3 text-xs">{data.promptTemplate}</pre>
+        <summary className="cursor-pointer text-sm text-muted-foreground">
+          View prompt template
+        </summary>
+        <pre className="mt-2 whitespace-pre-wrap rounded-lg bg-muted/20 p-3 text-xs">
+          {data.promptTemplate}
+        </pre>
       </details>
 
       <h2 className="mb-4 mt-8 text-lg font-semibold">Results</h2>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
         {resultUrls.map((url, i) => (
-          <img key={i} src={url} alt={`Result ${i + 1}`} className="rounded-lg object-cover aspect-square" />
+          <img
+            key={i}
+            src={url}
+            alt={`Result ${i + 1}`}
+            className="rounded-lg object-cover aspect-square"
+          />
         ))}
       </div>
     </main>

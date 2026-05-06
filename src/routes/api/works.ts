@@ -38,7 +38,14 @@ export const Route = createFileRoute("/api/works")({
           if (remixId) {
             const [w] = await db.select().from(work).where(eq(work.id, remixId));
             if (!w) return jsonResponse({ error: "Not found" }, 404);
-            return jsonResponse({ ...w, variableGroups: JSON.parse(w.variableGroups), resultUrls: JSON.parse(w.resultUrls) }, 200);
+            return jsonResponse(
+              {
+                ...w,
+                variableGroups: JSON.parse(w.variableGroups),
+                resultUrls: JSON.parse(w.resultUrls),
+              },
+              200,
+            );
           }
 
           const conditions = [eq(work.isPublished, 1)];
@@ -57,13 +64,16 @@ export const Route = createFileRoute("/api/works")({
             .limit(limit)
             .offset(offset);
 
-          return jsonResponse({
-            works: rows.map((w) => ({
-              ...w,
-              variableGroups: JSON.parse(w.variableGroups),
-              resultUrls: JSON.parse(w.resultUrls),
-            })),
-          }, 200);
+          return jsonResponse(
+            {
+              works: rows.map((w) => ({
+                ...w,
+                variableGroups: JSON.parse(w.variableGroups),
+                resultUrls: JSON.parse(w.resultUrls),
+              })),
+            },
+            200,
+          );
         } catch (err) {
           return jsonResponse({ error: "Failed to fetch works" }, 500);
         }

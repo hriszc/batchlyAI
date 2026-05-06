@@ -67,7 +67,10 @@ function GenerationsPage() {
 
   return (
     <main className="mx-auto max-w-[980px] px-4 py-8">
-      <Link to="/" className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+      <Link
+        to="/"
+        className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+      >
         <ArrowLeftIcon className="size-4" />
         Back to Generator
       </Link>

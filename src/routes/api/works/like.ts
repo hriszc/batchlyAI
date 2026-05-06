@@ -45,10 +45,7 @@ export const Route = createFileRoute("/api/works/like")({
               .select({ likeCount: work.likeCount })
               .from(work)
               .where(eq(work.id, workId));
-            return jsonResponse(
-              { liked: false, likeCount: updated?.likeCount ?? 0 },
-              200,
-            );
+            return jsonResponse({ liked: false, likeCount: updated?.likeCount ?? 0 }, 200);
           }
 
           await db.insert(workLike).values({
@@ -65,10 +62,7 @@ export const Route = createFileRoute("/api/works/like")({
             .select({ likeCount: work.likeCount })
             .from(work)
             .where(eq(work.id, workId));
-          return jsonResponse(
-            { liked: true, likeCount: updated?.likeCount ?? 0 },
-            200,
-          );
+          return jsonResponse({ liked: true, likeCount: updated?.likeCount ?? 0 }, 200);
         } catch {
           return jsonResponse({ error: "Like failed" }, 500);
         }

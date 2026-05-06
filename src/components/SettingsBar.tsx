@@ -196,7 +196,10 @@ export function SettingsBar() {
                   {t("myWorks")}
                 </a>
                 <div className="border-t" />
-                <button onClick={handleSignOut} className="block w-full px-3 py-2 text-left text-xs hover:bg-muted">
+                <button
+                  onClick={handleSignOut}
+                  className="block w-full px-3 py-2 text-left text-xs hover:bg-muted"
+                >
                   {t("signOut")}
                 </button>
               </div>

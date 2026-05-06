@@ -76,7 +76,11 @@ export function HomePage({ forceLanguage }: HomePageProps) {
     (async () => {
       try {
         const resp = await fetch(`/api/works?remix=${remixId}`);
-        const data = (await resp.json()) as { promptTemplate?: string; variableGroups?: string; model?: string };
+        const data = (await resp.json()) as {
+          promptTemplate?: string;
+          variableGroups?: string;
+          model?: string;
+        };
         if (!data.promptTemplate) return;
 
         actions.setPromptTemplate(data.promptTemplate);
@@ -95,7 +99,9 @@ export function HomePage({ forceLanguage }: HomePageProps) {
         const url = new URL(window.location.href);
         url.searchParams.delete("remix");
         window.history.replaceState({}, "", url.toString());
-      } catch { /* Non-critical */ }
+      } catch {
+        /* Non-critical */
+      }
     })();
   }, []);
 
