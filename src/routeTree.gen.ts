@@ -28,6 +28,7 @@ import { Route as ApiGenerateStatusRouteImport } from './routes/api/generate-sta
 import { Route as ApiGenerateRouteImport } from './routes/api/generate'
 import { Route as ApiExpandVarsRouteImport } from './routes/api/expand-vars'
 import { Route as GuestSignupRouteImport } from './routes/_guest/signup'
+import { Route as GuestResetPasswordRouteImport } from './routes/_guest/reset-password'
 import { Route as GuestLoginRouteImport } from './routes/_guest/login'
 import { Route as GuestForgotPasswordRouteImport } from './routes/_guest/forgot-password'
 import { Route as ApiTemplatesSlugRouteImport } from './routes/api/templates/$slug'
@@ -134,6 +135,11 @@ const GuestSignupRoute = GuestSignupRouteImport.update({
   path: '/signup',
   getParentRoute: () => GuestRouteRoute,
 } as any)
+const GuestResetPasswordRoute = GuestResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => GuestRouteRoute,
+} as any)
 const GuestLoginRoute = GuestLoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -194,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/forgot-password': typeof GuestForgotPasswordRoute
   '/login': typeof GuestLoginRoute
+  '/reset-password': typeof GuestResetPasswordRoute
   '/signup': typeof GuestSignupRoute
   '/forgot-password': typeof GuestForgotPasswordRoute
   '/api/expand-vars': typeof ApiExpandVarsRoute
@@ -226,6 +233,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/forgot-password': typeof GuestForgotPasswordRoute
   '/login': typeof GuestLoginRoute
+  '/reset-password': typeof GuestResetPasswordRoute
   '/signup': typeof GuestSignupRoute
   '/forgot-password': typeof GuestForgotPasswordRoute
   '/api/expand-vars': typeof ApiExpandVarsRoute
@@ -260,6 +268,7 @@ export interface FileRoutesById {
   '/_guest': typeof GuestRouteRouteWithChildren
   '/_guest/forgot-password': typeof GuestForgotPasswordRoute
   '/_guest/login': typeof GuestLoginRoute
+  '/_guest/reset-password': typeof GuestResetPasswordRoute
   '/_guest/signup': typeof GuestSignupRoute
   '/_guest/forgot-password': typeof GuestForgotPasswordRoute
   '/api/expand-vars': typeof ApiExpandVarsRoute
@@ -294,6 +303,7 @@ export interface FileRouteTypes {
     | '/'
     | '/forgot-password'
     | '/login'
+    | '/reset-password'
     | '/signup'
     | '/forgot-password'
     | '/api/expand-vars'
@@ -326,6 +336,7 @@ export interface FileRouteTypes {
     | '/'
     | '/forgot-password'
     | '/login'
+    | '/reset-password'
     | '/signup'
     | '/forgot-password'
     | '/api/expand-vars'
@@ -359,6 +370,7 @@ export interface FileRouteTypes {
     | '/_guest'
     | '/_guest/forgot-password'
     | '/_guest/login'
+    | '/_guest/reset-password'
     | '/_guest/signup'
     | '/_guest/forgot-password'
     | '/api/expand-vars'
@@ -552,6 +564,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuestSignupRouteImport
       parentRoute: typeof GuestRouteRoute
     }
+    '/_guest/reset-password': {
+      id: '/_guest/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof GuestResetPasswordRouteImport
+      parentRoute: typeof GuestRouteRoute
+    }
     '/_guest/login': {
       id: '/_guest/login'
       path: '/login'
@@ -635,6 +654,7 @@ declare module '@tanstack/react-router' {
 interface GuestRouteRouteChildren {
   GuestForgotPasswordRoute: typeof GuestForgotPasswordRoute
   GuestLoginRoute: typeof GuestLoginRoute
+  GuestResetPasswordRoute: typeof GuestResetPasswordRoute
   GuestSignupRoute: typeof GuestSignupRoute
   GuestForgotPasswordRoute: typeof GuestForgotPasswordRoute
 }
@@ -642,6 +662,7 @@ interface GuestRouteRouteChildren {
 const GuestRouteRouteChildren: GuestRouteRouteChildren = {
   GuestForgotPasswordRoute: GuestForgotPasswordRoute,
   GuestLoginRoute: GuestLoginRoute,
+  GuestResetPasswordRoute: GuestResetPasswordRoute,
   GuestSignupRoute: GuestSignupRoute,
   GuestForgotPasswordRoute: GuestForgotPasswordRoute,
 }
