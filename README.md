@@ -46,13 +46,47 @@ pnpm create mugnavo
 
    The development server should now be running at [http://localhost:3000](http://localhost:3000).
 
-## Deploying to production
+## Deployment
 
-[![Netlify Status](https://api.netlify.com/api/v1/badges/66acdee6-8e42-436f-9943-a67cad998f63/deploy-status)](https://app.netlify.com/projects/mugnavo-tanstarter/deploys)
+BatchlyAI uses Cloudflare Workers [Version Management](https://developers.cloudflare.com/workers/configuration/versions-and-deployments/) for canary deploys. New code deploys at 0% traffic — only you can test it, all users stay on the proven version.
 
-The [vite config](./vite.config.ts#L19-L20) is configured to use Nitro by default, which supports many [deployment presets](https://nitro.build/deploy) like Netlify, Vercel, Node.js, and more.
+### Daily workflow
 
-Refer to the [TanStack Start hosting docs](https://tanstack.com/start/latest/docs/framework/react/guide/hosting) for more information.
+```bash
+# 1. Deploy canary version (0% traffic, users unaffected)
+npx vite build && npx wrangler deploy
+
+# 2. Test the canary version
+#    Option A: Browser → https://batchlyai.com/?cwv_debug=2
+#    Option B: CLI    → npx wrangler versions test
+#    Option C: curl   → curl -H "x-cwv-debug: 2" https://batchlyai.com
+
+# 3. Run smoke tests against canary
+npm run smoke
+
+# 4. Confirm and promote to 100%
+npx wrangler versions promote
+```
+
+### Rollback
+
+```bash
+# Back to the previous version instantly
+npx wrangler rollback
+```
+
+### DB migrations
+
+Canary and stable versions share the same D1 database. Migrations must be forward-compatible:
+
+| Safe                                     | Unsafe                                 |
+| ---------------------------------------- | -------------------------------------- |
+| `ALTER TABLE ADD COLUMN ... DEFAULT ...` | `ADD COLUMN ... NOT NULL` (no default) |
+| New tables                               | `DROP COLUMN` / `DROP TABLE`           |
+| New indexes                              | Renaming columns                       |
+
+> [!IMPORTANT]
+> Verify Version Management is enabled in Cloudflare Dashboard → Workers → batchlyai → Settings.
 
 ## Issue watchlist
 

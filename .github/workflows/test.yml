@@ -75,3 +75,30 @@ jobs:
         with:
           name: playwright-report
           path: e2e-report/
+
+  smoke:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    needs: [unit-and-integration]
+    continue-on-error: true
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Smoke test production APIs
+        id: smoke
+        run: bash scripts/smoke-test.sh
+      - name: Comment smoke failure on PR
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '## Smoke test failed\n\nThe canary smoke test did not pass. Check the [smoke job logs](' +
+                'https://github.com/' + context.repo.owner + '/' + context.repo.repo +
+                '/actions/runs/' + context.runId + ') for details.\n\n' +
+                '**Do not promote the canary version until this is resolved.**'
+            })
