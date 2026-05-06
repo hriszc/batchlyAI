@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { runExpandLLM } from "@/lib/ai";
+import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getExpandCache, setExpandCache } from "@/lib/cache/prompt-cache";
 
@@ -63,9 +64,3 @@ export const Route = createFileRoute("/api/expand-vars")({
   },
 });
 
-function jsonResponse(data: unknown, status: number) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}

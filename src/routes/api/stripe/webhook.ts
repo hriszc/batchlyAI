@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, eq, sql } from "drizzle-orm";
 
+import { jsonResponse } from "@/lib/api-helpers";
 import { env } from "@/env/server";
 import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
@@ -9,23 +10,13 @@ import { getStripe } from "@/lib/stripe";
 
 export async function handleWebhook(request: Request): Promise<Response> {
   const binding = getD1Binding();
-  if (!binding) {
-    return new Response(JSON.stringify({ error: "DB unavailable" }), {
-      status: 501,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+  if (!binding) return jsonResponse({ error: "DB unavailable" }, 501);
 
   const body = await request.text();
   const sig = request.headers.get("stripe-signature") || "";
 
   const webhookSecret = env.STRIPE_WEBHOOK_SECRET;
-  if (!webhookSecret) {
-    return new Response(JSON.stringify({ error: "Webhook secret not configured" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+  if (!webhookSecret) return jsonResponse({ error: "Webhook secret not configured" }, 500);
 
   let event;
   try {
@@ -34,10 +25,7 @@ export async function handleWebhook(request: Request): Promise<Response> {
   } catch (err) {
     const message = err instanceof Error ? err.message : "Signature verification failed";
     console.error("[stripe] webhook signature error:", message);
-    return new Response(JSON.stringify({ error: message }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: message }, 400);
   }
 
   if (event.type === "checkout.session.completed") {
@@ -46,20 +34,16 @@ export async function handleWebhook(request: Request): Promise<Response> {
 
     if (!userId) {
       console.error("[stripe] webhook: no userId in metadata");
-      return new Response(JSON.stringify({ error: "Missing userId" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "Missing userId" }, 400);
     }
 
     const amountTotal = session.amount_total ?? 1000;
-    const creditsPerDollar = 100; // $10 = 1000 credits → 100 credits per dollar
+    const creditsPerDollar = 100;
     const creditsGranted = Math.round((amountTotal / 100) * creditsPerDollar);
     const now = Math.floor(Date.now() / 1000);
     const db = getDb(binding);
 
     try {
-      // Insert purchase record (idempotent — PK prevents duplicates)
       await db.insert(creditPurchase).values({
         id: session.id,
         userId,
@@ -70,13 +54,11 @@ export async function handleWebhook(request: Request): Promise<Response> {
         completedAt: now,
       });
 
-      // Credit the user
       await db
         .update(userTable)
         .set({ credits: sql`${userTable.credits} + ${creditsGranted}` })
         .where(eq(userTable.id, userId));
 
-      // Set stripe_customer_id on first purchase
       if (session.customer) {
         await db
           .update(userTable)
@@ -94,7 +76,6 @@ export async function handleWebhook(request: Request): Promise<Response> {
           .where(and(eq(referral.refereeId, userId), eq(referral.purchaseCommissionAwarded, 0)));
 
         if (refRecord) {
-          // TODO: restore tier-based rate after migration 0003 is applied
           const commissionRate = 0.2;
           const commission = Math.round(creditsGranted * commissionRate);
 
@@ -113,31 +94,20 @@ export async function handleWebhook(request: Request): Promise<Response> {
           }
         }
       } catch (refErr) {
-        // Non-fatal: don't break purchase if commission fails
         console.error("[stripe] Referral commission error:", refErr);
       }
     } catch (err) {
-      // PK violation = duplicate event, which is fine
       const message = err instanceof Error ? err.message : "";
       if (message.includes("UNIQUE constraint") || message.includes("SQLITE_CONSTRAINT")) {
         console.log(`[stripe] Duplicate webhook event ${session.id}, skipping`);
-        return new Response(JSON.stringify({ received: true }), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        });
+        return jsonResponse({ received: true }, 200);
       }
       console.error("[stripe] webhook db error:", message);
-      return new Response(JSON.stringify({ error: message }), {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: message }, 500);
     }
   }
 
-  return new Response(JSON.stringify({ received: true }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
+  return jsonResponse({ received: true }, 200);
 }
 
 export const Route = createFileRoute("/api/stripe/webhook")({
