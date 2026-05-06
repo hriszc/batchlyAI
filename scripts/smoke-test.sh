@@ -25,7 +25,7 @@ else
 fi
 
 # 2. Sign-up
-SIGNUP=$(curl -sf --max-time 15 -H "$HEADER" -X POST "$BASE/api/auth/sign-up/email" \
+SIGNUP=$(curl -s --max-time 15 -H "$HEADER" -X POST "$BASE/api/auth/sign-up/email" \
   -H "Content-Type: application/json" \
   -d '{"email":"smoke@test.com","password":"test123456","name":"SmokeTest"}' 2>&1 || true)
 if echo "$SIGNUP" | grep -qE 'token|already|exists'; then
