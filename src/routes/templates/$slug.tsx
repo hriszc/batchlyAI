@@ -4,13 +4,7 @@ import { drizzle } from "drizzle-orm/d1";
 import { ArrowRightIcon } from "lucide-react";
 
 import * as schema from "@/lib/db/schema";
-
-function getD1Binding(): D1Database | undefined {
-  const platformEnv = (globalThis as Record<string, unknown>).__env__ as
-    | Record<string, unknown>
-    | undefined;
-  return platformEnv?.batchlyai_db as D1Database | undefined;
-}
+import { getD1Binding } from "@/lib/cloudflare/bindings";
 
 export const Route = createFileRoute("/templates/$slug")({
   loader: async ({ params }) => {

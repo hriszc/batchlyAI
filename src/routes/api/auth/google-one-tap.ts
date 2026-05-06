@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createAuth } from "@/lib/auth/auth";
 import { getDb } from "@/lib/db";
 import { user as userTable, account as accountTable } from "@/lib/db/schema/auth.schema";
+import { getD1Binding } from "@/lib/cloudflare/bindings";
 
 async function verifyGoogleToken(credential: string) {
   const resp = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);
@@ -14,13 +15,6 @@ async function verifyGoogleToken(credential: string) {
     sub: string;
     email_verified: string;
   };
-}
-
-function getD1Binding(): D1Database | undefined {
-  const platformEnv = (globalThis as Record<string, unknown>).__env__ as
-    | Record<string, unknown>
-    | undefined;
-  return platformEnv?.batchlyai_db as D1Database | undefined;
 }
 
 function generateId() {

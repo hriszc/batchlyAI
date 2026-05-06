@@ -8,16 +8,10 @@ import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { getDb } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
 import { sendEmail } from "@/lib/email";
+import { getD1Binding } from "@/lib/cloudflare/bindings";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _auth: any = null;
-
-function getD1Binding(): D1Database | undefined {
-  const platformEnv = (globalThis as Record<string, unknown>).__env__ as
-    | Record<string, unknown>
-    | undefined;
-  return platformEnv?.batchlyai_db as D1Database | undefined;
-}
 
 export function createAuth(d1Binding?: D1Database) {
   if (_auth) return _auth;

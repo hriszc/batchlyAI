@@ -2,13 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { env } from "@/env/server";
 import { jsonResponse } from "@/lib/api-helpers";
-
-function getKvBinding(): KVNamespace | undefined {
-  const platformEnv = (globalThis as Record<string, unknown>).__env__ as
-    | Record<string, unknown>
-    | undefined;
-  return platformEnv?.batchlyai_kv as KVNamespace | undefined;
-}
+import { getKvBinding } from "@/lib/cloudflare/bindings";
 
 function hexToBuf(hex: string): Uint8Array {
   const bytes = new Uint8Array(Math.ceil(hex.length / 2));

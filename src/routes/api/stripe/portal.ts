@@ -5,13 +5,7 @@ import { createAuth } from "@/lib/auth/auth";
 import { getDb } from "@/lib/db";
 import { user as userTable } from "@/lib/db/schema";
 import { getStripe } from "@/lib/stripe";
-
-function getD1Binding(): D1Database | undefined {
-  const platformEnv = (globalThis as Record<string, unknown>).__env__ as
-    | Record<string, unknown>
-    | undefined;
-  return platformEnv?.batchlyai_db as D1Database | undefined;
-}
+import { getD1Binding } from "@/lib/cloudflare/bindings";
 
 export async function handlePortal(request: Request): Promise<Response> {
   const auth = createAuth();

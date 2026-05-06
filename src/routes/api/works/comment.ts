@@ -6,13 +6,7 @@ import { createAuth } from "@/lib/auth/auth";
 import { getDb } from "@/lib/db";
 import { user } from "@/lib/db/schema/auth.schema";
 import { work, workComment } from "@/lib/db/schema/data-flywheel.schema";
-
-function getD1Binding(): D1Database | undefined {
-  const platformEnv = (globalThis as Record<string, unknown>).__env__ as
-    | Record<string, unknown>
-    | undefined;
-  return platformEnv?.batchlyai_db as D1Database | undefined;
-}
+import { getD1Binding } from "@/lib/cloudflare/bindings";
 
 export const Route = createFileRoute("/api/works/comment")({
   server: {

@@ -4,19 +4,13 @@ import { pollReplicatePrediction } from "@/lib/ai";
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { getKvBinding } from "@/lib/cloudflare/bindings";
 
 interface GrsTaskData {
   userId: string;
   status: string;
   urls?: string[];
   error?: string;
-}
-
-function getKvBinding(): KVNamespace | undefined {
-  const platformEnv = (globalThis as Record<string, unknown>).__env__ as
-    | Record<string, unknown>
-    | undefined;
-  return platformEnv?.batchlyai_kv as KVNamespace | undefined;
 }
 
 export async function handleGenerateStatus(request: Request): Promise<Response> {

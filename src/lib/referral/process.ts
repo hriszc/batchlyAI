@@ -2,20 +2,7 @@ import { and, eq, gte, sql } from "drizzle-orm";
 
 import { getDb } from "@/lib/db";
 import { referral as referralTable, referralCode, user as userTable } from "@/lib/db/schema";
-
-function getD1Binding(): D1Database | undefined {
-  const platformEnv = (globalThis as Record<string, unknown>).__env__ as
-    | Record<string, unknown>
-    | undefined;
-  return platformEnv?.batchlyai_db as D1Database | undefined;
-}
-
-function getKvBinding(): KVNamespace | undefined {
-  const platformEnv = (globalThis as Record<string, unknown>).__env__ as
-    | Record<string, unknown>
-    | undefined;
-  return platformEnv?.batchlyai_kv as KVNamespace | undefined;
-}
+import { getD1Binding, getKvBinding } from "@/lib/cloudflare/bindings";
 
 const REFERRER_CREDITS = 5;
 const REFEREE_CREDITS = 3;

@@ -9,6 +9,7 @@ import { getDb } from "@/lib/db";
 import { user as userTable } from "@/lib/db/schema/auth.schema";
 import { generation } from "@/lib/db/schema/data-flywheel.schema";
 import { generateRequestSchema } from "@/lib/validation/schemas";
+import { getD1Binding, getKvBinding } from "@/lib/cloudflare/bindings";
 
 export const CREDIT_COST: Record<string, number> = {
   "z-image-fast": 10,
@@ -18,20 +19,6 @@ export const CREDIT_COST: Record<string, number> = {
   "z-video-fast": 40,
   "z-video-pro": 80,
 };
-
-function getD1Binding(): D1Database | undefined {
-  const platformEnv = (globalThis as Record<string, unknown>).__env__ as
-    | Record<string, unknown>
-    | undefined;
-  return platformEnv?.batchlyai_db as D1Database | undefined;
-}
-
-function getKvBinding(): KVNamespace | undefined {
-  const platformEnv = (globalThis as Record<string, unknown>).__env__ as
-    | Record<string, unknown>
-    | undefined;
-  return platformEnv?.batchlyai_kv as KVNamespace | undefined;
-}
 
 export interface GenerateContext {
   request: Request;
