@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { createAuth } from "@/lib/auth/auth";
 import { jsonResponse } from "@/lib/api-helpers";
+import { createAuth } from "@/lib/auth/auth";
 import { getDb } from "@/lib/db";
 import { user as userTable, account as accountTable } from "@/lib/db/schema/auth.schema";
 
@@ -136,4 +136,3 @@ export const Route = createFileRoute("/api/auth/google-one-tap")({
     },
   },
 });
-

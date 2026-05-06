@@ -63,4 +63,3 @@ export const Route = createFileRoute("/api/expand-vars")({
     },
   },
 });
-

@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { env } from "@/env/server";
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
-import { env } from "@/env/server";
 import { getStripe } from "@/lib/stripe";
 
 export async function handleCheckout(request: Request): Promise<Response> {
