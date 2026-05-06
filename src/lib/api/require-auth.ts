@@ -1,5 +1,5 @@
-import { createAuth } from "@/lib/auth/auth";
 import { jsonResponse } from "@/lib/api-helpers";
+import { createAuth } from "@/lib/auth/auth";
 
 export async function requireAuth(request: Request) {
   const auth = createAuth();
