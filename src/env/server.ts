@@ -4,7 +4,11 @@ import * as z from "zod";
 export const env = createEnv({
   server: {
     VITE_BASE_URL: z.string().url().default("http://localhost:3000"),
-    BETTER_AUTH_SECRET: z.string().min(32),
+    BETTER_AUTH_SECRET: z
+      .string()
+      .min(32)
+      .optional()
+      .default("dev-secret-do-not-use-in-production-42-characters-minimum"),
 
     // AI Gateway
     DEEPSEEK_API_KEY: z.string().optional(),
