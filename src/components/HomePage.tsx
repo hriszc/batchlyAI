@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 import { GeneratorCard } from "@/components/universal-generator/GeneratorCard";
@@ -6,6 +7,7 @@ import { ResultsGrid } from "@/components/universal-generator/ResultsGrid";
 import { ShareScreenshot } from "@/components/universal-generator/ShareScreenshot";
 import { useGeneratorState } from "@/components/universal-generator/useGeneratorState";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { authClient } from "@/lib/auth/auth-client";
 
 interface HomePageProps {
   forceLanguage?: "en" | "zh";
@@ -16,6 +18,9 @@ export function HomePage({ forceLanguage }: HomePageProps) {
   const resultsRef = useRef<HTMLDivElement>(null);
   const { setLanguage, t } = useLanguage();
   const [shareMode, setShareMode] = useState(false);
+
+  const { data: session } = authClient.useSession();
+  const isLoggedIn = !!session?.user;
 
   useEffect(() => {
     if (forceLanguage) {
@@ -125,6 +130,78 @@ export function HomePage({ forceLanguage }: HomePageProps) {
           }}
         />
       )}
+
+      {!hasResults && !isLoggedIn && (
+        <DiscoverSection cta={t("signupToCreate")} discoverTitle={t("discoverCTA")} />
+      )}
     </main>
+  );
+}
+
+function DiscoverSection({
+  cta,
+  discoverTitle,
+}: {
+  cta: string;
+  discoverTitle: string;
+}) {
+  const [works, setWorks] = useState<Array<{
+    slug: string;
+    name: string;
+    description: string;
+    previewImageUrl: string | null;
+    usageCount: number;
+  }> | null>(null);
+
+  useEffect(() => {
+    fetch("/api/templates?limit=6")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.error) setWorks(data.templates);
+      })
+      .catch(() => {});
+  }, []);
+
+  if (!works || works.length === 0) return null;
+
+  return (
+    <section className="mt-16">
+      <h2 className="mb-4 text-xl font-semibold">{discoverTitle}</h2>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {works.slice(0, 6).map((w) => (
+          <Link
+            key={w.slug}
+            to="/templates/$slug"
+            params={{ slug: w.slug }}
+            className="group overflow-hidden rounded-lg border bg-card shadow-sm transition-shadow hover:shadow-md"
+          >
+            <div className="aspect-[16/10] bg-muted">
+              {w.previewImageUrl ? (
+                <img src={w.previewImageUrl} alt={w.name} className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full items-center justify-center text-muted-foreground/30">
+                  No preview
+                </div>
+              )}
+            </div>
+            <div className="p-4">
+              <h3 className="font-medium group-hover:text-[#0071e3]">{w.name}</h3>
+              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{w.description}</p>
+              <span className="mt-2 inline-block text-[10px] text-muted-foreground">
+                {w.usageCount} uses
+              </span>
+            </div>
+          </Link>
+        ))}
+      </div>
+      <div className="mt-6 text-center">
+        <a
+          href="/signup"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#0071e3] px-6 text-sm font-medium text-white transition-colors hover:bg-[#0077ed]"
+        >
+          {cta}
+        </a>
+      </div>
+    </section>
   );
 }

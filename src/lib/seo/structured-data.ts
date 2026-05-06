@@ -50,3 +50,23 @@ export function webPageLd(input: {
     url: input.url,
   };
 }
+
+export function creativeWorkLd(input: {
+  title: string;
+  description: string;
+  url: string;
+  image: string;
+  authorName: string;
+  datePublished: string;
+}): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    name: input.title,
+    description: input.description,
+    url: input.url,
+    image: input.image,
+    author: { "@type": "Person", name: input.authorName },
+    datePublished: input.datePublished,
+  };
+}

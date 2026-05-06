@@ -104,6 +104,8 @@ export const translations = {
     referralCreated: "Referral link created\!",
     referralCopied: "Referral link copied\!",
     referralFailed: "Failed to create referral link",
+    discoverCTA: "Discover what others are creating",
+    signupToCreate: "Sign up to create your own",
   },
   zh: {
     siteTitle: "BatchlyAI",
@@ -209,6 +211,8 @@ export const translations = {
     referralCreated: "推荐链接已创建！",
     referralCopied: "推荐链接已复制！",
     referralFailed: "创建推荐链接失败",
+    discoverCTA: "发现更多精彩作品",
+    signupToCreate: "注册开始创作",
   },
 } as const;
 

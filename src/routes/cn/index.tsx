@@ -7,7 +7,7 @@ import { softwareAppLd } from "@/lib/seo/structured-data";
 
 const meta = createPageMeta({
   title: "BatchlyAI — 万能 AI 生成器",
-  description: "万能 AI 生成器 — 一次输入多组变量，批量生成所有组合结果",
+  description: "万能 AI 生成器 — 一次输入多组变量，批量生成所有组合结果，发现更多精彩作品，混搭提示词",
   path: "/cn",
   locale: "zh-CN",
   jsonLd: softwareAppLd(),

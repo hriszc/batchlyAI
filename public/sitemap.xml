@@ -10,4 +10,5 @@
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
+  <!-- Works pages will be auto-included when dynamic sitemap is implemented -->
 </urlset>

@@ -8,7 +8,7 @@ import { softwareAppLd } from "@/lib/seo/structured-data";
 const meta = createPageMeta({
   title: "BatchlyAI — Universal AI Generator",
   description:
-    "Universal AI Generator — batch generate all combinations from multi-variable prompts",
+    "Universal AI Generator — batch generate all combinations from multi-variable prompts, discover works, and remix prompts",
   path: "/",
   locale: "en",
   jsonLd: softwareAppLd(),
