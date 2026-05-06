@@ -4,411 +4,394 @@
 
 ## 1. 项目概览
 
-**BatchlyAI** 是一个 Universal AI Generator，用户输入含多变量的 prompt 模板（如 `A {{cat, dog}} in {{forest, beach}}`），系统自动计算所有笛卡尔积组合并批量生成 AI 图片。支持多个 AI 后端（Replicate 快速通道、grsaiapi.com 专业通道），内置用户积分与 Stripe 支付系统。
+**BatchlyAI** 是一个 Universal AI Generator，支持多变量 prompt 模板批量生成 + 社区分享 + 模板市场 + 推荐系统。用户输入 `{{var1, var2}}` 变量组，系统计算笛卡尔积后批量调用 AI 生成图片/文本。支持 `{*描述*}` AI 智能展开语法。
 
 - **线上地址**: https://batchlyai.com
-- **部署名称**: `batchlyai` (Cloudflare Workers)
-- **模板来源**: [TanStarter](https://github.com/mugnavo/tanstarter)
+- **部署**: Cloudflare Workers (Nitro v3)，D1 数据库，KV 缓存，R2 存储
 
 ## 2. 技术栈
 
-| 层级              | 技术                                          | 版本/备注                                            |
-| ----------------- | --------------------------------------------- | ---------------------------------------------------- |
-| **元框架**        | TanStack Start                                | SSR + file-based routing                             |
-| **UI**            | React 19 + React Compiler                     | `@vitejs/plugin-react` + babel-plugin-react-compiler |
-| **路由**          | TanStack Router                               | `createFileRoute` 基于文件的路由                     |
-| **数据获取**      | TanStack React Query v5                       | staleTime: 2min, SSR query integration               |
-| **样式**          | Tailwind CSS v4 + shadcn/ui + Base UI         | Apple 设计系统                                       |
-| **图标**          | lucide-react + @icons-pack/react-simple-icons | UI 图标 + 品牌图标                                   |
-| **ORM**           | Drizzle ORM                                   | `drizzle-orm` + `drizzle-kit`, SQLite 方言           |
-| **数据库 (生产)** | Cloudflare D1                                 | `batchlyai_db`                                       |
-| **数据库 (本地)** | SQLite (local.db)                             | 开发模式使用本地 SQLite 文件                         |
-| **认证**          | Better Auth                                   | email/password + GitHub/Google OAuth                 |
-| **缓存**          | Cloudflare KV                                 | `batchlyai_kv`, prompt 结果缓存 + GRS 任务状态       |
-| **存储**          | Cloudflare R2                                 | `batchlyai_r2`, 文件上传                             |
-| **AI Providers**  | grsaiapi.com + Replicate                      | gpt-image-2 / z-image-turbo                          |
-| **支付**          | Stripe SDK v22                                | 一次性积分购买，API version `2026-04-22.dahlia`      |
-| **邮件**          | Cloudflare Email / MailChannels               | 基础设施就绪，auth 回调尚未接入                      |
-| **服务端**        | Nitro v3 beta (Cloudflare Workers module)     | `nodejs_compat` flag                                 |
-| **构建**          | Vite 8 + rolldown                             | Babel plugin for React Compiler                      |
-| **语言**          | TypeScript 6                                  | strict mode                                          |
-| **检查**          | Oxlint + Oxfmt                                | lint-staged pre-commit hook                          |
-| **测试**          | Vitest + @testing-library/react + Playwright  | 单元/集成/E2E                                        |
-| **包管理**        | pnpm                                          | workspace 单包模式                                   |
+| 层级             | 技术                            | 备注                                                    |
+| ---------------- | ------------------------------- | ------------------------------------------------------- |
+| **元框架**       | TanStack Start                  | SSR + file-based routing                                |
+| **UI**           | React 19 + React Compiler       | Tailwind CSS v4 + shadcn/ui                             |
+| **路由**         | TanStack Router                 | `createFileRoute`                                       |
+| **数据获取**     | TanStack React Query v5         | staleTime: 2min                                         |
+| **ORM**          | Drizzle ORM                     | SQLite (Cloudflare D1)                                  |
+| **认证**         | Better Auth                     | email/password + GitHub + Google OAuth + Google One Tap |
+| **AI Providers** | DeepSeek + Replicate + Grsai    | 通过 Cloudflare AI Gateway (含 fallback)                |
+| **支付**         | Stripe SDK v22                  | 一次性支付, USD/CNY 双币种, API `2026-04-22.dahlia`     |
+| **邮件**         | Cloudflare Email / MailChannels | 验证邮件 + 密码重置                                     |
+| **缓存**         | Cloudflare KV                   | prompt 缓存 + GRS 任务状态 + 推荐 IP 追踪               |
+| **存储**         | Cloudflare R2                   | 文件上传                                                |
+| **服务端**       | Nitro v3 beta                   | `nodejs_compat`                                         |
+| **语言**         | TypeScript 6                    | strict mode                                             |
+| **检查**         | Oxlint + Oxfmt                  |                                                         |
+| **测试**         | Vitest + Playwright             | 单元/集成/E2E                                           |
 
 ## 3. 目录结构
 
 ```
-.
-├── package.json              # 依赖 & 脚本
-├── tsconfig.json             # TypeScript 严格模式, ESNext, @/* 别名
-├── vite.config.ts            # Vite + TanStack Start + Nitro + React Compiler
-├── wrangler.toml             # Cloudflare Workers 部署 (D1 + KV + R2 绑定)
-├── drizzle.config.ts         # Drizzle ORM (本地 dev 用 local.db)
-├── .env.example              # 环境变量模板
-├── drizzle/                  # Drizzle 迁移文件
-├── migrations/               # SQL 迁移 (Stripe 等)
-├── e2e/                      # Playwright E2E 测试
-├── tests/                    # Vitest 测试辅助
-├── public/                   # 静态资源 (logo, robots.txt, _headers)
 ├── src/
-│   ├── router.tsx            # TanStack Router 创建 + Query 集成
-│   ├── routeTree.gen.ts      # 自动生成的路由树
-│   ├── styles.css            # Tailwind v4 + Apple 主题
-│   ├── env/                  # t3-env + zod 环境变量校验 (server/client)
-│   ├── types/                # 本地类型声明 (D1Database, KVNamespace)
-│   ├── routes/               # TanStack Router 基于文件的路由
-│   │   ├── __root.tsx        # 根布局 (主题/i18n/devtools)
-│   │   ├── index.tsx         # 英文首页
-│   │   ├── cn/index.tsx      # 中文首页 (hreflang="zh-CN")
-│   │   ├── _guest/           # 游客路由 (login, signup)
-│   │   └── api/              # API 服务端函数路由
-│   │       ├── auth/$.ts     # Better Auth 代理 (手动路由表)
-│   │       ├── generate.ts   # POST /api/generate — AI 生成 (全异步)
-│   │       ├── generate-status.ts  # GET /api/generate-status — 异步轮询
-│   │       ├── upload-url.ts # POST /api/upload-url — R2 文件上传
-│   │       ├── grs-webhook.ts     # POST /api/grs-webhook — GRS 回调
-│   │       └── stripe/            # Stripe 支付
-│   │           ├── checkout.ts    #    创建 checkout session
-│   │           ├── portal.ts      #    创建 billing portal session
-│   │           └── webhook.ts     #    接收 Stripe 事件
-│   ├── components/           # React 组件
-│   │   ├── HomePage.tsx      # 主页面布局
-│   │   ├── SettingsBar.tsx   # 认证/设置/购买积分
-│   │   ├── ui/               # shadcn/ui 基础组件
-│   │   └── universal-generator/  # 核心生成器功能
-│   │       ├── types.ts           # 状态 & Action 类型
-│   │       ├── models.ts          # 模型定义 (6 个模型, 3 种类别)
-│   │       ├── utils.ts           # 变量提取 & 笛卡尔积计算
+│   ├── router.tsx               # TanStack Router + Query 集成
+│   ├── routeTree.gen.ts         # 自动生成路由树
+│   ├── styles.css               # Tailwind v4
+│   ├── env/                     # client.ts / server.ts (t3-env + zod)
+│   ├── types/                   # workers.d.ts (D1, KV 类型声明)
+│   │
+│   ├── routes/                  # TanStack Router 文件路由
+│   │   ├── __root.tsx           # 根布局
+│   │   ├── index.tsx            # 英文首页
+│   │   ├── cn/index.tsx         # 中文首页
+│   │   ├── discover.tsx         # 社区作品发现页
+│   │   ├── _guest/              # 游客路由 (login/signup/forgot-password/reset-password)
+│   │   ├── my/                  # 用户页面 (generations/prompts/works)
+│   │   ├── blog/                # 博客 (index + $slug)
+│   │   ├── templates/           # 模板市场 (index + $slug)
+│   │   ├── works/$workId.tsx    # 作品详情
+│   │   ├── g/$shareId.tsx       # 公开分享批次
+│   │   ├── r/$code.tsx          # 推荐码落地页 (302 跳转)
+│   │   └── api/                 # 服务端 API 路由
+│   │       ├── auth/$.ts             # Better Auth (认证路由表)
+│   │       ├── auth/google-one-tap.ts # Google One Tap 登录
+│   │       ├── generate.ts          # POST - AI 生成 (全异步)
+│   │       ├── generate-status.ts   # GET  - 异步轮询
+│   │       ├── grs-webhook.ts       # POST - GRS 回调
+│   │       ├── expand-vars.ts       # POST - AI 变量展开 (DeepSeek)
+│   │       ├── prompts.ts           # GET/POST/DELETE - 保存的 Prompt
+│   │       ├── templates.ts         # GET/POST - 模板市场
+│   │       ├── templates/$slug.ts   # GET - 模板详情
+│   │       ├── works.ts             # GET/POST - 社区作品
+│   │       ├── works/comment.ts     # GET/POST - 作品评论
+│   │       ├── works/like.ts        # POST - 点赞
+│   │       ├── generations.ts       # GET - 生成历史
+│   │       ├── share.ts             # POST - 创建分享
+│   │       ├── upload-url.ts        # POST - R2 上传
+│   │       ├── health.ts            # GET - 健康检查
+│   │       ├── stripe/              # Stripe 支付
+│   │       │   ├── checkout.ts      #    POST - 创建 checkout
+│   │       │   ├── portal.ts        #    POST - billing portal
+│   │       │   └── webhook.ts       #    POST - Stripe webhook
+│   │       └── referral/            # 推荐系统
+│   │           ├── generate-code.ts #    POST - 生成推荐码
+│   │           └── stats.ts         #    GET  - 推荐统计
+│   │
+│   ├── components/
+│   │   ├── HomePage.tsx         # 主页面 (GeneratorCard + ResultsGrid + ShareScreenshot)
+│   │   ├── SettingsBar.tsx      # 固定工具栏 (主题/语言/积分/推荐/用户菜单)
+│   │   ├── CreditPurchasePopover.tsx  # 积分购买弹窗 (1-100 包)
+│   │   ├── GoogleOneTap.tsx     # Google One Tap 自动登录
+│   │   ├── theme-provider.tsx / theme-toggle.tsx
+│   │   ├── sign-in-social-button.tsx / sign-out-button.tsx
+│   │   ├── ui/                  # shadcn/ui 基础组件
+│   │   └── universal-generator/ # 核心生成器
+│   │       ├── types.ts              # 状态/Action 类型 (含 AiBlock)
+│   │       ├── models.ts             # 6 个模型 (image/video/text)
+│   │       ├── utils.ts              # 变量解析 + AI block 提取
 │   │       ├── useGeneratorState.ts  # useReducer 状态机 + 轮询
-│   │       ├── GeneratorCard.tsx   # 主生成器卡片
-│   │       ├── ResultCard.tsx      # 单结果卡片
-│   │       ├── ResultsGrid.tsx     # 结果网格
-│   │       └── VariableGroupCard.tsx  # 变量组编辑器
-│   └── lib/                  # 业务逻辑
-│       ├── ai/index.ts       # AI 后端 (grsaiapi + Replicate, 全异步)
-│       ├── auth/             # Better Auth 配置、中间件、密码哈希
-│       │   ├── auth.ts            # createAuth() 工厂
-│       │   ├── middleware.ts      # authMiddleware / freshAuthMiddleware
-│       │   ├── password.ts        # PBKDF2 密码哈希
-│       │   └── functions.ts       # _getUser() 服务端函数
-│       ├── db/               # Drizzle ORM + DB 连接
-│       │   └── schema/       # auth.schema.ts + payment.schema.ts
-│       ├── cache/prompt-cache.ts   # KV prompt 结果缓存 (SHA-256, 24h TTL)
-│       ├── stripe.ts              # Stripe SDK 单例 (fetch HTTP client)
-│       ├── cloudflare/r2.ts        # R2 文件操作
-│       ├── i18n/             # 英文/中文翻译 (含购买积分文案)
-│       ├── email.ts          # 邮件发送 (Cloudflare Email + MailChannels)
-│       ├── rate-limit.ts     # 内存限流器
-│       └── utils.ts          # 共享工具 (cn 等)
+│   │       ├── useExpandVariables.ts # AI 变量展开 hook
+│   │       ├── inspire-prompts.ts    # 15 个灵感 prompt 模板
+│   │       ├── GeneratorCard.tsx     # 生成器卡片
+│   │       ├── ResultCard.tsx / ResultsGrid.tsx
+│   │       ├── VariableGroupCard.tsx
+│   │       └── ShareScreenshot.tsx   # html2canvas 截图分享
+│   │
+│   ├── lib/
+│   │   ├── ai/index.ts         # AI 集成 (DeepSeek + Replicate + Grsai + AI Gateway)
+│   │   ├── auth/               # Better Auth 配置、中间件、密码、hooks
+│   │   ├── db/schema/          # auth + payment + data-flywheel + referral + share
+│   │   ├── cache/prompt-cache.ts    # KV 缓存
+│   │   ├── cloudflare/r2.ts         # R2 操作
+│   │   ├── i18n/translations.ts     # EN/ZH 双语 (~150 key)
+│   │   ├── referral/process.ts      # 推荐处理 (注册后发积分)
+│   │   ├── seo/                     # hreflang, meta, structured-data
+│   │   ├── upload/sanitize.ts       # 文件名消毒
+│   │   ├── validation/schemas.ts    # Zod 校验 (prompt/数量/比例)
+│   │   ├── security-headers.ts      # CSP/HSTS/X-Frame 等安全头
+│   │   ├── api-helpers.ts           # JSON 响应辅助
+│   │   ├── stripe.ts / email.ts / rate-limit.ts
+│   │   └── utils.ts
+│   │
+│   └── content/blog/           # 3 篇静态博客 (TypeScript 文件)
+│
+├── public/                     # favicon, logo, robots.txt, sitemap.xml
+├── prd/                        # 产品需求文档 (变量系统增强)
+├── scripts/smoke-test.sh       # 部署后烟雾测试
+├── e2e/                        # Playwright E2E
+├── tests/                      # Vitest 测试辅助
+└── drizzle/ + migrations/      # DB 迁移
 ```
 
 ## 4. 核心架构
 
-### 请求流
+### 4.1 认证
+
+Better Auth 使用路由表派发模式：已知路径直接用 `auth.api[method]` 内部调用 (规避 Workers Free 10ms CPU 限制)，未知路径 fallback 到 `auth.handler()`。
+
+- 支持 **email/password** + **GitHub OAuth** + **Google OAuth** + **Google One Tap**
+- 敏感端点限流: 10 req/60s per IP
+- 密码: PBKDF2-SHA256 (100k iterations)
+- 邮件验证和密码重置使用 Cloudflare Email / MailChannels 真实发送
+- 注册后触发 `processReferralAfterSignup()` 处理推荐
+
+### 4.2 AI 生成 pipeline
 
 ```
-浏览器 → Cloudflare Workers (Nitro v3)
-  ├── 静态资源: ASSETS binding → public/ 目录
-  ├── API 路由: src/routes/api/*.ts → 服务端函数
-  └── SSR 页面: TanStack Start → React 19 渲染 → HTML 响应
+用户输入 prompt 模板 → extractVariableGroups 解析 {{var1, var2}}
+  ├── {*描述*} 语法 → extractAiBlocks → AI 展开 (DeepSeek) → 替换为 {{v1, v2, ...}}
+  └── computePromptCombinations → 笛卡尔积 → 逐组合 POST /api/generate
+       ├── 检查 prompt 缓存 (KV)
+       ├── 原子扣减积分
+       ├── z-image-fast → Replicate (异步, 返回 predictionId)
+       ├── z-image-pro  → Grsai (异步, webhook 回调写 KV)
+       └── text 模型   → DeepSeek generateText()
+Client 轮询 GET /api/generate-status (每 2s, 最多 60 次, 合并轮询)
 ```
 
-### 认证架构
+### 4.3 AI Providers
 
-Better Auth 使用标准 `auth.handler(request)` 处理所有认证请求。
+| Provider      | 用途                    | 连接方式                                                        |
+| ------------- | ----------------------- | --------------------------------------------------------------- |
+| **DeepSeek**  | 文本生成 + AI 变量展开  | Cloudflare AI Gateway `/deepseek` → fallback `api.deepseek.com` |
+| **Replicate** | 图片生成 (z-image-fast) | Gateway `/replicate` → fallback `api.replicate.com`             |
+| **Grsai**     | 图片生成 (z-image-pro)  | Gateway `/grsai` → fallback `grsaiapi.com`                      |
 
-关键细节：
-
-- 敏感端点（sign-in/up、forget/reset-password）在 POST 请求进入 handler 之前有内存限流 (10 req/60s per IP)
-- 限流检查后直接 `return auth.handler(request)` 处理
-- Session 通过 cookie cache 管理 (5min maxAge)
-- 密码使用 PBKDF2-SHA256 哈希 (100k iterations, 16-byte salt, 64-byte key)
-
-**认证中间件** (`src/lib/auth/middleware.ts`)：
-
-- `authMiddleware` — 缓存 session (5min cookie cache)，用于路由级守卫
-- `freshAuthMiddleware` — 每次查询数据库，用于敏感/写操作
-
-**邮件**：`src/lib/email.ts` 支持 Cloudflare Email Binding + MailChannels HTTP API 两种发送方式。auth.ts 的 `sendEmailVerification` 和 `sendResetPassword` 回调已接入真实邮件发送 (发送 HTML 邮件，含验证/重置链接)。
-
-### AI 生成 pipeline (全异步)
-
-```
-Client POST /api/generate
-  ├── 检查 prompt 缓存 (KV, SHA-256 key, 24h TTL)
-
-  ├── 命中 → 直接返回 URL (免积分)
-  └── 未命中 → 原子扣减积分 (UPDATE WHERE credits >= cost)
-       ├── 余额不足 → 402
-       └── 扣减成功
-            ├── z-image-fast (Replicate)
-            │     → POST api.replicate.com/v1/predictions
-            │     → 返回 predictionIds
-            └── z-image-pro (GRS AI)
-                  → POST grsaiapi.com/v1/draw/completions (含 webHook URL)
-                  → 存储 task 到 KV: grs:<id>
-                  → 返回 predictionIds
-
-Client 轮询 GET /api/generate-status?ids=...&type=...
-  ├── type=replicate → 调用 Replicate poll API
-  └── type=grs → 读取 KV grs:<id> (由 webhook 更新)
-
-GRS AI 回调 POST /api/grs-webhook
-  → 更新 KV grs:<id> 写入最终状态 (succeeded/failed) + URL
-```
-
-轮询参数: 每 2 秒一次, 最多 60 次 (2 分钟), 等到所有 prediction 达到终态后返回。
-
-缓存命中时直接返回 URL（不扣积分），命中后写入 KV。
+所有 Provider 使用 `fetchWithFallback()`: 先走 Gateway，失败后直连。
 
 ## 5. API 路由表
 
-| 路由                           | 方法     | 文件                            | 功能            | 认证 | 限流   |
-| ------------------------------ | -------- | ------------------------------- | --------------- | ---- | ------ |
-| `/api/auth/sign-up/email`      | POST     | `routes/api/auth/$.ts`          | 邮箱注册        | 否   | 10/60s |
-| `/api/auth/sign-in/email`      | POST     | `routes/api/auth/$.ts`          | 邮箱登录        | 否   | 10/60s |
-| `/api/auth/sign-out`           | POST     | `routes/api/auth/$.ts`          | 登出            | 否   | -      |
-| `/api/auth/get-session`        | GET      | `routes/api/auth/$.ts`          | 获取当前会话    | 否   | -      |
-| `/api/auth/forget-password`    | POST     | `routes/api/auth/$.ts`          | 忘记密码        | 否   | 10/60s |
-| `/api/auth/reset-password`     | POST     | `routes/api/auth/$.ts`          | 重置密码        | 否   | 10/60s |
-| `/api/auth/callback/:provider` | GET/POST | `routes/api/auth/$.ts`          | OAuth 回调      | 否   | -      |
-| `/api/generate`                | POST     | `routes/api/generate.ts`        | AI 生成 (异步)  | 是   | -      |
-| `/api/generate-status`         | GET      | `routes/api/generate-status.ts` | 异步任务轮询    | 是   | -      |
-| `/api/grs-webhook`             | POST     | `routes/api/grs-webhook.ts`     | GRS AI 回调     | 否   | -      |
-| `/api/upload-url`              | POST     | `routes/api/upload-url.ts`      | 文件上传到 R2   | 是   | -      |
-| `/api/stripe/checkout`         | POST     | `routes/api/stripe/checkout.ts` | 创建支付会话    | 是   | -      |
-| `/api/stripe/portal`           | POST     | `routes/api/stripe/portal.ts`   | 账单管理门户    | 是   | -      |
-| `/api/stripe/webhook`          | POST     | `routes/api/stripe/webhook.ts`  | Stripe 事件接收 | 否   | -      |
+### 认证
 
-## 6. 关键模块详解
+| 路由                       | 方法     | 认证 | 限流            |
+| -------------------------- | -------- | ---- | --------------- |
+| `/api/auth/*`              | GET/POST | 否   | 敏感端点 10/60s |
+| `/api/auth/google-one-tap` | POST     | 否   | -               |
 
-### 6.1 AI 集成 (`src/lib/ai/index.ts`)
+### 生成
 
-全异步架构，不再有同步生成：
+| 路由                   | 方法 | 认证 | 说明                               |
+| ---------------------- | ---- | ---- | ---------------------------------- |
+| `/api/generate`        | POST | 是   | AI 生成 (全异步, 上限 500 组合)    |
+| `/api/generate-status` | GET  | 是   | 合并轮询 prediction 状态           |
+| `/api/grs-webhook`     | POST | 否   | Grsai 异步回调                     |
+| `/api/expand-vars`     | POST | 是   | AI 变量展开 (DeepSeek, 最多 10 个) |
 
-- **createGrsaiPredictions()**: 调用 GRS AI (`gpt-image-2`)，传入 `webHook: ${VITE_BASE_URL}/api/grs-webhook`，立即返回 `{ id, status }`
-- **createReplicatePredictions()**: 调用 Replicate (`z-image-turbo`), `version: cba7f388...`, 根据 aspect ratio 计算 width/height (base 1024)，立即返回 prediction ID
-- **pollReplicatePrediction()**: 轮询 Replicate prediction 状态，返回 `{ status, urls, error }`
+### 内容
 
-### 6.2 生成器状态机 (`src/components/universal-generator/useGeneratorState.ts`)
+| 路由                   | 方法            | 认证    | 说明                          |
+| ---------------------- | --------------- | ------- | ----------------------------- |
+| `/api/prompts`         | GET/POST/DELETE | 是      | 保存的 Prompt (搜索/标签)     |
+| `/api/templates`       | GET/POST        | 仅 POST | 公共模板市场 (搜索/分类/分页) |
+| `/api/templates/$slug` | GET             | 否      | 模板详情                      |
+| `/api/works`           | GET/POST        | 仅 POST | 社区作品 (hot/new, 分类)      |
+| `/api/works/like`      | POST            | 是      | 点赞/取消 (幂等)              |
+| `/api/works/comment`   | GET/POST        | 仅 POST | 评论 (含用户信息 JOIN)        |
+| `/api/generations`     | GET             | 是      | 生成历史 (分页)               |
+| `/api/share`           | POST            | 是      | 创建公开分享批次              |
 
-- 使用 `useReducer` 管理 `GeneratorState`，`stateRef` 解决闭包陈旧问题
-- `startGenerating()`: POST 到 `/api/generate`
-  - 如果是异步响应 → 调用 `pollForResults()` (每 2s 轮询, 最多 60 次)
-  - 如果是同步响应 (缓存命中) → 直接返回 URL
-  - video/text 模型 → 前端模拟 (setTimeout 1.5s)
-- 积分余额通过 `SET_CREDITS_REMAINING` 实时更新
+### 支付 & 推荐
 
-### 6.3 变量解析 (`src/components/universal-generator/utils.ts`)
+| 路由                          | 方法 | 认证 | 说明                                           |
+| ----------------------------- | ---- | ---- | ---------------------------------------------- |
+| `/api/stripe/checkout`        | POST | 是   | 创建 Stripe Checkout (USD/CNY, quantity 1-100) |
+| `/api/stripe/portal`          | POST | 是   | Billing Portal (需 stripeCustomerId)           |
+| `/api/stripe/webhook`         | POST | 否   | Stripe 事件 (idempotent via PK)                |
+| `/api/referral/generate-code` | POST | 是   | 生成 8 位推荐码 (需要已使用积分)               |
+| `/api/referral/stats`         | GET  | 是   | 推荐统计 (积分/tier/数量)                      |
 
-- **extractVariableGroups()**: 正则 `/\{\{(.+?)\}\}/g` 提取变量组
-- **computeCombinations()**: 笛卡尔积计算
-- **computePromptCombinations()**: 模板插值生成最终 prompt
-- **getCombinationCount()**: 总组合数 = 各组值数量的乘积
+### 其他
 
-### 6.4 模型定义 (`src/components/universal-generator/models.ts`)
+| 路由              | 方法 | 认证 | 说明        |
+| ----------------- | ---- | ---- | ----------- |
+| `/api/upload-url` | POST | 是   | R2 文件上传 |
+| `/api/files/*`    | GET  | 否   | R2 文件访问 |
+| `/api/health`     | GET  | 否   | 健康检查    |
 
-| id             | label       | category | tier | provider  | creditCost |
-| -------------- | ----------- | -------- | ---- | --------- | ---------- |
-| `z-image-fast` | Image Turbo | image    | fast | replicate | 10         |
-| `z-image-pro`  | Image Pro   | image    | pro  | grsai     | 20         |
-| `z-video-fast` | Video Turbo | video    | fast | simulated | 40         |
-| `z-video-pro`  | Video Pro   | video    | pro  | simulated | 80         |
-| `z-text-fast`  | Text Turbo  | text     | fast | simulated | 5          |
-| `z-text-pro`   | Text Pro    | text     | pro  | simulated | 10         |
+## 6. 数据模型
 
-- 默认模型: `z-image-pro`
-- `provider` 字段驱动后端选择: `replicate` | `grsai` | `simulated`
-- 三类模型类别: image / video / text (video 和 text 为模拟占位)
+### user (auth.schema.ts)
 
-### 6.5 积分 & 支付系统
+```
+id, name, email, emailVerified, image, credits (default 10),
+stripeCustomerId, role, createdAt, updatedAt
+```
 
-**积分系统** (`src/routes/api/generate.ts`):
-
-- 新用户默认 10 积分
-- 原子扣减: `UPDATE user SET credits = credits - cost WHERE id = ? AND credits >= cost`
-- 失败退款: 生成失败时 `credits + refund`
-- 少生成退款: 实际生成数少于预期数量，退还多扣积分
-
-**Stripe 支付** (`src/lib/stripe.ts` + `src/routes/api/stripe/`):
-
-- **一次性支付** (`mode: "payment"`)，非订阅制
-- **多币种**: 根据用户语言自动选择 USD (`STRIPE_PRICE_ID_USD`) 或 CNY (`STRIPE_PRICE_ID_CNY`)，中文用户 → CNY
-- Checkout → Stripe → Webhook (`checkout.session.completed`) → 充值积分
-- 汇率: 100 积分/美元 (hardcoded)，CNY 订单用相同公式 (注意: 可能少给积分)
-- **幂等性**: Stripe Session ID 作为 `credit_purchase` 表主键，重复事件返回 200
-- **首次购买**: 自动设置 `user.stripe_customer_id`，后续可使用 Billing Portal
-- Billing Portal 仅在用户有 `stripe_customer_id` 时可用 (至少购买过一次)
-- 前端 `SettingsBar.tsx` 处理 `?purchase=success/canceled` URL 参数并提示 toast
-
-### 6.6 提示缓存 (`src/lib/cache/prompt-cache.ts`)
-
-- Key: `SHA-256(prompt|model|aspectRatio|n)`
-- TTL: 24 小时
-- 生成前先查缓存，命中直接返回 URL（不扣积分）
-- 生成成功后将结果写入 KV
-- 缓存失败不抛异常（非致命）
-
-### 6.7 限流器 (`src/lib/rate-limit.ts`)
-
-- 内存 Map 实现，单 Worker 实例级别
-- 30s 惰性清理过期条目
-- 应用于敏感 auth 端点: `checkRateLimit(`${path}:${ip}`, 10, 60)`
-
-## 7. 数据模型
+### 支付 (payment.schema.ts)
 
 ```sql
--- src/lib/db/schema/auth.schema.ts (Drizzle SQLite)
-
-user (
-  id                  TEXT PRIMARY KEY
-  name                TEXT NOT NULL
-  email               TEXT NOT NULL UNIQUE
-  email_verified      BOOLEAN DEFAULT FALSE
-  image               TEXT
-  credits             INTEGER DEFAULT 10       -- 积分余额
-  stripe_customer_id  TEXT                     -- Stripe 客户 ID (首次购买后设置)
-  created_at          TIMESTAMP
-  updated_at          TIMESTAMP
-)
-
-session (
-  id          TEXT PRIMARY KEY
-  expires_at  TIMESTAMP NOT NULL
-  token       TEXT NOT NULL UNIQUE
-  ip_address  TEXT
-  user_agent  TEXT
-  user_id     TEXT NOT NULL → user.id (CASCADE)
-  ── INDEX session_userId_idx (user_id)
-)
-
-account (
-  id          TEXT PRIMARY KEY
-  account_id  TEXT NOT NULL
-  provider_id TEXT NOT NULL
-  user_id     TEXT NOT NULL → user.id (CASCADE)
-  access_token TEXT
-  refresh_token TEXT
-  password    TEXT
-  ── INDEX account_userId_idx (user_id)
-)
-
-verification (
-  id          TEXT PRIMARY KEY
-  identifier  TEXT NOT NULL
-  value       TEXT NOT NULL
-  expires_at  TIMESTAMP NOT NULL
-  ── INDEX verification_identifier_idx (identifier)
-)
-
--- src/lib/db/schema/payment.schema.ts
-
 credit_purchase (
-  id            TEXT PRIMARY KEY       -- Stripe Session ID (幂等性)
-  user_id       TEXT NOT NULL → user.id
-  amount        INTEGER NOT NULL       -- 支付金额 (美分)
-  credits       INTEGER NOT NULL       -- 充值积分数
-  status        TEXT NOT NULL DEFAULT 'pending'
-  created_at    INTEGER NOT NULL       -- Unix 时间戳
-  completed_at  INTEGER                -- 完成时间
+  id TEXT PK,           -- Stripe Session ID (幂等)
+  user_id TEXT FK,
+  amount INTEGER,       -- 金额 (美分/分)
+  credits INTEGER,      -- 充值积分数
+  status TEXT,          -- pending/completed
+  created_at INTEGER,
+  completed_at INTEGER
 )
 ```
 
-关系: `user` 1→N `session`, `user` 1→N `account`, `user` 1→N `credit_purchase`
+### 数据飞轮 (data-flywheel.schema.ts)
 
-## 8. 前端组件树
+```sql
+generation (id, user_id, promptTemplate, resolvedPrompts JSON,
+  variableGroups JSON, resultUrls JSON, model, creditsUsed, created_at)
 
-```
-<ThemeProvider>
-  <QueryClientProvider>
-    <Router>
-      <RootLayout (__root.tsx)>
-        ├─ <SettingsBar />       — 认证状态/登录/登出/购买积分
-        │   ├─ <SignInSocialButton />   — GitHub/Google OAuth
-        │   ├─ <SignOutButton />
-        │   └─ "Buy Credits" 按钮 → Stripe Checkout
-        ├─ <ThemeToggle />        — 暗黑模式切换
-        ├─ <HomePage>
-        │   └─ <GeneratorCard>    — 核心生成卡片
-        │       ├─ 文本输入区 (textarea)
-        │       ├─ 附件列表 (R2 上传)
-        │       ├─ 工具栏:
-        │       │   ├─ 模型选择器 (Dropdown, 按类别分组, Fast/Pro 二级)
-        │       │   ├─ 宽高比选择 (16:9 / 1:1 / 9:16)
-        │       │   ├─ 数量选择 (1 / 2 / 4)
-        │       │   ├─ 组合数 & 预估积分
-        │       │   └─ 剩余积分 (实时更新)
-        │       └─ [可折叠] <VariableGroupCard /> × N
-        └─ <ResultsGrid>
-            └─ <ResultCard /> × N  — 图片 + prompt + 下载按钮
-      </RootLayout>
-    </Router>
-  </QueryClientProvider>
-</ThemeProvider>
+savedPrompt (id, user_id, name, promptTemplate, variableGroups,
+  model, tags, usageCount, created_at, updated_at)
+
+work (id, user_id, generation_id, title, description, category,
+  promptTemplate, variableGroups, coverUrl, resultUrls JSON, model,
+  parentWorkId, isPublished, likeCount, commentCount, remixCount,
+  created_at, published_at)
+
+workLike (id, work_id, user_id, created_at) UNIQUE(work_id, user_id)
+workComment (id, work_id, user_id, content, created_at)
 ```
 
-## 9. 部署架构
+### 推荐 (referral.schema.ts)
+
+```sql
+referralCode (id, user_id UNIQUE, code UNIQUE, created_at)
+
+referral (id, referrer_id, referee_id UNIQUE, code,
+  status,           -- pending/credited
+  referrerCreditsAwarded, refereeCreditsAwarded,
+  purchaseCommissionAwarded,
+  ipAddress, created_at, credited_at)
+```
+
+### 分享 (share.schema.ts)
+
+```sql
+sharedBatch (id, user_id, promptTemplate, variableGroups JSON,
+  resultImageUrls JSON, model, aspectRatio, created_at)
+
+template (id, user_id, slug UNIQUE, name, description, category,
+  promptTemplate, variableGroups JSON, model, aspectRatio,
+  previewImageUrl, isPublic, usageCount, created_at)
+```
+
+## 7. 模型定义
+
+| id             | Label       | Category | Tier | Provider                     | Credit |
+| -------------- | ----------- | -------- | ---- | ---------------------------- | ------ |
+| `z-image-fast` | Image Turbo | image    | fast | replicate                    | 10     |
+| `z-image-pro`  | Image Pro   | image    | pro  | grsai                        | 20     |
+| `z-video-fast` | Video Turbo | video    | fast | simulated                    | 40     |
+| `z-video-pro`  | Video Pro   | video    | pro  | simulated                    | 80     |
+| `z-text-fast`  | Text Turbo  | text     | fast | deepseek (deepseek-chat)     | 5      |
+| `z-text-pro`   | Text Pro    | text     | pro  | deepseek (deepseek-reasoner) | 10     |
+
+默认: `z-image-pro`。video 仍为模拟占位。
+
+## 8. 前端页面总览
+
+| 路径               | 页面                             | 类型   |
+| ------------------ | -------------------------------- | ------ |
+| `/`                | 主页 (生成器)                    | 公开   |
+| `/cn`              | 中文主页                         | 公开   |
+| `/discover`        | 社区作品发现 (hot/new/分类 tabs) | 公开   |
+| `/templates`       | 模板市场 (搜索/分类)             | 公开   |
+| `/templates/$slug` | 模板详情 + 使用按钮              | 公开   |
+| `/works/$workId`   | 作品详情 (点赞/评论/Remix)       | 公开   |
+| `/blog`            | 博客列表                         | 公开   |
+| `/blog/$slug`      | 博客文章                         | 公开   |
+| `/g/$shareId`      | 分享批次                         | 公开   |
+| `/r/$code`         | 推荐落地页 (302 → signup)        | 公开   |
+| `/login`           | 登录 (email + OAuth)             | 游客   |
+| `/signup`          | 注册 (支持 ?ref=)                | 游客   |
+| `/forgot-password` | 忘记密码                         | 游客   |
+| `/reset-password`  | 重置密码                         | 游客   |
+| `/my/generations`  | 生成历史                         | 需登录 |
+| `/my/prompts`      | 保存的 Prompt                    | 需登录 |
+| `/my/works`        | 我的作品                         | 需登录 |
+
+## 9. 关键功能详解
+
+### 9.1 AI 变量展开 (`{*描述*}`)
+
+用户可在 prompt 中使用 `{*animals*}` 语法，点击 "Expand" 后：
+
+1. `extractAiBlocks()` 提取所有 `{*...*}` 块
+2. POST `/api/expand-vars` 调用 DeepSeek LLM
+3. DeepSeek 返回逗号分隔的值列表 (结果缓存在 KV)
+4. 前端替换 `{*描述*}` → `{{val1, val2, ...}}`
+5. 支持撤销 (undo)
+
+### 9.2 推荐系统
+
+- 用户需先使用积分 (credits < 10) 才能生成推荐码
+- 8 位字母数字码 (排除易混淆字符)
+- 注册时携带 `?ref=CODE`: 推荐人 +5 积分, 被推荐人 +3 积分
+- **风控**: 同 IP 24h 内 3+ 注册 → pending；自推荐 → pending；同 email → 阻止
+- 购买佣金: 被推荐人首次购买，推荐人获 20% 积分佣金
+- 每日推荐上限: 50 人
+
+### 9.3 社区作品
+
+- 发布: POST `/api/works` (title + coverUrl + resultUrls)
+- 画廊: `/discover` 页支持 hot/new + 分类过滤
+- 点赞: 幂等 toogle (再次请求取消)
+- 评论: 含用户信息 JOIN
+- Remix: 加载原作品的 prompt/variables 到生成器
+
+### 9.4 模板市场
+
+- 任何用户可创建公开模板 (需含 `{{}}` 变量)
+- 自动 slugify 名称 (碰撞加 `-1` 后缀)
+- 搜索 + 分类过滤 + 分页
+- "Use this template" → 预填主页生成器
+
+### 9.5 积分购买
+
+- 预设数量: 1/5/10/50/100 包，或自定义 (1-100)
+- 每包 $10 (或人民币等值) = 1000 积分
+- 中文用户自动切换 CNY 价格
+- 购买成功/取消 toast 提示
+
+### 9.6 安全
+
+- **安全头** (`security-headers.ts`): CSP, HSTS (2y), X-Frame-Options: DENY, X-Content-Type-Options, Referrer-Policy
+- **输入验证** (`validation/schemas.ts`): Zod 校验 prompt 长度 (1-5000), n (1-10), aspectRatio (7 种), model (6 种)
+- **限流** (`rate-limit.ts`): 内存 token-bucket, 敏感路径 10/60s
+- **文件上传** (`upload/sanitize.ts`): 文件名消毒
+
+### 9.7 SEO
+
+- `hreflang.ts`: en/zh-CN 双语 alternate 链接
+- `meta.ts`: 页面级 meta 标签辅助
+- `structured-data.ts`: JSON-LD (BlogPosting, HowTo, CreativeWork)
+
+## 10. 部署架构
 
 ```
 Cloudflare Workers (batchlyai)
-  ├── 主 Worker: .output/server/index.mjs (Nitro v3)
-  ├── 兼容性: nodejs_compat, compatibility_date=2026-05-04
-  ├── D1 数据库: batchlyai-db
-  ├── KV 命名空间: batchlyai_kv
-  ├── R2 存储桶: batchlyai-uploads
-  ├── Email Binding: EMAIL → noreply@batchlyai.com
-  ├── 静态资源: ASSETS binding → .output/public
-  └── 密钥 (wrangler secret):
-      ├── BETTER_AUTH_SECRET
-      ├── GRSAI_API_KEY, REPLICATE_API_KEY
-      ├── STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET
-      ├── STRIPE_PRICE_ID_USD, STRIPE_PRICE_ID_CNY
-      └── GITHUB/GOOGLE OAuth (CLIENT_ID + CLIENT_SECRET)
+  ├── D1: batchlyai-db
+  ├── KV: batchlyai_kv (prompt cache + GRS tasks + referral IP tracking)
+  ├── R2: batchlyai-uploads (文件)
+  ├── Email: EMAIL binding → noreply@batchlyai.com
+  ├── Assets: .output/public
+  └── Secrets: DEEPSEEK_API_KEY, GRSAI_API_KEY, REPLICATE_API_KEY,
+               STRIPE_*, BETTER_AUTH_SECRET, OAuth keys
 ```
 
-部署命令: `npx vite build && npx wrangler deploy`
+## 11. 已知注意事项
 
-## 10. 已知陷阱 & 注意事项
+1. **auth.handler() 部分绕过**: 已知路径仍直接调 `auth.api` (防止 Workers Free 10ms CPU 超时)，未知路径 fallback 到 handler
+2. **Replicate API**: `z-image-turbo` 用 `version` (hash `cba7f388...`)，参数 `width/height` (非 `aspect_ratio`)
+3. **GRS webhook**: 依赖 webhook 回调写 KV，未到达则客户端轮询超时失败
+4. **Stripe 多币种 CNY 积分计算**: webhook 公式 `(amount/100)*100` 按美元逻辑，CNY 同价不同值会少给积分
+5. **video 模型未实现**: provider 为 `simulated`
+6. **AI Gateway fallback**: 所有 AI 调用优先走 Cloudflare AI Gateway，失败后直连
+7. **推荐统计 TODO**: tier/totalReferrals 字段为硬编码，等待 migration 0003 恢复
+8. **CLAUDE.md 过时**: 可能仍记录旧的绕过方案细节
 
-1. **部署后必须自检**: 每次 `wrangler deploy` 后用 `curl` 验证首页、注册 API、登录 API。
-
-2. **Replicate API**: `z-image-turbo` 用 `version` (非 `model`)，hash: `cba7f388...`。输入参数 `width`/`height` (非 `aspect_ratio`)。
-
-3. **GRS webhook**: GRS AI 依赖 webhook 回调更新 KV，若 webhook 未到达则 client 轮询 (每 2s, 最多 60 次) 超时后返回失败。
-
-4. **绝对定位 dropdown**: 检查祖先元素是否有 `overflow: hidden/auto/scroll/clip`，会裁剪绝对定位子元素。
-
-5. **Stripe 幂等性**: Webhook 用 Stripe Session ID 做主键防重复，`SQLITE_CONSTRAINT` 错误被静默捕获。
-
-6. **Stripe 多币种**: 前端根据语言选择 USD/CNY 价格 ID，但 webhook 的积分计算公式 `(amount_total / 100) * 100` 按美元逻辑处理，CNY 订单会少给积分。
-
-7. **Prompt 缓存**: `SHA-256(prompt|model|aspectRatio|n)` 作为 KV key，TTL 24h。缓存命中不扣积分。
-
-8. **积分原子操作**: `UPDATE WHERE credits >= cost` 乐观锁防超用，失败必须退款。
-
-9. **text/video 模型**: 尚未接入真实 API (`provider: "simulated"`)，前端用 setTimeout 1.5s 模拟生成。
-
-10. **CLAUDE.md 已过时**: 仍记录旧的 `auth.handler()` 绕过方案，但实际代码已恢复使用 `auth.handler(request)`。
-
-## 11. 常用命令
+## 12. 常用命令
 
 ```bash
-pnpm dev            # 本地开发 (vite dev)
-pnpm build          # 构建
-pnpm lint           # Oxlint 类型感知检查
-pnpm format         # Oxfmt 格式化
-pnpm test           # Vitest 测试
-pnpm test:e2e       # Playwright E2E
-pnpm db generate    # Drizzle 迁移生成
-pnpm db migrate     # Drizzle 迁移执行
-```
-
-部署与验证:
-
-```bash
-npx vite build && npx wrangler deploy
-curl -s https://batchlyai.com | head -1                           # 首页
-curl -s -X POST https://batchlyai.com/api/auth/sign-up/email ...   # 注册
-curl -s -X POST https://batchlyai.com/api/auth/sign-in/email ...   # 登录
+pnpm dev             # 本地开发
+npx vite build && npx wrangler deploy   # 构建+部署
+pnpm lint && pnpm format:check          # 代码检查
+pnpm test && pnpm test:e2e              # 测试
+bash scripts/smoke-test.sh              # 部署后验证
 ```
