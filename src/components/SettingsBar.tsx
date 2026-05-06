@@ -8,12 +8,20 @@ import {
   PlusIcon,
   Share2Icon,
   GiftIcon,
+  ChevronDownIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { CreditPurchasePopover } from "@/components/CreditPurchasePopover";
 import { useTheme } from "@/components/theme-provider";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { authClient } from "@/lib/auth/auth-client";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -173,10 +181,32 @@ export function SettingsBar() {
             </span>
             {t("credits")}
           </span>
-          <span className="inline-flex h-8 items-center justify-center gap-1.5 rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground backdrop-blur-sm">
-            <UserIcon className="size-3" />
-            {session.user.name || session.user.email}
-          </span>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="inline-flex h-8 items-center justify-center gap-1.5 rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground">
+              <UserIcon className="size-3" />
+              {session.user.name || session.user.email}
+              <ChevronDownIcon className="size-3" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => navigate({ to: "/my/generations" })}>
+                {t("myGenerations")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate({ to: "/my/prompts" })}>
+                {t("myPrompts")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate({ to: "/my/works" })}>
+                {t("myWorks")}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setShowPurchase(true)}>
+                {t("buyCredits")}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut}>
+                {t("signOut")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <button
             onClick={handleSignOut}
             className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-muted/80 text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
