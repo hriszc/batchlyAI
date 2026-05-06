@@ -9,17 +9,19 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as GuestRouteRouteImport } from './routes/_guest/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TemplatesIndexRouteImport } from './routes/templates/index'
 import { Route as CnIndexRouteImport } from './routes/cn/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
+import { Route as WorksWorkIdRouteImport } from './routes/works/$workId'
 import { Route as TemplatesSlugRouteImport } from './routes/templates/$slug'
-import { Route as SitemapXmlRouteImport } from './routes/sitemap.xml'
 import { Route as RobotsTxtRouteImport } from './routes/robots.txt'
 import { Route as RCodeRouteImport } from './routes/r/$code'
 import { Route as GShareIdRouteImport } from './routes/g/$shareId'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
+import { Route as ApiWorksRouteImport } from './routes/api/works'
 import { Route as ApiUploadUrlRouteImport } from './routes/api/upload-url'
 import { Route as ApiTemplatesRouteImport } from './routes/api/templates'
 import { Route as ApiShareRouteImport } from './routes/api/share'
@@ -30,6 +32,8 @@ import { Route as ApiGenerateRouteImport } from './routes/api/generate'
 import { Route as ApiExpandVarsRouteImport } from './routes/api/expand-vars'
 import { Route as GuestSignupRouteImport } from './routes/_guest/signup'
 import { Route as GuestLoginRouteImport } from './routes/_guest/login'
+import { Route as ApiWorksLikeRouteImport } from './routes/api/works/like'
+import { Route as ApiWorksCommentRouteImport } from './routes/api/works/comment'
 import { Route as ApiTemplatesSlugRouteImport } from './routes/api/templates/$slug'
 import { Route as ApiStripeWebhookRouteImport } from './routes/api/stripe/webhook'
 import { Route as ApiStripePortalRouteImport } from './routes/api/stripe/portal'
@@ -40,6 +44,11 @@ import { Route as ApiFilesSplatRouteImport } from './routes/api/files/$'
 import { Route as ApiAuthGoogleOneTapRouteImport } from './routes/api/auth/google-one-tap'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
+const DiscoverRoute = DiscoverRouteImport.update({
+  id: '/discover',
+  path: '/discover',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GuestRouteRoute = GuestRouteRouteImport.update({
   id: '/_guest',
   getParentRoute: () => rootRouteImport,
@@ -64,14 +73,14 @@ const BlogIndexRoute = BlogIndexRouteImport.update({
   path: '/blog/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WorksWorkIdRoute = WorksWorkIdRouteImport.update({
+  id: '/works/$workId',
+  path: '/works/$workId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TemplatesSlugRoute = TemplatesSlugRouteImport.update({
   id: '/templates/$slug',
   path: '/templates/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SitemapXmlRoute = SitemapXmlRouteImport.update({
-  id: '/sitemap/xml',
-  path: '/sitemap/xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RobotsTxtRoute = RobotsTxtRouteImport.update({
@@ -92,6 +101,11 @@ const GShareIdRoute = GShareIdRouteImport.update({
 const BlogSlugRoute = BlogSlugRouteImport.update({
   id: '/blog/$slug',
   path: '/blog/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiWorksRoute = ApiWorksRouteImport.update({
+  id: '/api/works',
+  path: '/api/works',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiUploadUrlRoute = ApiUploadUrlRouteImport.update({
@@ -144,6 +158,16 @@ const GuestLoginRoute = GuestLoginRouteImport.update({
   path: '/login',
   getParentRoute: () => GuestRouteRoute,
 } as any)
+const ApiWorksLikeRoute = ApiWorksLikeRouteImport.update({
+  id: '/like',
+  path: '/like',
+  getParentRoute: () => ApiWorksRoute,
+} as any)
+const ApiWorksCommentRoute = ApiWorksCommentRouteImport.update({
+  id: '/comment',
+  path: '/comment',
+  getParentRoute: () => ApiWorksRoute,
+} as any)
 const ApiTemplatesSlugRoute = ApiTemplatesSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -192,6 +216,7 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/discover': typeof DiscoverRoute
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
   '/api/expand-vars': typeof ApiExpandVarsRoute
@@ -202,12 +227,13 @@ export interface FileRoutesByFullPath {
   '/api/share': typeof ApiShareRoute
   '/api/templates': typeof ApiTemplatesRouteWithChildren
   '/api/upload-url': typeof ApiUploadUrlRoute
+  '/api/works': typeof ApiWorksRouteWithChildren
   '/blog/$slug': typeof BlogSlugRoute
   '/g/$shareId': typeof GShareIdRoute
   '/r/$code': typeof RCodeRoute
   '/robots/txt': typeof RobotsTxtRoute
-  '/sitemap/xml': typeof SitemapXmlRoute
   '/templates/$slug': typeof TemplatesSlugRoute
+  '/works/$workId': typeof WorksWorkIdRoute
   '/blog/': typeof BlogIndexRoute
   '/cn/': typeof CnIndexRoute
   '/templates/': typeof TemplatesIndexRoute
@@ -220,9 +246,12 @@ export interface FileRoutesByFullPath {
   '/api/stripe/portal': typeof ApiStripePortalRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/api/templates/$slug': typeof ApiTemplatesSlugRoute
+  '/api/works/comment': typeof ApiWorksCommentRoute
+  '/api/works/like': typeof ApiWorksLikeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/discover': typeof DiscoverRoute
   '/login': typeof GuestLoginRoute
   '/signup': typeof GuestSignupRoute
   '/api/expand-vars': typeof ApiExpandVarsRoute
@@ -233,12 +262,13 @@ export interface FileRoutesByTo {
   '/api/share': typeof ApiShareRoute
   '/api/templates': typeof ApiTemplatesRouteWithChildren
   '/api/upload-url': typeof ApiUploadUrlRoute
+  '/api/works': typeof ApiWorksRouteWithChildren
   '/blog/$slug': typeof BlogSlugRoute
   '/g/$shareId': typeof GShareIdRoute
   '/r/$code': typeof RCodeRoute
   '/robots/txt': typeof RobotsTxtRoute
-  '/sitemap/xml': typeof SitemapXmlRoute
   '/templates/$slug': typeof TemplatesSlugRoute
+  '/works/$workId': typeof WorksWorkIdRoute
   '/blog': typeof BlogIndexRoute
   '/cn': typeof CnIndexRoute
   '/templates': typeof TemplatesIndexRoute
@@ -251,11 +281,14 @@ export interface FileRoutesByTo {
   '/api/stripe/portal': typeof ApiStripePortalRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/api/templates/$slug': typeof ApiTemplatesSlugRoute
+  '/api/works/comment': typeof ApiWorksCommentRoute
+  '/api/works/like': typeof ApiWorksLikeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_guest': typeof GuestRouteRouteWithChildren
+  '/discover': typeof DiscoverRoute
   '/_guest/login': typeof GuestLoginRoute
   '/_guest/signup': typeof GuestSignupRoute
   '/api/expand-vars': typeof ApiExpandVarsRoute
@@ -266,12 +299,13 @@ export interface FileRoutesById {
   '/api/share': typeof ApiShareRoute
   '/api/templates': typeof ApiTemplatesRouteWithChildren
   '/api/upload-url': typeof ApiUploadUrlRoute
+  '/api/works': typeof ApiWorksRouteWithChildren
   '/blog/$slug': typeof BlogSlugRoute
   '/g/$shareId': typeof GShareIdRoute
   '/r/$code': typeof RCodeRoute
   '/robots/txt': typeof RobotsTxtRoute
-  '/sitemap/xml': typeof SitemapXmlRoute
   '/templates/$slug': typeof TemplatesSlugRoute
+  '/works/$workId': typeof WorksWorkIdRoute
   '/blog/': typeof BlogIndexRoute
   '/cn/': typeof CnIndexRoute
   '/templates/': typeof TemplatesIndexRoute
@@ -284,11 +318,14 @@ export interface FileRoutesById {
   '/api/stripe/portal': typeof ApiStripePortalRoute
   '/api/stripe/webhook': typeof ApiStripeWebhookRoute
   '/api/templates/$slug': typeof ApiTemplatesSlugRoute
+  '/api/works/comment': typeof ApiWorksCommentRoute
+  '/api/works/like': typeof ApiWorksLikeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/discover'
     | '/login'
     | '/signup'
     | '/api/expand-vars'
@@ -299,12 +336,13 @@ export interface FileRouteTypes {
     | '/api/share'
     | '/api/templates'
     | '/api/upload-url'
+    | '/api/works'
     | '/blog/$slug'
     | '/g/$shareId'
     | '/r/$code'
     | '/robots/txt'
-    | '/sitemap/xml'
     | '/templates/$slug'
+    | '/works/$workId'
     | '/blog/'
     | '/cn/'
     | '/templates/'
@@ -317,9 +355,12 @@ export interface FileRouteTypes {
     | '/api/stripe/portal'
     | '/api/stripe/webhook'
     | '/api/templates/$slug'
+    | '/api/works/comment'
+    | '/api/works/like'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/discover'
     | '/login'
     | '/signup'
     | '/api/expand-vars'
@@ -330,12 +371,13 @@ export interface FileRouteTypes {
     | '/api/share'
     | '/api/templates'
     | '/api/upload-url'
+    | '/api/works'
     | '/blog/$slug'
     | '/g/$shareId'
     | '/r/$code'
     | '/robots/txt'
-    | '/sitemap/xml'
     | '/templates/$slug'
+    | '/works/$workId'
     | '/blog'
     | '/cn'
     | '/templates'
@@ -348,10 +390,13 @@ export interface FileRouteTypes {
     | '/api/stripe/portal'
     | '/api/stripe/webhook'
     | '/api/templates/$slug'
+    | '/api/works/comment'
+    | '/api/works/like'
   id:
     | '__root__'
     | '/'
     | '/_guest'
+    | '/discover'
     | '/_guest/login'
     | '/_guest/signup'
     | '/api/expand-vars'
@@ -362,12 +407,13 @@ export interface FileRouteTypes {
     | '/api/share'
     | '/api/templates'
     | '/api/upload-url'
+    | '/api/works'
     | '/blog/$slug'
     | '/g/$shareId'
     | '/r/$code'
     | '/robots/txt'
-    | '/sitemap/xml'
     | '/templates/$slug'
+    | '/works/$workId'
     | '/blog/'
     | '/cn/'
     | '/templates/'
@@ -380,11 +426,14 @@ export interface FileRouteTypes {
     | '/api/stripe/portal'
     | '/api/stripe/webhook'
     | '/api/templates/$slug'
+    | '/api/works/comment'
+    | '/api/works/like'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GuestRouteRoute: typeof GuestRouteRouteWithChildren
+  DiscoverRoute: typeof DiscoverRoute
   ApiExpandVarsRoute: typeof ApiExpandVarsRoute
   ApiGenerateRoute: typeof ApiGenerateRoute
   ApiGenerateStatusRoute: typeof ApiGenerateStatusRoute
@@ -393,12 +442,13 @@ export interface RootRouteChildren {
   ApiShareRoute: typeof ApiShareRoute
   ApiTemplatesRoute: typeof ApiTemplatesRouteWithChildren
   ApiUploadUrlRoute: typeof ApiUploadUrlRoute
+  ApiWorksRoute: typeof ApiWorksRouteWithChildren
   BlogSlugRoute: typeof BlogSlugRoute
   GShareIdRoute: typeof GShareIdRoute
   RCodeRoute: typeof RCodeRoute
   RobotsTxtRoute: typeof RobotsTxtRoute
-  SitemapXmlRoute: typeof SitemapXmlRoute
   TemplatesSlugRoute: typeof TemplatesSlugRoute
+  WorksWorkIdRoute: typeof WorksWorkIdRoute
   BlogIndexRoute: typeof BlogIndexRoute
   CnIndexRoute: typeof CnIndexRoute
   TemplatesIndexRoute: typeof TemplatesIndexRoute
@@ -414,6 +464,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/discover': {
+      id: '/discover'
+      path: '/discover'
+      fullPath: '/discover'
+      preLoaderRoute: typeof DiscoverRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_guest': {
       id: '/_guest'
       path: ''
@@ -449,18 +506,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/works/$workId': {
+      id: '/works/$workId'
+      path: '/works/$workId'
+      fullPath: '/works/$workId'
+      preLoaderRoute: typeof WorksWorkIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/templates/$slug': {
       id: '/templates/$slug'
       path: '/templates/$slug'
       fullPath: '/templates/$slug'
       preLoaderRoute: typeof TemplatesSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sitemap/xml': {
-      id: '/sitemap/xml'
-      path: '/sitemap/xml'
-      fullPath: '/sitemap/xml'
-      preLoaderRoute: typeof SitemapXmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/robots/txt': {
@@ -489,6 +546,13 @@ declare module '@tanstack/react-router' {
       path: '/blog/$slug'
       fullPath: '/blog/$slug'
       preLoaderRoute: typeof BlogSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/works': {
+      id: '/api/works'
+      path: '/api/works'
+      fullPath: '/api/works'
+      preLoaderRoute: typeof ApiWorksRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/upload-url': {
@@ -560,6 +624,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/login'
       preLoaderRoute: typeof GuestLoginRouteImport
       parentRoute: typeof GuestRouteRoute
+    }
+    '/api/works/like': {
+      id: '/api/works/like'
+      path: '/like'
+      fullPath: '/api/works/like'
+      preLoaderRoute: typeof ApiWorksLikeRouteImport
+      parentRoute: typeof ApiWorksRoute
+    }
+    '/api/works/comment': {
+      id: '/api/works/comment'
+      path: '/comment'
+      fullPath: '/api/works/comment'
+      preLoaderRoute: typeof ApiWorksCommentRouteImport
+      parentRoute: typeof ApiWorksRoute
     }
     '/api/templates/$slug': {
       id: '/api/templates/$slug'
@@ -653,9 +731,24 @@ const ApiTemplatesRouteWithChildren = ApiTemplatesRoute._addFileChildren(
   ApiTemplatesRouteChildren,
 )
 
+interface ApiWorksRouteChildren {
+  ApiWorksCommentRoute: typeof ApiWorksCommentRoute
+  ApiWorksLikeRoute: typeof ApiWorksLikeRoute
+}
+
+const ApiWorksRouteChildren: ApiWorksRouteChildren = {
+  ApiWorksCommentRoute: ApiWorksCommentRoute,
+  ApiWorksLikeRoute: ApiWorksLikeRoute,
+}
+
+const ApiWorksRouteWithChildren = ApiWorksRoute._addFileChildren(
+  ApiWorksRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GuestRouteRoute: GuestRouteRouteWithChildren,
+  DiscoverRoute: DiscoverRoute,
   ApiExpandVarsRoute: ApiExpandVarsRoute,
   ApiGenerateRoute: ApiGenerateRoute,
   ApiGenerateStatusRoute: ApiGenerateStatusRoute,
@@ -664,12 +757,13 @@ const rootRouteChildren: RootRouteChildren = {
   ApiShareRoute: ApiShareRoute,
   ApiTemplatesRoute: ApiTemplatesRouteWithChildren,
   ApiUploadUrlRoute: ApiUploadUrlRoute,
+  ApiWorksRoute: ApiWorksRouteWithChildren,
   BlogSlugRoute: BlogSlugRoute,
   GShareIdRoute: GShareIdRoute,
   RCodeRoute: RCodeRoute,
   RobotsTxtRoute: RobotsTxtRoute,
-  SitemapXmlRoute: SitemapXmlRoute,
   TemplatesSlugRoute: TemplatesSlugRoute,
+  WorksWorkIdRoute: WorksWorkIdRoute,
   BlogIndexRoute: BlogIndexRoute,
   CnIndexRoute: CnIndexRoute,
   TemplatesIndexRoute: TemplatesIndexRoute,

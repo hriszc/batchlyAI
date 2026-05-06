@@ -65,6 +65,33 @@ export function HomePage({ forceLanguage }: HomePageProps) {
     })();
   }, []);
 
+  // Handle ?remix=<workId> for "Remix this work" flow
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const remixId = params.get("remix");
+    if (!remixId) return;
+
+    (async () => {
+      try {
+        const resp = await fetch(`/api/works?remix=${encodeURIComponent(remixId)}`);
+        const data = (await resp.json()) as {
+          work?: { promptTemplate?: string };
+          error?: string;
+        };
+        if (data.error || !data.work?.promptTemplate) return;
+
+        actions.setPromptTemplate(data.work.promptTemplate);
+
+        const url = new URL(window.location.href);
+        url.searchParams.delete("remix");
+        window.history.replaceState({}, "", url.toString());
+      } catch {
+        // Non-critical
+      }
+    })();
+  }, []);
+
   useEffect(() => {
     if (!state.isGenerating && state.results.length > 0 && resultsRef.current) {
       resultsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
