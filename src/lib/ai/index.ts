@@ -17,7 +17,7 @@ const DRAW_API_DIRECT = "https://grsaiapi.com/v1/draw/completions";
 
 const DEEPSEEK_HOST = `${AI_GATEWAY}/DeepSeek/v1/chat/completions`;
 const REPLICATE_API_BASE = `${AI_GATEWAY}/replicate`;
-const DRAW_API_HOST = `${AI_GATEWAY}/grsai/v1/draw/completions`;
+const DRAW_API_HOST = `${AI_GATEWAY}/custom-grsai/v1/draw/completions`;
 
 /**
  * Try gateway first; fall back to direct API on any failure.
