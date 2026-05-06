@@ -82,7 +82,7 @@ jobs:
     needs: [unit-and-integration]
     continue-on-error: true
     permissions:
-      issues: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - name: Smoke test production APIs
