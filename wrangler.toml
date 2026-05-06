@@ -3,7 +3,6 @@ compatibility_date = "2026-05-04"
 compatibility_flags = ["nodejs_compat"]
 main = ".output/server/index.mjs"
 
-
 [assets]
 binding = "ASSETS"
 directory = ".output/public"
@@ -32,25 +31,3 @@ head_sampling_rate = 1
 
 [vars]
 VITE_BASE_URL = "https://batchlyai.com"
-
-# === Staging Environment ===
-# Deploy: npx vite build && wrangler deploy --env staging
-# After creating staging resources, fill in the IDs below.
-[env.staging]
-name = "batchlyai-staging"
-
-[[env.staging.d1_databases]]
-binding = "batchlyai_db"
-database_name = "batchlyai-db-staging"
-database_id = "" # Run: wrangler d1 create batchlyai-db-staging
-
-[[env.staging.kv_namespaces]]
-binding = "batchlyai_kv"
-id = "" # Run: wrangler kv namespace create BATCHLYAI_KV_STAGING
-
-[[env.staging.r2_buckets]]
-binding = "batchlyai_r2"
-bucket_name = "batchlyai-uploads-staging"
-
-[env.staging.vars]
-VITE_BASE_URL = "https://staging.batchlyai.com"
