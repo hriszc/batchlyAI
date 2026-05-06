@@ -42,16 +42,8 @@ function ResetPasswordPage() {
     <div className="flex flex-col items-center gap-2">
       <Link to="/" className="flex flex-col items-center gap-2 font-medium">
         <div className="relative h-8 w-auto">
-          <img
-            src="/logo-light.png"
-            alt="BatchlyAI"
-            className="block h-8 w-auto dark:hidden"
-          />
-          <img
-            src="/logo-dark.png"
-            alt="BatchlyAI"
-            className="hidden h-8 w-auto dark:block"
-          />
+          <img src="/logo-light.png" alt="BatchlyAI" className="block h-8 w-auto dark:hidden" />
+          <img src="/logo-dark.png" alt="BatchlyAI" className="hidden h-8 w-auto dark:block" />
         </div>
       </Link>
       <h1 className="text-xl font-bold">{t("resetPasswordTitle")}</h1>
@@ -110,13 +102,8 @@ function ResetPasswordPage() {
       <div className="flex flex-col gap-6">
         {logoHeader}
         <div className="flex flex-col items-center gap-4">
-          <p className="text-center text-sm text-muted-foreground">
-            {t("invalidResetLink")}
-          </p>
-          <a
-            href="/forgot-password"
-            className="text-sm underline underline-offset-4"
-          >
+          <p className="text-center text-sm text-muted-foreground">{t("invalidResetLink")}</p>
+          <a href="/forgot-password" className="text-sm underline underline-offset-4">
             {t("requestNewLink")}
           </a>
         </div>
