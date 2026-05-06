@@ -134,7 +134,9 @@ async function fetchWithRetry(
     const resp = await fetchWithFallback(url, directUrl, init, provider);
     if (resp.status !== 429 || attempt === maxRetries) return resp;
     const delay = Math.min(1000 * 2 ** attempt, 16000);
-    console.warn(`[ai] ${provider} 429 throttled, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+    console.warn(
+      `[ai] ${provider} 429 throttled, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`,
+    );
     await new Promise((r) => setTimeout(r, delay));
   }
   // unreachable but TS needs it
@@ -263,7 +265,7 @@ async function chatDeepseek(
     if (resp.status === 401 && !key) {
       throw new Error(
         `DeepSeek API error 401: Gateway auth failed and no DEEPSEEK_API_KEY fallback. ` +
-        `Set via: wrangler secret put DEEPSEEK_API_KEY. Details: ${errText}`,
+          `Set via: wrangler secret put DEEPSEEK_API_KEY. Details: ${errText}`,
       );
     }
     throw new Error(`DeepSeek API error ${resp.status}: ${errText}`);
