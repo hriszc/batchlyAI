@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CheckCircleIcon, LoaderCircleIcon } from "lucide-react";
+import { ArrowLeftIcon, LoaderCircleIcon, MailCheckIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -11,7 +11,7 @@ import { authClient } from "@/lib/auth/auth-client";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { createPageMeta } from "@/lib/seo/meta";
 
-const forgotPasswordSeo = createPageMeta({
+const forgotSeo = createPageMeta({
   title: "Forgot Password — BatchlyAI",
   description: "Reset your BatchlyAI account password",
   path: "/forgot-password",
@@ -22,30 +22,21 @@ const forgotPasswordSeo = createPageMeta({
 export const Route = createFileRoute("/_guest/forgot-password")({
   head: () => ({
     htmlAttrs: { lang: "en" },
-    meta: forgotPasswordSeo.meta,
+    meta: forgotSeo.meta,
     links: [{ rel: "canonical", href: "https://batchlyai.com/forgot-password" }],
   }),
-  component: ForgotPasswordPage,
+  component: ForgotPasswordForm,
 });
 
-function ForgotPasswordPage() {
+function ForgotPasswordForm() {
   const { t } = useLanguage();
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [emailSent, setEmailSent] = useState(false);
+  const [sent, setSent] = useState(false);
 
-  const { mutate: forgetPasswordMutate, isPending } = useMutation({
+  const { mutate: forgotMutate, isPending } = useMutation({
     mutationFn: async (data: { email: string }) => {
-      // forgetPassword is typed as lost on Better Auth v1.6.9 client types
-      const result = await (
-        authClient as unknown as {
-          forgetPassword: (opts: {
-            email: string;
-            redirectTo: string;
-          }) => Promise<{ error?: { message?: string } } | undefined>;
-        }
-      ).forgetPassword({
+      const result = await authClient.requestPasswordReset({
         email: data.email,
-        redirectTo: "/reset-password",
+        redirectTo: `${window.location.origin}/reset-password`,
       });
       if (
         result &&
@@ -59,91 +50,87 @@ function ForgotPasswordPage() {
       return result;
     },
     onSuccess: () => {
-      setEmailSent(true);
+      setSent(true);
     },
     onError: (error) => {
-      const msg = error.message || "An error occurred while sending the reset email.";
-      setErrorMessage(msg);
-      toast.error(msg);
+      toast.error(error.message || "Failed to send reset email");
     },
   });
 
   const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isPending) return;
-    setErrorMessage(null);
 
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email") as string;
 
     if (!email) return;
 
-    forgetPasswordMutate({ email });
+    forgotMutate({ email });
   };
 
   return (
     <div className="flex flex-col gap-6">
-      <form onSubmit={handleSubmit}>
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col items-center gap-2">
-            <Link to="/" className="flex flex-col items-center gap-2 font-medium">
-              <div className="relative h-8 w-auto">
-                <img
-                  src="/logo-light.png"
-                  alt="BatchlyAI"
-                  className="block h-8 w-auto dark:hidden"
-                />
-                <img
-                  src="/logo-dark.png"
-                  alt="BatchlyAI"
-                  className="hidden h-8 w-auto dark:block"
-                />
-              </div>
-            </Link>
-            <h1 className="text-xl font-bold">{t("forgotPasswordTitle")}</h1>
+      <div className="flex flex-col items-center gap-2">
+        <Link to="/" className="flex flex-col items-center gap-2 font-medium">
+          <div className="relative h-8 w-auto">
+            <img
+              src="/logo-light.png"
+              alt="BatchlyAI"
+              className="block h-8 w-auto dark:hidden"
+            />
+            <img
+              src="/logo-dark.png"
+              alt="BatchlyAI"
+              className="hidden h-8 w-auto dark:block"
+            />
           </div>
+        </Link>
+        <h1 className="text-xl font-bold">{t("forgotPasswordTitle")}</h1>
+      </div>
 
-          <div className="flex flex-col gap-5">
-            {emailSent ? (
-              <div className="flex flex-col items-center gap-4 rounded-md bg-primary/10 px-4 py-6 text-center">
-                <CheckCircleIcon className="size-8 text-primary" />
-                <p className="text-sm font-medium">{t("resetEmailSent")}</p>
-              </div>
-            ) : (
-              <>
-                <p className="text-center text-sm text-muted-foreground">
-                  {t("forgotPasswordDesc")}
-                </p>
-                <div className="grid gap-2">
-                  <Label htmlFor="email">{t("emailLabel")}</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder={t("emailPlaceholder")}
-                    readOnly={isPending}
-                    required
-                  />
-                </div>
-                {errorMessage && (
-                  <div className="rounded-md bg-destructive/15 px-4 py-2 text-sm text-destructive">
-                    {errorMessage}
-                  </div>
-                )}
-                <Button type="submit" className="mt-2 w-full" size="lg" disabled={isPending}>
-                  {isPending && <LoaderCircleIcon className="animate-spin" />}
-                  {isPending ? t("sendingResetEmail") : t("sendResetEmail")}
-                </Button>
-              </>
-            )}
-          </div>
+      {sent ? (
+        <div className="flex flex-col items-center gap-4 text-center">
+          <MailCheckIcon className="size-12 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">{t("forgotPasswordSent")}</p>
+          <Link
+            to="/login"
+            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm hover:bg-accent hover:text-accent-foreground"
+          >
+            {t("backToLogin")}
+          </Link>
         </div>
-      </form>
+      ) : (
+        <form onSubmit={handleSubmit}>
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-5">
+              <div className="grid gap-2">
+                <Label htmlFor="email">{t("emailLabel")}</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder={t("emailPlaceholder")}
+                  readOnly={isPending}
+                  required
+                />
+              </div>
+              <Button type="submit" className="mt-2 w-full" size="lg" disabled={isPending}>
+                {isPending && <LoaderCircleIcon className="animate-spin" />}
+                {isPending ? t("sending") : t("sendResetLink")}
+              </Button>
+            </div>
+          </div>
+        </form>
+      )}
 
       <div className="text-center text-sm">
-        {t("rememberPassword")}{" "}
-        <Link to="/login" className="underline underline-offset-4">
-          {t("signInLink")}
+        <Link
+          to="/login"
+          className="inline-flex items-center gap-1 text-muted-foreground underline underline-offset-4 hover:text-foreground"
+        >
+          <ArrowLeftIcon className="size-3" />
+          {t("backToLogin")}
         </Link>
       </div>
     </div>
