@@ -66,7 +66,7 @@ function DiscoverPage() {
       : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {works.map(w => (
-            <Link key={w.id} to="/works/$workId" params={{ workId: w.id }} className="group rounded-xl border bg-card shadow-sm transition-shadow hover:shadow-md">
+            <a key={w.id} href={`/works/${w.id}`} className="group rounded-xl border bg-card shadow-sm transition-shadow hover:shadow-md">
               <div className="aspect-square overflow-hidden rounded-t-xl">
                 <img src={w.coverUrl} alt={w.title} className="h-full w-full object-cover transition-transform group-hover:scale-105" />
               </div>

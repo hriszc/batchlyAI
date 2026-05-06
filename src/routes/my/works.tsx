@@ -58,7 +58,7 @@ function WorksPage() {
         <p className="text-muted-foreground">Please log in to view your works.</p>
         <Link to="/login" className="mt-2 inline-block text-[#0071e3]">
           Login
-        </a>
+        </Link>
       </main>
     );
   }
@@ -70,7 +70,7 @@ function WorksPage() {
         className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeftIcon className="size-4" /> Back to Generator
-      </a>
+      </Link>
       <h1 className="mb-6 text-2xl font-semibold text-foreground">{t("myWorks")}</h1>
 
       {loading ? (
@@ -82,10 +82,9 @@ function WorksPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {works.map((w) => (
-            <Link
+            <a
               key={w.id}
-              to="/works/$workId"
-              params={{ workId: w.id }}
+              href={`/works/${w.id}`}
               className="rounded-xl border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
             >
               <img
