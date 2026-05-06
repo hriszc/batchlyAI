@@ -7,7 +7,7 @@ set -e
 
 DOMAIN="batchlyai.com"
 BASE="https://$DOMAIN"
-HEADER="x-cwv-debug: 2"   # Route to the latest (canary) version
+HEADER=""   # Route to default production version (canary not yet configured)
 PASS=0
 FAIL=0
 
