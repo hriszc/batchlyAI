@@ -1,42 +1,45 @@
 // @ts-nocheck - route tree auto-generated at build time
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { eq } from "drizzle-orm";
+import { createFileRoute } from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
 import { ArrowLeftIcon, HeartIcon, Repeat2Icon, CopyIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { authClient } from "@/lib/auth/auth-client";
-import { getDb } from "@/lib/db";
-import { work } from "@/lib/db/schema/data-flywheel.schema";
-import { user } from "@/lib/db/schema/auth.schema";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { createPageMeta } from "@/lib/seo/meta";
 import { creativeWorkLd } from "@/lib/seo/structured-data";
 
-function getD1Binding(): D1Database | undefined {
-  const platformEnv = (globalThis as Record<string, unknown>).__env__ as Record<string, unknown> | undefined;
-  return platformEnv?.batchlyai_db as D1Database | undefined;
-}
+const loadWork = createServerFn({ method: "GET" })
+  .validator((workId: string) => workId)
+  .handler(async ({ data: workId }) => {
+    const { eq } = await import("drizzle-orm");
+    const { getDb } = await import("@/lib/db");
+    const { work } = await import("@/lib/db/schema/data-flywheel.schema");
+    const { user } = await import("@/lib/db/schema/auth.schema");
 
-// @ts-expect-error route tree auto-generated at build time
-export const Route = createFileRoute("/works/$workId")({
-  loader: async ({ params }) => {
-    const binding = getD1Binding();
+    const platformEnv = (globalThis as Record<string, unknown>).__env__ as Record<string, unknown> | undefined;
+    const binding = platformEnv?.batchlyai_db as D1Database | undefined;
     if (!binding) return null;
     const db = getDb(binding);
+
     const [row] = await db
       .select({ w: work, author: { name: user.name } })
       .from(work)
       .leftJoin(user, eq(work.userId, user.id))
-      .where(eq(work.id, params.workId));
+      .where(eq(work.id, workId));
     if (!row) return null;
+
     return {
       ...row.w,
       authorName: row.author?.name || "Unknown",
       variableGroups: JSON.parse(row.w.variableGroups),
       resultUrls: JSON.parse(row.w.resultUrls),
     };
-  },
+  });
+
+export const Route = createFileRoute("/works/$workId")({
+  loader: async ({ params }) => loadWork({ data: params.workId }),
   head: ({ loaderData }) => {
     if (!loaderData) return {};
     const seo = createPageMeta({
