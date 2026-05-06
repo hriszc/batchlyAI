@@ -61,7 +61,7 @@ export function createAuth(d1Binding?: D1Database) {
       },
       emailAndPassword: {
         enabled: true,
-        requireEmailVerification: true,
+        requireEmailVerification: false,
         password: {
           hash: hashPassword,
           verify: verifyPassword,
