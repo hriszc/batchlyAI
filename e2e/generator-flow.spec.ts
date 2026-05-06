@@ -33,8 +33,18 @@ async function setupApiMocks(page: import("@playwright/test").Page) {
       contentType: "application/json",
       body: JSON.stringify({
         results: [
-          { id: "pred-e2e-001", status: "succeeded", urls: ["https://picsum.photos/1024/1024?random=1"], error: null },
-          { id: "pred-e2e-002", status: "succeeded", urls: ["https://picsum.photos/1024/1024?random=2"], error: null },
+          {
+            id: "pred-e2e-001",
+            status: "succeeded",
+            urls: ["https://picsum.photos/1024/1024?random=1"],
+            error: null,
+          },
+          {
+            id: "pred-e2e-002",
+            status: "succeeded",
+            urls: ["https://picsum.photos/1024/1024?random=2"],
+            error: null,
+          },
         ],
       }),
     });
@@ -44,7 +54,10 @@ async function setupApiMocks(page: import("@playwright/test").Page) {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ publicUrl: "/api/files/uploads/user_e2e/test.png", key: "uploads/user_e2e/test.png" }),
+      body: JSON.stringify({
+        publicUrl: "/api/files/uploads/user_e2e/test.png",
+        key: "uploads/user_e2e/test.png",
+      }),
     });
   });
 }

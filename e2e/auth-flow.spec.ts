@@ -7,7 +7,10 @@ async function setupAuthMocks(page: import("@playwright/test").Page) {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ token: "e2e-token", user: { id: "u1", name: "Tester", email: "test@test.com", credits: 100 } }),
+        body: JSON.stringify({
+          token: "e2e-token",
+          user: { id: "u1", name: "Tester", email: "test@test.com", credits: 100 },
+        }),
       });
     } else {
       await route.fulfill({
@@ -22,7 +25,10 @@ async function setupAuthMocks(page: import("@playwright/test").Page) {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
-      body: JSON.stringify({ token: "e2e-new", user: { id: "new", name: "New", email: "new@test.com", credits: 10 } }),
+      body: JSON.stringify({
+        token: "e2e-new",
+        user: { id: "new", name: "New", email: "new@test.com", credits: 10 },
+      }),
     });
   });
 
@@ -49,13 +55,19 @@ test.describe("Auth E2E (with API mocks)", () => {
     await page.goto("/login");
     await expect(page.locator('input[type="email"]')).toBeVisible();
     await expect(page.locator('input[type="password"]')).toBeVisible();
-    const loginBtn = page.locator("button").filter({ hasText: /sign in|login|登录/i }).first();
+    const loginBtn = page
+      .locator("button")
+      .filter({ hasText: /sign in|login|登录/i })
+      .first();
     await expect(loginBtn).toBeVisible();
   });
 
   test("login form validates empty fields", async ({ page }) => {
     await page.goto("/login");
-    const btn = page.locator("button").filter({ hasText: /sign in|login|登录/i }).first();
+    const btn = page
+      .locator("button")
+      .filter({ hasText: /sign in|login|登录/i })
+      .first();
     if (await btn.isVisible()) await btn.click();
     // Should stay on login page
     await expect(page.locator('input[type="email"]')).toBeVisible();
@@ -65,7 +77,10 @@ test.describe("Auth E2E (with API mocks)", () => {
     await page.goto("/login");
     await page.fill('input[type="email"]', "test@test.com");
     await page.fill('input[type="password"]', "test123456");
-    const btn = page.locator("button").filter({ hasText: /sign in|login|登录/i }).first();
+    const btn = page
+      .locator("button")
+      .filter({ hasText: /sign in|login|登录/i })
+      .first();
     await btn.click();
     // API mock returns 200 with token — page should respond (redirects to /)
     await page.waitForTimeout(2000);
