@@ -12,8 +12,22 @@ import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth/auth-client";
 import { authQueryOptions } from "@/lib/auth/queries";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { createPageMeta } from "@/lib/seo/meta";
+
+const signupSeo = createPageMeta({
+  title: "Sign Up — BatchlyAI",
+  description: "Create a BatchlyAI account to start generating AI images",
+  path: "/signup",
+  locale: "en",
+  noIndex: true,
+});
 
 export const Route = createFileRoute("/_guest/signup")({
+  head: () => ({
+    htmlAttrs: { lang: "en" },
+    meta: signupSeo.meta,
+    links: [{ rel: "canonical", href: "https://batchlyai.com/signup" }],
+  }),
   component: SignupForm,
 });
 
