@@ -11,8 +11,8 @@ HEADER="x-cwv-debug: 2"   # Route to the latest (canary) version
 PASS=0
 FAIL=0
 
-green() { echo -e "\033[32mPASS\033[0m $1"; ((PASS++)); }
-red() { echo -e "\033[31mFAIL\033[0m $1"; ((FAIL++)); exit 1; }
+green() { echo -e "\033[32mPASS\033[0m $1"; PASS=$((PASS + 1)); }
+red() { echo -e "\033[31mFAIL\033[0m $1"; FAIL=$((FAIL + 1)); exit 1; }
 
 echo "=== Smoke test (canary version): $BASE ==="
 echo ""
