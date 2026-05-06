@@ -118,8 +118,7 @@ test.describe("Generator E2E (with API mocks)", () => {
 
   test("generate button enabled/disabled state works", async ({ page }) => {
     await page.goto("/");
-    const generateBtn = page.getByRole("button", { name: /generate|开始生成/i });
-    // Should be disabled when textarea is empty
+    const generateBtn = page.locator("button").filter({ hasText: /generate|开始生成/i }).first();
     await expect(generateBtn).toBeDisabled();
 
     const textarea = page.locator("textarea").first();
@@ -136,7 +135,7 @@ test.describe("Generator E2E (with API mocks)", () => {
     await textarea.fill("A beautiful landscape");
     await page.waitForTimeout(200);
 
-    const generateBtn = page.getByRole("button", { name: /generate|开始生成/i });
+    const generateBtn = page.locator("button").filter({ hasText: /generate|开始生成/i }).first();
     await generateBtn.click();
 
     // Wait for results heading to appear
