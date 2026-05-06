@@ -43,7 +43,7 @@ export const Route = createFileRoute("/api/share")({
         if (!binding) return jsonResponse({ error: "DB unavailable" }, 501);
         const db = getDb(binding);
 
-        const shareId = `share_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        const shareId = `share_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
         const now = Math.floor(Date.now() / 1000);
 
         await db.insert(sharedBatch).values({

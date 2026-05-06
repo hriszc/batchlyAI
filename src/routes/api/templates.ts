@@ -137,7 +137,7 @@ export const Route = createFileRoute("/api/templates")({
           slug = `${baseSlug}-${attempt}`;
         }
 
-        const id = `tmpl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+        const id = `tmpl_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
         const now = Math.floor(Date.now() / 1000);
 
         await db.insert(templateTable).values({

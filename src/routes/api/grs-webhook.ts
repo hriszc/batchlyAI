@@ -10,6 +10,14 @@ function getKvBinding(): KVNamespace | undefined {
   return platformEnv?.batchlyai_kv as KVNamespace | undefined;
 }
 
+function hexToBuf(hex: string): Uint8Array {
+  const bytes = new Uint8Array(Math.ceil(hex.length / 2));
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(hex.substring(i * 2, i * 2 + 2), 16);
+  }
+  return bytes;
+}
+
 interface GrsWebhookPayload {
   id?: string;
   status?: string;
@@ -18,16 +26,34 @@ interface GrsWebhookPayload {
 }
 
 export async function handleGrsWebhook(request: Request): Promise<Response> {
-  if (env.GRS_WEBHOOK_SECRET) {
-    const url = new URL(request.url);
-    const secret = url.searchParams.get("secret");
-    if (secret !== env.GRS_WEBHOOK_SECRET) {
-      return jsonResponse({ error: "Unauthorized" }, 401);
-    }
+  const webhookSecret = env.GRS_WEBHOOK_SECRET;
+  if (!webhookSecret) {
+    return jsonResponse({ error: "Webhook not configured" }, 501);
+  }
+
+  const rawBody = await request.text();
+  const sig = request.headers.get("x-grs-signature") || "";
+
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(webhookSecret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["verify"],
+  );
+  const valid = await crypto.subtle.verify(
+    "HMAC",
+    key,
+    hexToBuf(sig).buffer as ArrayBuffer,
+    encoder.encode(rawBody),
+  );
+  if (!valid) {
+    return jsonResponse({ error: "Unauthorized" }, 401);
   }
 
   try {
-    const body = (await request.json()) as GrsWebhookPayload;
+    const body = JSON.parse(rawBody) as GrsWebhookPayload;
     const taskId = body.id;
 
     if (!taskId) {
