@@ -104,6 +104,20 @@ export function applyMigrations(db: ReturnType<typeof createTestDb>) {
     "created_at" integer NOT NULL,
     "completed_at" integer
   )`);
+
+  // Generation table
+  db.run(`CREATE TABLE "generation" (
+    "id" text PRIMARY KEY NOT NULL,
+    "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+    "prompt_template" text NOT NULL,
+    "resolved_prompts" text NOT NULL,
+    "variable_groups" text NOT NULL,
+    "result_urls" text NOT NULL,
+    "model" text NOT NULL,
+    "credits_used" integer NOT NULL,
+    "created_at" integer NOT NULL
+  )`);
+  db.run(`CREATE INDEX "generation_user_id_idx" ON "generation" ("user_id")`);
 }
 
 export function seedUser(

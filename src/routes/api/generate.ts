@@ -7,6 +7,7 @@ import { createAuth } from "@/lib/auth/auth";
 import { getCachedResult, setCachedResult } from "@/lib/cache/prompt-cache";
 import { getDb } from "@/lib/db";
 import { user as userTable } from "@/lib/db/schema/auth.schema";
+import { generation } from "@/lib/db/schema/data-flywheel.schema";
 import { generateRequestSchema } from "@/lib/validation/schemas";
 
 export const CREDIT_COST: Record<string, number> = {
@@ -103,6 +104,23 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
           await setCachedFn(body.prompt, model, body.aspectRatio || "1:1", texts.length, texts);
         }
 
+        // Auto-save generation history
+        try {
+          await db.insert(generation).values({
+            id: crypto.randomUUID(),
+            userId,
+            promptTemplate: body.prompt,
+            resolvedPrompts: JSON.stringify(Array.from({ length: n }, () => body.prompt)),
+            variableGroups: JSON.stringify([]),
+            resultUrls: JSON.stringify(texts),
+            model,
+            creditsUsed: maxCost,
+            createdAt: Math.floor(Date.now() / 1000),
+          });
+        } catch {
+          // Non-critical: don't fail the request if history save fails
+        }
+
         return jsonResponse({ texts, creditsRemaining: newBalance, isText: true, watermark }, 200);
       } catch (err) {
         await db
@@ -168,6 +186,23 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
 
     const predictionIds = predictions.map((p) => p.id);
     const newBalance = deducted.credits;
+
+    // Auto-save generation history (async: empty resultUrls initially)
+    try {
+      await db.insert(generation).values({
+        id: crypto.randomUUID(),
+        userId,
+        promptTemplate: body.prompt,
+        resolvedPrompts: JSON.stringify(Array.from({ length: n }, () => body.prompt)),
+        variableGroups: JSON.stringify([]),
+        resultUrls: JSON.stringify([]),
+        model,
+        creditsUsed: maxCost,
+        createdAt: Math.floor(Date.now() / 1000),
+      });
+    } catch {
+      // Non-critical: don't fail the request if history save fails
+    }
 
     return jsonResponse(
       {
