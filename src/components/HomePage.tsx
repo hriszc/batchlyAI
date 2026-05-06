@@ -17,6 +17,9 @@ export function HomePage({ forceLanguage }: HomePageProps) {
   const resultsRef = useRef<HTMLDivElement>(null);
   const { setLanguage, t } = useLanguage();
   const [shareMode, setShareMode] = useState(false);
+  const { data: session } = authClient.useSession();
+  const userCredits = ((session?.user as Record<string, unknown>)?.credits as number) ?? 0;
+  const showWatermark = userCredits <= 10;
 
   useEffect(() => {
     if (forceLanguage) {
@@ -142,6 +145,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
         <ResultsGrid
           results={state.results}
           isGenerating={state.isGenerating}
+          showWatermark={showWatermark}
           onShare={() => {
             if (state.results.length === 0) return;
             setShareMode(true);
