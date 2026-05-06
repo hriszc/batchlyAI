@@ -92,7 +92,8 @@ test.describe("Auth E2E (with API mocks)", () => {
   test("signup form has required fields", async ({ page }) => {
     await page.goto("/signup");
     await expect(page.locator('input[type="email"]')).toBeVisible();
-    await expect(page.locator('input[type="password"]')).toBeVisible();
+    // Signup may have password + confirm-password — match first
+    await expect(page.locator('input[type="password"]').first()).toBeVisible();
     const nameInput = page.locator('input[name="name"]').or(page.locator('input[id="name"]'));
     await expect(nameInput).toBeVisible();
   });
