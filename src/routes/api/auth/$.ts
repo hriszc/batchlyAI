@@ -20,7 +20,7 @@ const API_MAP: Record<string, string> = {
   "sign-in/email": "signInEmail",
   "sign-out": "signOut",
   "get-session": "getSession",
-  "forget-password": "forgetPassword",
+  "forget-password": "requestPasswordReset",
   "reset-password": "resetPassword",
   "send-verification-email": "sendVerificationEmail",
   "verify-email": "verifyEmail",

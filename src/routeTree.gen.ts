@@ -15,7 +15,6 @@ import { Route as TemplatesIndexRouteImport } from './routes/templates/index'
 import { Route as CnIndexRouteImport } from './routes/cn/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as TemplatesSlugRouteImport } from './routes/templates/$slug'
-import { Route as SitemapXmlRouteImport } from './routes/sitemap.xml'
 import { Route as RobotsTxtRouteImport } from './routes/robots.txt'
 import { Route as RCodeRouteImport } from './routes/r/$code'
 import { Route as GShareIdRouteImport } from './routes/g/$shareId'
@@ -67,11 +66,6 @@ const BlogIndexRoute = BlogIndexRouteImport.update({
 const TemplatesSlugRoute = TemplatesSlugRouteImport.update({
   id: '/templates/$slug',
   path: '/templates/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SitemapXmlRoute = SitemapXmlRouteImport.update({
-  id: '/sitemap/xml',
-  path: '/sitemap/xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RobotsTxtRoute = RobotsTxtRouteImport.update({
@@ -206,7 +200,6 @@ export interface FileRoutesByFullPath {
   '/g/$shareId': typeof GShareIdRoute
   '/r/$code': typeof RCodeRoute
   '/robots/txt': typeof RobotsTxtRoute
-  '/sitemap/xml': typeof SitemapXmlRoute
   '/templates/$slug': typeof TemplatesSlugRoute
   '/blog/': typeof BlogIndexRoute
   '/cn/': typeof CnIndexRoute
@@ -237,7 +230,6 @@ export interface FileRoutesByTo {
   '/g/$shareId': typeof GShareIdRoute
   '/r/$code': typeof RCodeRoute
   '/robots/txt': typeof RobotsTxtRoute
-  '/sitemap/xml': typeof SitemapXmlRoute
   '/templates/$slug': typeof TemplatesSlugRoute
   '/blog': typeof BlogIndexRoute
   '/cn': typeof CnIndexRoute
@@ -270,7 +262,6 @@ export interface FileRoutesById {
   '/g/$shareId': typeof GShareIdRoute
   '/r/$code': typeof RCodeRoute
   '/robots/txt': typeof RobotsTxtRoute
-  '/sitemap/xml': typeof SitemapXmlRoute
   '/templates/$slug': typeof TemplatesSlugRoute
   '/blog/': typeof BlogIndexRoute
   '/cn/': typeof CnIndexRoute
@@ -303,7 +294,6 @@ export interface FileRouteTypes {
     | '/g/$shareId'
     | '/r/$code'
     | '/robots/txt'
-    | '/sitemap/xml'
     | '/templates/$slug'
     | '/blog/'
     | '/cn/'
@@ -334,7 +324,6 @@ export interface FileRouteTypes {
     | '/g/$shareId'
     | '/r/$code'
     | '/robots/txt'
-    | '/sitemap/xml'
     | '/templates/$slug'
     | '/blog'
     | '/cn'
@@ -366,7 +355,6 @@ export interface FileRouteTypes {
     | '/g/$shareId'
     | '/r/$code'
     | '/robots/txt'
-    | '/sitemap/xml'
     | '/templates/$slug'
     | '/blog/'
     | '/cn/'
@@ -397,7 +385,6 @@ export interface RootRouteChildren {
   GShareIdRoute: typeof GShareIdRoute
   RCodeRoute: typeof RCodeRoute
   RobotsTxtRoute: typeof RobotsTxtRoute
-  SitemapXmlRoute: typeof SitemapXmlRoute
   TemplatesSlugRoute: typeof TemplatesSlugRoute
   BlogIndexRoute: typeof BlogIndexRoute
   CnIndexRoute: typeof CnIndexRoute
@@ -454,13 +441,6 @@ declare module '@tanstack/react-router' {
       path: '/templates/$slug'
       fullPath: '/templates/$slug'
       preLoaderRoute: typeof TemplatesSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sitemap/xml': {
-      id: '/sitemap/xml'
-      path: '/sitemap/xml'
-      fullPath: '/sitemap/xml'
-      preLoaderRoute: typeof SitemapXmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/robots/txt': {
@@ -668,7 +648,6 @@ const rootRouteChildren: RootRouteChildren = {
   GShareIdRoute: GShareIdRoute,
   RCodeRoute: RCodeRoute,
   RobotsTxtRoute: RobotsTxtRoute,
-  SitemapXmlRoute: SitemapXmlRoute,
   TemplatesSlugRoute: TemplatesSlugRoute,
   BlogIndexRoute: BlogIndexRoute,
   CnIndexRoute: CnIndexRoute,
