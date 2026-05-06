@@ -55,7 +55,9 @@ export function reducer(state: GeneratorState, action: GeneratorAction): Generat
           g.id === action.payload.groupId
             ? {
                 ...g,
-                values: g.values.map((v, i) => (i === action.payload.index ? action.payload.value : v)),
+                values: g.values.map((v, i) =>
+                  i === action.payload.index ? action.payload.value : v,
+                ),
               }
             : g,
         ),

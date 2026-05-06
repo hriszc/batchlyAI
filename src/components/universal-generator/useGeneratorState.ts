@@ -1,8 +1,8 @@
 import { useReducer, useCallback, useRef, useEffect } from "react";
 
 import { DEFAULT_MODEL, MODELS } from "./models";
-import { reducer, initialState } from "./reducer";
 import { unifiedPoll } from "./poll";
+import { reducer, initialState } from "./reducer";
 import type { GeneratorState, GeneratorAction, GroupId, PromptCombination } from "./types";
 import { computePromptCombinations } from "./utils";
 
