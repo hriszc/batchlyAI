@@ -1,8 +1,8 @@
 import { and, eq, gte, sql } from "drizzle-orm";
 
+import { getD1Binding, getKvBinding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
 import { referral as referralTable, referralCode, user as userTable } from "@/lib/db/schema";
-import { getD1Binding, getKvBinding } from "@/lib/cloudflare/bindings";
 
 const REFERRER_CREDITS = 5;
 const REFEREE_CREDITS = 3;

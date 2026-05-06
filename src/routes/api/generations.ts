@@ -3,9 +3,9 @@ import { desc, eq, sql } from "drizzle-orm";
 
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
+import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
 import { generation } from "@/lib/db/schema/data-flywheel.schema";
-import { getD1Binding } from "@/lib/cloudflare/bindings";
 
 export const Route = createFileRoute("/api/generations")({
   server: {

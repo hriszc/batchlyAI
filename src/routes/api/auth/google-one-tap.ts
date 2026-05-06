@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { createAuth } from "@/lib/auth/auth";
+import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
 import { user as userTable, account as accountTable } from "@/lib/db/schema/auth.schema";
-import { getD1Binding } from "@/lib/cloudflare/bindings";
 
 async function verifyGoogleToken(credential: string) {
   const resp = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${credential}`);

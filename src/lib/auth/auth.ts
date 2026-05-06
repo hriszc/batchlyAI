@@ -5,10 +5,10 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 
 import { env } from "@/env/server";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
+import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
 import { sendEmail } from "@/lib/email";
-import { getD1Binding } from "@/lib/cloudflare/bindings";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _auth: any = null;

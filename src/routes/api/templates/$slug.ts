@@ -2,9 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
 
 import { jsonResponse } from "@/lib/api-helpers";
+import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
 import { template as templateTable } from "@/lib/db/schema";
-import { getD1Binding } from "@/lib/cloudflare/bindings";
 
 export const Route = createFileRoute("/api/templates/$slug")({
   server: {

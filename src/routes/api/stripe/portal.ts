@@ -2,10 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
 
 import { createAuth } from "@/lib/auth/auth";
+import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
 import { user as userTable } from "@/lib/db/schema";
 import { getStripe } from "@/lib/stripe";
-import { getD1Binding } from "@/lib/cloudflare/bindings";
 
 export async function handlePortal(request: Request): Promise<Response> {
   const auth = createAuth();

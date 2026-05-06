@@ -3,8 +3,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { pollReplicatePrediction } from "@/lib/ai";
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
-import { checkRateLimit } from "@/lib/rate-limit";
 import { getKvBinding } from "@/lib/cloudflare/bindings";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 interface GrsTaskData {
   userId: string;

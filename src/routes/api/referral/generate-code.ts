@@ -3,9 +3,9 @@ import { eq } from "drizzle-orm";
 
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
+import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
 import { referralCode, user as userTable } from "@/lib/db/schema";
-import { getD1Binding } from "@/lib/cloudflare/bindings";
 
 function generateCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";

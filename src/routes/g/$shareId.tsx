@@ -2,8 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 
-import * as schema from "@/lib/db/schema";
 import { getD1Binding } from "@/lib/cloudflare/bindings";
+import * as schema from "@/lib/db/schema";
 
 export const Route = createFileRoute("/g/$shareId")({
   loader: async ({ params }) => {

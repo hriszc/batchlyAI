@@ -3,9 +3,9 @@ import { and, desc, eq, like, or, sql } from "drizzle-orm";
 
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
+import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
 import { template as templateTable } from "@/lib/db/schema";
-import { getD1Binding } from "@/lib/cloudflare/bindings";
 
 function slugify(text: string): string {
   return text

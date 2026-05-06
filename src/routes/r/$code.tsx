@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
 
+import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
 import { referralCode } from "@/lib/db/schema";
-import { getD1Binding } from "@/lib/cloudflare/bindings";
 
 function redirectToSignup(origin: string, refCode?: string) {
   const headers = new Headers();

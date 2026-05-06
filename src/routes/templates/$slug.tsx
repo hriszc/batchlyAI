@@ -3,8 +3,8 @@ import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { ArrowRightIcon } from "lucide-react";
 
-import * as schema from "@/lib/db/schema";
 import { getD1Binding } from "@/lib/cloudflare/bindings";
+import * as schema from "@/lib/db/schema";
 
 export const Route = createFileRoute("/templates/$slug")({
   loader: async ({ params }) => {

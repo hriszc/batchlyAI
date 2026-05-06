@@ -2,9 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
+import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
 import { sharedBatch } from "@/lib/db/schema";
-import { getD1Binding } from "@/lib/cloudflare/bindings";
 
 export async function handleShare(request: Request): Promise<Response> {
   const auth = createAuth();
