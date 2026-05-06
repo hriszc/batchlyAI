@@ -18,6 +18,9 @@ export const env = createEnv({
     GOOGLE_CLIENT_ID: z.string().optional(),
     GOOGLE_CLIENT_SECRET: z.string().optional(),
 
+    // Staging access control
+    STAGING_ACCESS_TOKEN: z.string().optional(),
+
     // Stripe
     STRIPE_SECRET_KEY: z.string().min(1).optional(),
     STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),

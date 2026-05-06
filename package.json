@@ -28,7 +28,9 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "smoke:staging": "bash scripts/smoke-test.sh staging.batchlyai.com",
+    "smoke:prod": "bash scripts/smoke-test.sh batchlyai.com"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",
