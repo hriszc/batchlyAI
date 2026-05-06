@@ -186,15 +186,15 @@ export function SettingsBar() {
             </button>
             {showUserMenu && (
               <div className="absolute right-0 top-full z-10 mt-1 w-44 rounded-xl border bg-popover shadow-lg">
-                <Link to="/my/generations" className="block px-3 py-2 text-xs hover:bg-muted" onClick={() => setShowUserMenu(false)}>
+                <a href="/my/generations" className="block px-3 py-2 text-xs hover:bg-muted">
                   {t("myGenerations")}
-                </Link>
-                <Link to="/my/prompts" className="block px-3 py-2 text-xs hover:bg-muted" onClick={() => setShowUserMenu(false)}>
+                </a>
+                <a href="/my/prompts" className="block px-3 py-2 text-xs hover:bg-muted">
                   {t("myPrompts")}
-                </Link>
-                <Link to="/my/works" className="block px-3 py-2 text-xs hover:bg-muted" onClick={() => setShowUserMenu(false)}>
+                </a>
+                <a href="/my/works" className="block px-3 py-2 text-xs hover:bg-muted">
                   {t("myWorks")}
-                </Link>
+                </a>
                 <div className="border-t" />
                 <button onClick={handleSignOut} className="block w-full px-3 py-2 text-left text-xs hover:bg-muted">
                   {t("signOut")}
