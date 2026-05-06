@@ -1,5 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
 // @ts-nocheck - route tree auto-generated at build time
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
 import { ArrowLeftIcon, HeartIcon, Repeat2Icon, CopyIcon } from "lucide-react";
 import { useState } from "react";
