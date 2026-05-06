@@ -76,7 +76,7 @@ function WorkDetailPage() {
     return (
       <main className="mx-auto max-w-[980px] px-4 py-16 text-center">
         <p className="text-muted-foreground">Work not found</p>
-        <a href="/discover" className="mt-2 inline-block text-[#0071e3]">Discover more</Link>
+        <a href="/discover" className="mt-2 inline-block text-[#0071e3]">Discover more</a>
       </main>
     );
   }
@@ -103,7 +103,7 @@ function WorkDetailPage() {
     <main className="mx-auto max-w-[980px] px-4 py-8">
       <a href="/discover" className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeftIcon className="size-4" /> {t("discover")}
-      </Link>
+      </a>
 
       <img src={data.coverUrl} alt={data.title} className="mb-6 w-full rounded-2xl object-cover max-h-96" />
 
