@@ -59,6 +59,14 @@ function RootDocument({ children }: { readonly children: React.ReactNode }) {
             <SettingsBar />
             <GoogleOneTap />
             {children}
+            <footer className="mt-auto border-t py-6 text-center">
+              <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+                <a href="/blog" className="transition-colors hover:text-foreground">Blog</a>
+                <a href="/templates" className="transition-colors hover:text-foreground">Templates</a>
+                <a href="/discover" className="transition-colors hover:text-foreground">Discover</a>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground/50">&copy; {new Date().getFullYear()} BatchlyAI</p>
+            </footer>
             <Toaster richColors />
           </LanguageProvider>
         </ThemeProvider>
