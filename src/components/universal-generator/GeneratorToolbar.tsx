@@ -1,5 +1,7 @@
 import { Settings2Icon } from "lucide-react";
+import { useState } from "react";
 
+import { MODELS } from "./models";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 import { ModelPicker } from "./ModelPicker";
@@ -39,19 +41,55 @@ export function GeneratorToolbar({
   creditsRemaining,
 }: GeneratorToolbarProps) {
   const { t } = useLanguage();
+  const [showSettings, setShowSettings] = useState(false);
+  const modelInfo = MODELS.find((m) => m.id === currentModel);
+  const isImage = modelInfo?.category === "image";
+  const isText = modelInfo?.category === "text";
 
   return (
     <div className="flex flex-wrap items-center gap-3 border-t bg-muted/20 px-4 py-2.5 text-sm">
-      <button
-        type="button"
-        onClick={onToggleVariables}
-        className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-muted ${
-          showVariables ? "text-[#0071e3]" : "text-muted-foreground"
-        }`}
-        title={t("advancedSettings")}
-      >
-        <Settings2Icon className="h-4 w-4" />
-      </button>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setShowSettings(!showSettings)}
+          className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-muted ${
+            showSettings ? "text-[#0071e3]" : "text-muted-foreground"
+          }`}
+          title={t("advancedSettings")}
+        >
+          <Settings2Icon className="h-4 w-4" />
+        </button>
+        {showSettings && (
+          <div className="absolute bottom-full left-0 z-10 mb-2 w-56 rounded-xl border bg-popover p-3 shadow-lg">
+            <p className="mb-2 text-xs font-semibold text-foreground">{modelInfo?.label} Settings</p>
+            {isImage && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Aspect ratio: use the ratio buttons in the toolbar.
+                </p>
+              </div>
+            )}
+            {isText && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Text models generate creative responses. Try different prompts for varied results.
+                </p>
+              </div>
+            )}
+            {!isImage && !isText && (
+              <p className="text-xs text-muted-foreground">
+                Video generation uses the selected quantity and aspect ratio.
+              </p>
+            )}
+            <button
+              onClick={() => setShowSettings(false)}
+              className="mt-2 w-full rounded bg-muted py-1 text-xs"
+            >
+              Close
+            </button>
+          </div>
+        )}
+      </div>
 
       <span className="text-muted-foreground/40">|</span>
 
