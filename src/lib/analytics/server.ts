@@ -8,7 +8,7 @@ export async function trackServer(
   clientId: string,
   props?: Record<string, unknown>,
 ) {
-  // @ts-expect-error — server-only env; skip in test/client environments
+  // Server-only env; skip in test/client environments
   if (typeof process === "undefined" || !process.env?.GA4_MEASUREMENT_ID) return;
   const id = process.env.GA4_MEASUREMENT_ID;
   const secret = process.env.GA4_API_SECRET;
