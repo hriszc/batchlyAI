@@ -5,7 +5,7 @@ import { createTestDb, applyMigrations, seedUser } from "#test/db-setup";
 const m = vi.hoisted(() => ({ s: vi.fn() }));
 vi.mock("@/lib/auth/auth", () => ({ createAuth: () => ({ api: { getSession: m.s } }) }));
 vi.mock("@/lib/db", () => ({ getDb: (b: any) => b }));
-vi.mock("@/lib/cloudflare/bindings", () => ({ getD1Binding: () => ({}) as any }));
+vi.mock("@/lib/cloudflare/bindings", () => ({ getD1Binding: () => ((globalThis as any).__env__?.batchlyai_db as any) ?? undefined }));
 
 import { handleGetGenerations } from "@/routes/api/generations";
 function req(url = "https://x.com/api/generations"): Request {
