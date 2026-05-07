@@ -125,7 +125,9 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
               updatedAt: Math.floor(Date.now() / 1000),
             });
           }
-        } catch { /* non-fatal */ }
+        } catch {
+          /* non-fatal */
+        }
 
         return jsonResponse({ texts, creditsRemaining: newBalance, isText: true, watermark }, 200);
       } catch (err) {
@@ -211,7 +213,9 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
           updatedAt: Math.floor(Date.now() / 1000),
         });
       }
-    } catch { /* non-fatal */ }
+    } catch {
+      /* non-fatal */
+    }
 
     try {
       await db.insert(generation).values({
