@@ -150,6 +150,7 @@ export const translations = {
     new: "New",
     discoverCTA: "Discover what others are creating",
     signupToCreate: "Sign up to create your own",
+    supportEmail: "For any questions, email: support@batchlyai.com",
   },
   zh: {
     siteTitle: "BatchlyAI",
@@ -300,6 +301,7 @@ export const translations = {
     new: "最新",
     discoverCTA: "发现更多精彩作品",
     signupToCreate: "注册开始创作",
+    supportEmail: "如有任何问题发送邮件至：support@batchlyai.com",
   },
 } as const;
 

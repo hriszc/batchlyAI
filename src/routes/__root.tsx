@@ -11,7 +11,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { env } from "@/env/client";
 import type { AuthQueryResult } from "@/lib/auth/queries";
-import { LanguageProvider } from "@/lib/i18n/LanguageContext";
+import { LanguageProvider, useLanguage } from "@/lib/i18n/LanguageContext";
 import { createPageMeta } from "@/lib/seo/meta";
 import { softwareAppLd } from "@/lib/seo/structured-data";
 
@@ -62,6 +62,11 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   shellComponent: RootDocument,
 });
 
+function SupportEmail() {
+  const { t } = useLanguage();
+  return <p className="mt-1 text-xs text-muted-foreground/50">{t("supportEmail")}</p>;
+}
+
 function RootDocument({ children }: { readonly children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
@@ -89,6 +94,7 @@ function RootDocument({ children }: { readonly children: React.ReactNode }) {
               <p className="mt-2 text-xs text-muted-foreground/50">
                 &copy; {new Date().getFullYear()} BatchlyAI
               </p>
+              <SupportEmail />
             </footer>
             <Toaster richColors />
           </LanguageProvider>
