@@ -112,7 +112,8 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
           const existing = await db
             .select({ id: savedPrompt.id })
             .from(savedPrompt)
-            .where(and(eq(savedPrompt.userId, userId), eq(savedPrompt.promptTemplate, body.prompt)))
+            .where(eq(savedPrompt.userId, userId))
+            .where(eq(savedPrompt.promptTemplate, body.prompt))
             .limit(1);
           if (existing.length === 0) {
             await db.insert(savedPrompt).values({
@@ -125,9 +126,7 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
               updatedAt: Math.floor(Date.now() / 1000),
             });
           }
-        } catch {
-          /* non-fatal */
-        }
+        } catch { /* non-fatal */ }
 
         return jsonResponse({ texts, creditsRemaining: newBalance, isText: true, watermark }, 200);
       } catch (err) {
@@ -200,7 +199,8 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
       const existing = await db
         .select({ id: savedPrompt.id })
         .from(savedPrompt)
-        .where(and(eq(savedPrompt.userId, userId), eq(savedPrompt.promptTemplate, body.prompt)))
+        .where(eq(savedPrompt.userId, userId))
+        .where(eq(savedPrompt.promptTemplate, body.prompt))
         .limit(1);
       if (existing.length === 0) {
         await db.insert(savedPrompt).values({
@@ -213,9 +213,7 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
           updatedAt: Math.floor(Date.now() / 1000),
         });
       }
-    } catch {
-      /* non-fatal */
-    }
+    } catch { /* non-fatal */ }
 
     try {
       await db.insert(generation).values({

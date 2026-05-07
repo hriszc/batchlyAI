@@ -5,7 +5,14 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 import type { GeneratedResult } from "./types";
 
 function renderMarkdown(text: string): string {
+<<<<<<< HEAD
   let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+=======
+  let html = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+>>>>>>> 62a605b (fix: referral check, auto-save prompts, markdown rendering, remove save button)
   html = html.replace(/^### (.+)$/gm, "<h3 class='text-sm font-semibold mt-2 mb-1'>$1</h3>");
   html = html.replace(/^## (.+)$/gm, "<h2 class='text-base font-semibold mt-3 mb-1'>$1</h2>");
   html = html.replace(/^# (.+)$/gm, "<h1 class='text-lg font-bold mt-3 mb-1'>$1</h1>");
