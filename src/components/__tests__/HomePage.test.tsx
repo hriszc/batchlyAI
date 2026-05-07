@@ -16,9 +16,9 @@ describe("HomePage", () => {
     expect(screen.getByText(/Universal AI Generator/)).toBeInTheDocument();
   });
 
-  it.skip("renders GeneratorCard", () => {
+  it("renders GeneratorCard", () => {
     renderWithProviders(<HomePage />);
-    expect(screen.getByPlaceholderText(/Use {{vars}} for batch generation/)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Describe your image/)).toBeInTheDocument();
   });
 
   it("renders title in Chinese when forceLanguage is zh", () => {

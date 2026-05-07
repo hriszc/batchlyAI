@@ -36,9 +36,9 @@ const baseState: GeneratorState = {
 };
 
 describe("GeneratorCard", () => {
-  it.skip("renders textarea with placeholder", () => {
+  it("renders textarea with placeholder", () => {
     renderWithProviders(<GeneratorCard state={baseState} actions={mockActions} />);
-    expect(screen.getByPlaceholderText(/batch generation/)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Describe your image/)).toBeInTheDocument();
   });
 
   it("renders generate button", () => {
@@ -142,7 +142,7 @@ describe("GeneratorCard", () => {
     expect(removeAttachment).toHaveBeenCalledWith("f1");
   });
 
-  it.skip("calls setPromptTemplate when textarea changes", async () => {
+  it("calls setPromptTemplate when textarea changes", async () => {
     const setPrompt = vi.fn();
     renderWithProviders(
       <GeneratorCard
@@ -150,7 +150,7 @@ describe("GeneratorCard", () => {
         actions={{ ...mockActions, setPromptTemplate: setPrompt }}
       />,
     );
-    const textarea = screen.getByPlaceholderText(/batch generation/);
+    const textarea = screen.getByPlaceholderText(/Describe your image/);
     await userEvent.type(textarea, "hello");
     expect(setPrompt).toHaveBeenCalled();
   });
