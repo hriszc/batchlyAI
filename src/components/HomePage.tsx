@@ -122,6 +122,21 @@ export function HomePage({ forceLanguage }: HomePageProps) {
         hasResults ? "pt-8" : "flex min-h-[90vh] flex-col justify-center"
       }`}
     >
+      <nav className="mb-4 flex items-center justify-center gap-2">
+        <a
+          href="/discover"
+          className="inline-flex h-8 items-center rounded-full bg-muted/80 px-3 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
+        >
+          {t("discover")}
+        </a>
+        <a
+          href="/templates"
+          className="inline-flex h-8 items-center rounded-full bg-muted/80 px-3 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
+        >
+          {t("templates")}
+        </a>
+      </nav>
+
       <div className="mb-2 flex justify-center">
         <img
           src="/logo-light.png"
@@ -169,6 +184,23 @@ export function HomePage({ forceLanguage }: HomePageProps) {
           }}
         />
       )}
+
+      <footer className="mt-16 border-t py-6 text-center">
+        <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+          <a href="/blog" className="transition-colors hover:text-foreground">
+            Blog
+          </a>
+          <a href="/templates" className="transition-colors hover:text-foreground">
+            {t("templates")}
+          </a>
+          <a href="/discover" className="transition-colors hover:text-foreground">
+            {t("discover")}
+          </a>
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground/50">
+          &copy; {new Date().getFullYear()} BatchlyAI
+        </p>
+      </footer>
     </main>
   );
 }
