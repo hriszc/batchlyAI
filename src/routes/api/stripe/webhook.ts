@@ -74,6 +74,21 @@ export async function handleWebhook(request: Request): Promise<Response> {
 
       console.log(`[stripe] Credited ${creditsGranted} credits`);
 
+      // Analytics (non-blocking)
+      void (async () => {
+        const [userRecord] = await db
+          .select({ stripeCustomerId: userTable.stripeCustomerId })
+          .from(userTable)
+          .where(eq(userTable.id, userId))
+          .limit(1);
+        const { trackServer } = await import("@/lib/analytics/server");
+        await trackServer("purchase_completed", userId, {
+          amount_cents: amountTotal,
+          credits_granted: creditsGranted,
+          is_first_purchase: !userRecord?.stripeCustomerId,
+        });
+      })();
+
       // Referral purchase commission (first purchase only)
       try {
         const [refRecord] = await db

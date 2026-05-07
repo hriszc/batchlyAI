@@ -90,6 +90,13 @@ export const Route = createFileRoute("/api/auth/$")({
                     user?: { id: string; email: string };
                   };
                   await processReferralAfterSignup(request, body);
+
+                  const refCode = (await request.clone().json().catch(() => ({})) as Record<string, unknown>)?.ref as string | undefined;
+                  const { trackServer } = await import("@/lib/analytics/server");
+                  await trackServer("signup_completed", body.user?.id || "unknown", {
+                    method: "email",
+                    referral_code: refCode || "",
+                  });
                 } catch {
                   console.error("[auth] Referral processing error");
                 }

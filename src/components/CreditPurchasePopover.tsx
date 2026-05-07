@@ -49,6 +49,8 @@ export function CreditPurchasePopover({ onClose }: CreditPurchasePopoverProps) {
     if (effectiveQuantity < 1) return;
     setLoading(true);
     try {
+      const { track } = await import("@/lib/analytics/client");
+      track("checkout_started", { quantity: effectiveQuantity, currency });
       const resp = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
