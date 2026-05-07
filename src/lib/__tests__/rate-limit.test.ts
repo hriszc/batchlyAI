@@ -83,7 +83,9 @@ describe("checkRateLimit", () => {
 });
 
 describe("checkRateLimit edge cases", () => {
-  afterEach(() => { vi.useRealTimers(); });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it("handles very large maxRequests", () => {
     const r = checkRateLimit("large-limit", 10000, 60);
