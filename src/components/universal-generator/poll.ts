@@ -32,6 +32,7 @@ export async function unifiedPoll(pendings: AsyncPending[]): Promise<GeneratedRe
 
   const modelType = pendings[0]?.modelType ?? "replicate";
   const pendingIds = new Set(allIds);
+  const finished: GeneratedResult[] = [];
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     await new Promise((r) => setTimeout(r, interval));
@@ -43,8 +44,6 @@ export async function unifiedPoll(pendings: AsyncPending[]): Promise<GeneratedRe
       const json = (await resp.json()) as { results?: PollResult[]; error?: string };
 
       if (!json.results) continue;
-
-      const finished: GeneratedResult[] = [];
 
       for (const r of json.results) {
         if (
@@ -86,10 +85,9 @@ export async function unifiedPoll(pendings: AsyncPending[]): Promise<GeneratedRe
   }
 
   // Timeout: remaining pending IDs become error results
-  const timedOut: GeneratedResult[] = [];
   for (const id of pendingIds) {
     const combination = idToCombo.get(id) ?? pendings[0].combination;
-    timedOut.push({
+    finished.push({
       id: generateResultId(),
       combination,
       imageUrl: null,
@@ -98,5 +96,5 @@ export async function unifiedPoll(pendings: AsyncPending[]): Promise<GeneratedRe
       status: "error" as const,
     });
   }
-  return timedOut;
+  return finished;
 }
