@@ -81,3 +81,28 @@ describe("checkRateLimit", () => {
     expect(result.allowed).toBe(true);
   });
 });
+
+describe("checkRateLimit edge cases", () => {
+  afterEach(() => { vi.useRealTimers(); });
+
+  it("handles very large maxRequests", () => {
+    const r = checkRateLimit("large-limit", 10000, 60);
+    expect(r.allowed).toBe(true);
+    expect(r.remaining).toBe(9999);
+  });
+
+  it("handles zero window gracefully", () => {
+    const r = checkRateLimit("zero-window", 5, 0);
+    expect(r.allowed).toBe(true);
+  });
+
+  it("different windows have independent expiry", () => {
+    const f = Date.now();
+    vi.useFakeTimers({ now: f });
+    checkRateLimit("short", 2, 1);
+    checkRateLimit("long", 2, 100);
+    vi.advanceTimersByTime(2000);
+    expect(checkRateLimit("short", 2, 1).allowed).toBe(true); // reset
+    expect(checkRateLimit("long", 2, 100).allowed).toBe(true); // not yet hit limit
+  });
+});
