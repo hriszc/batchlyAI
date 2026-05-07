@@ -5,7 +5,7 @@ export const translations = {
       "Universal AI Generator — batch generate all combinations from multi-variable prompts",
     promptPlaceholder:
       "Describe your image. Try {{cat, dog}} for variations, or {*animal ideas*} for AI suggestions.",
-    promptHint: "",
+    promptHint: "Use {{vars}} for batch combinations or {*desc*} for AI expansion",
     expandAi: "AI Expand",
     expanding: "Expanding...",
     expandFailed: "Expansion failed. Please try again.",
@@ -153,9 +153,8 @@ export const translations = {
   zh: {
     siteTitle: "BatchlyAI",
     siteDescription: "万能 AI 生成器 — 一次输入多组变量，批量生成所有组合结果",
-    promptPlaceholder:
-      "描述你想要的画面。试试 {{猫, 狗}} 批量出图，或 {*动物创意*} 让 AI 出主意。",
-    promptHint: "",
+    promptPlaceholder: "描述你想要的画面。试试 {{猫, 狗}} 批量出图，或 {*动物创意*} 让 AI 出主意。",
+    promptHint: "使用 {{变量}} 批量组合，或 {*描述*} 让 AI 扩展",
     expandAi: "AI 展开",
     expanding: "展开中...",
     expandFailed: "展开失败，请重试",
