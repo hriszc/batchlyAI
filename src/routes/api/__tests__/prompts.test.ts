@@ -15,7 +15,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("@/lib/cloudflare/bindings", () => ({
-  getD1Binding: () => ({}) as D1Database,
+  getD1Binding: () => ((globalThis as any).__env__?.batchlyai_db as any) ?? undefined,
 }));
 
 import { handleGetPrompts, handleSavePrompt } from "@/routes/api/prompts";
