@@ -215,6 +215,18 @@ export function SettingsBar() {
           {t("loginNav")}
         </Link>
       )}
+      <a
+        href="/discover"
+        className="inline-flex h-8 items-center rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
+      >
+        {t("discover")}
+      </a>
+      <a
+        href="/templates"
+        className="inline-flex h-8 items-center rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
+      >
+        {t("templates")}
+      </a>
       <button
         onClick={() => setLanguage(language === "en" ? "zh" : "en")}
         className="inline-flex h-8 items-center justify-center rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
