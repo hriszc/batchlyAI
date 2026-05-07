@@ -274,9 +274,10 @@ async function chatDeepseek(
   }
 
   const data = (await resp.json()) as {
-    choices: Array<{ message: { content: string } }>;
+    choices: Array<{ message: { content: string; reasoning_content?: string } }>;
   };
-  return data.choices[0]?.message?.content?.trim() ?? "";
+  const msg = data.choices[0]?.message;
+  return (msg?.content || msg?.reasoning_content || "").trim();
 }
 
 const EXPAND_SYSTEM_PROMPT =
@@ -298,7 +299,7 @@ export async function runExpandLLM(description: string): Promise<string[]> {
       { role: "system", content: EXPAND_SYSTEM_PROMPT },
       { role: "user", content: description },
     ],
-    { maxTokens: 100, temperature: 0.7, model: "deepseek-v4-flash" },
+    { maxTokens: 500, temperature: 0.7, model: "deepseek-v4-flash" },
   );
 
   return text
