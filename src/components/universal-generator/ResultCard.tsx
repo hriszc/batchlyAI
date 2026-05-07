@@ -27,8 +27,48 @@ function downloadUrl(url: string, filename: string) {
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
-  a.target = "_blank";
   a.click();
+}
+
+async function downloadWithWatermark(imageUrl: string, filename: string) {
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error("Failed to load image"));
+    img.src = imageUrl;
+  });
+
+  const canvas = document.createElement("canvas");
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(img, 0, 0);
+
+  // Watermark at bottom-right
+  const text = "batchlyai.com";
+  const fontSize = Math.max(14, Math.floor(canvas.width / 40));
+  ctx.font = `600 ${fontSize}px Inter, system-ui, sans-serif`;
+  const metrics = ctx.measureText(text);
+  const padding = fontSize;
+  const x = canvas.width - metrics.width - padding;
+  const y = canvas.height - padding;
+
+  // Semi-transparent background for readability
+  ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+  const boxH = fontSize + padding * 0.6;
+  ctx.fillRect(x - padding * 0.4, y - fontSize, metrics.width + padding * 0.8, boxH);
+
+  // Text
+  ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+  ctx.fillText(text, x, y);
+
+  canvas.toBlob((blob) => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    downloadUrl(url, filename);
+    URL.revokeObjectURL(url);
+  }, "image/png");
 }
 
 export function ResultCard({ result, showWatermark = false }: ResultCardProps) {
@@ -54,9 +94,15 @@ export function ResultCard({ result, showWatermark = false }: ResultCardProps) {
             )}
             {hasDownloadable && (
               <button
-                onClick={() => downloadUrl(result.imageUrl!, `batchlyai-${result.id}.png`)}
+                onClick={() => {
+                  if (showWatermark) {
+                    downloadWithWatermark(result.imageUrl!, `batchlyai-${result.id}.png`);
+                  } else {
+                    downloadUrl(result.imageUrl!, `batchlyai-${result.id}.png`);
+                  }
+                }}
                 className="absolute top-2 right-2 rounded-lg bg-black/50 p-1.5 text-white/80 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 hover:bg-black/70"
-                title="Download"
+                title={showWatermark ? "Download with watermark" : "Download"}
               >
                 <DownloadIcon className="size-4" />
               </button>
