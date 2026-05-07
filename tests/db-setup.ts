@@ -121,6 +121,21 @@ export function applyMigrations(db: ReturnType<typeof createTestDb>) {
   db.run(`CREATE INDEX "generation_user_idx" ON "generation" ("user_id")`);
   db.run(`CREATE INDEX "generation_created_idx" ON "generation" ("created_at")`);
 
+  // Saved prompts table
+  db.run(`CREATE TABLE "saved_prompt" (
+    "id" text PRIMARY KEY NOT NULL,
+    "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+    "name" text NOT NULL,
+    "prompt_template" text NOT NULL,
+    "variable_groups" text,
+    "model" text,
+    "tags" text,
+    "usage_count" integer DEFAULT 0,
+    "created_at" integer NOT NULL,
+    "updated_at" integer NOT NULL
+  )`);
+  db.run(`CREATE INDEX "saved_prompt_user_idx" ON "saved_prompt" ("user_id")`);
+
   // Payment tables
   db.run(`CREATE TABLE "credit_purchase" (
     "id" text PRIMARY KEY NOT NULL,
