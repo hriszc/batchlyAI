@@ -1,8 +1,6 @@
-import { eq } from "drizzle-orm";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
 import { createTestDb, applyMigrations, seedUser } from "#test/db-setup";
-import { user as userTable, referralCode } from "@/lib/db/schema";
 
 const mocks = vi.hoisted(() => {
   const mockGetSession = vi.fn();
@@ -20,6 +18,13 @@ vi.mock("@/lib/db", () => ({
 }));
 
 import { handleReferralGenerateCode } from "@/routes/api/referral/generate-code";
+
+function seedGeneration(db: ReturnType<typeof createTestDb>, userId: string) {
+  const now = Math.floor(Date.now() / 1000);
+  db.run(
+    `INSERT INTO generation (id, user_id, prompt_template, resolved_prompts, variable_groups, result_urls, model, credits_used, created_at) VALUES ('gen1', '${userId}', 'test', '["test"]', '[]', '[]', 'z-image-pro', 20, ${now})`,
+  );
+}
 
 function makeRequest(url?: string): Request {
   return {
@@ -55,14 +60,15 @@ describe("handleReferralGenerateCode", () => {
     expect(resp.status).toBe(501);
   });
 
-  it("returns 403 when user has default credits (no activity)", async () => {
-    seedUser(db, { id: "u1", credits: 10 });
+  it("returns 403 when user has no generation activity", async () => {
+    seedUser(db, { id: "u1" });
     const resp = await handleReferralGenerateCode(makeRequest());
     expect(resp.status).toBe(403);
   });
 
-  it.skip("returns 200 with code when user has spent credits", async () => {
-    seedUser(db, { id: "u1", credits: 5 });
+  it("returns 200 with code when user has generation activity", async () => {
+    seedUser(db, { id: "u1" });
+    seedGeneration(db, "u1");
     const resp = await handleReferralGenerateCode(makeRequest());
     expect(resp.status).toBe(200);
     const body = (await resp.json()) as { code: string; shareUrl: string };
@@ -71,18 +77,18 @@ describe("handleReferralGenerateCode", () => {
   });
 
   it("returns existing code idempotently", async () => {
-    seedUser(db, { id: "u1", credits: 5 });
-    // First call creates
+    seedUser(db, { id: "u1" });
+    seedGeneration(db, "u1");
     const r1 = await handleReferralGenerateCode(makeRequest());
     const b1 = (await r1.json()) as { code: string };
-    // Second call returns same
     const r2 = await handleReferralGenerateCode(makeRequest());
     const b2 = (await r2.json()) as { code: string };
     expect(b1.code).toBe(b2.code);
   });
 
-  it.skip("uses correct origin in shareUrl", async () => {
-    seedUser(db, { id: "u1", credits: 3 });
+  it("uses correct origin in shareUrl", async () => {
+    seedUser(db, { id: "u1" });
+    seedGeneration(db, "u1");
     const resp = await handleReferralGenerateCode(
       makeRequest("https://batchlyai.com/api/referral/generate-code"),
     );

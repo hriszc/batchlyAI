@@ -167,7 +167,7 @@ describe("GeneratorCard", () => {
     expect(screen.getByText(/qty/i)).toBeInTheDocument();
   });
 
-  it.skip("toggles variable editor visibility", async () => {
+  it("shows variable groups when prompt has variables", async () => {
     const stateWithVars: GeneratorState = {
       ...baseState,
       promptTemplate: "{{cat, dog}}",
@@ -175,11 +175,8 @@ describe("GeneratorCard", () => {
     };
     renderWithProviders(<GeneratorCard state={stateWithVars} actions={mockActions} />);
 
-    // Click the settings button to toggle variable editor
-    const settingsBtn = screen.getByTitle("Advanced settings");
-    await userEvent.click(settingsBtn);
-    // Variable group label should now be visible
-    expect(screen.getByText("Group 1")).toBeInTheDocument();
+    // Variable groups count should be visible in the group pill
+    expect(screen.getByText(/1\s+groups/)).toBeInTheDocument();
   });
 
   it("shows credits remaining when not null", () => {
