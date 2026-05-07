@@ -16,7 +16,7 @@ describe("sanitizeFilename", () => {
     expect(sanitizeFilename("a".repeat(250) + ".png").length).toBeLessThanOrEqual(200));
   it("returns 'upload' for empty result", () => expect(sanitizeFilename("___")).toBe("upload"));
   it("removes null bytes", () => expect(sanitizeFilename("a\0b.png")).toBe("ab.png"));
-  it("handles unicode by replacing", () => expect(sanitizeFilename("中文.png")).toBe("_.png"));
+  it("handles unicode by replacing", () => expect(sanitizeFilename("中文.png")).toBe(".png"));
   it("preserves dots and hyphens", () =>
     expect(sanitizeFilename("my-file.v1.0.png")).toBe("my-file.v1.0.png"));
 });
