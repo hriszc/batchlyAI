@@ -1,50 +1,101 @@
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { renderHook, act } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
-import { LanguageProvider, useLanguage } from "@/lib/i18n/LanguageContext";
+import { LanguageProvider, useLanguage } from "../LanguageContext";
 
-function TestConsumer() {
-  const { language, t, setLanguage } = useLanguage();
-  return (
-    <div>
-      <span data-testid="lang">{language}</span>
-      <span data-testid="title">{t("siteTitle")}</span>
-      <button onClick={() => setLanguage("zh")}>Switch to ZH</button>
-    </div>
-  );
+function createWrapper() {
+  return function Wrapper({ children }: { children: React.ReactNode }) {
+    return <LanguageProvider>{children}</LanguageProvider>;
+  };
 }
 
-describe("LanguageProvider", () => {
-  it("provides default language en", () => {
-    render(
-      <LanguageProvider>
-        <TestConsumer />
-      </LanguageProvider>,
-    );
-    expect(screen.getByTestId("lang").textContent).toBe("en");
-    expect(screen.getByTestId("title").textContent).toBe("BatchlyAI");
+describe("LanguageContext", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
   });
 
-  it("switches language when setLanguage is called", async () => {
-    const user = userEvent.setup();
-    render(
-      <LanguageProvider>
-        <TestConsumer />
-      </LanguageProvider>,
-    );
-    await user.click(screen.getByText("Switch to ZH"));
-    expect(screen.getByTestId("lang").textContent).toBe("zh");
+  // --- Initial language detection (synchronous) ---
+  it("defaults to en when no browser preference and no localStorage", () => {
+    vi.stubGlobal("navigator", { language: "en-US" });
+    const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });
+    expect(result.current.language).toBe("en");
   });
 
-  it("defaults to en for unsupported stored language", () => {
-    localStorage.setItem("language", "fr");
-    render(
-      <LanguageProvider>
-        <TestConsumer />
-      </LanguageProvider>,
-    );
-    // Should still show en (fr is not supported)
-    expect(screen.getByTestId("lang").textContent).toBe("en");
+  it("detects Chinese from browser language on first visit", () => {
+    vi.stubGlobal("navigator", { language: "zh-CN" });
+    const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });
+    expect(result.current.language).toBe("zh");
+  });
+
+  it("detects Chinese from zh-TW variant", () => {
+    vi.stubGlobal("navigator", { language: "zh-TW" });
+    const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });
+    expect(result.current.language).toBe("zh");
+  });
+
+  it("returns en for non-Chinese languages", () => {
+    vi.stubGlobal("navigator", { language: "fr" });
+    const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });
+    expect(result.current.language).toBe("en");
+  });
+
+  // --- localStorage preference overrides browser ---
+  it("uses localStorage 'zh' even when browser is English", () => {
+    localStorage.setItem("language", "zh");
+    vi.stubGlobal("navigator", { language: "en-US" });
+    const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });
+    expect(result.current.language).toBe("zh");
+  });
+
+  it("uses localStorage 'en' even when browser is Chinese", () => {
+    localStorage.setItem("language", "en");
+    vi.stubGlobal("navigator", { language: "zh-CN" });
+    const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });
+    expect(result.current.language).toBe("en");
+  });
+
+  // --- setLanguage persists ---
+  it("setLanguage updates language and persists to localStorage", () => {
+    vi.stubGlobal("navigator", { language: "en-US" });
+    const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });
+
+    act(() => result.current.setLanguage("zh"));
+    expect(result.current.language).toBe("zh");
+    expect(localStorage.getItem("language")).toBe("zh");
+
+    act(() => result.current.setLanguage("en"));
+    expect(result.current.language).toBe("en");
+    expect(localStorage.getItem("language")).toBe("en");
+  });
+
+  // --- Translation function ---
+  it("t() returns translated string", () => {
+    vi.stubGlobal("navigator", { language: "zh-CN" });
+    const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });
+    expect(result.current.language).toBe("zh");
+    // "generate" → "开始生成" in zh
+    expect(result.current.t("generate")).toBe("开始生成");
+  });
+
+  it("t() returns English when language is en", () => {
+    vi.stubGlobal("navigator", { language: "en-US" });
+    const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });
+    expect(result.current.t("generate")).toBe("Generate");
+  });
+
+  // --- Edge case: server-side rendering ---
+  it("defaults to en when navigator is undefined (SSR)", () => {
+    vi.stubGlobal("navigator", undefined);
+    const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });
+    expect(result.current.language).toBe("en");
+  });
+
+  // --- Edge case: corrupted localStorage ---
+  it("ignores invalid localStorage value and falls back to browser", () => {
+    localStorage.setItem("language", "de");
+    vi.stubGlobal("navigator", { language: "zh-CN" });
+    const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });
+    expect(result.current.language).toBe("zh"); // falls back to browser detection
   });
 });
