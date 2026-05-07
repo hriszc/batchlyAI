@@ -28,7 +28,7 @@ export async function sendEmail({ to, subject, html }: SendEmailParams): Promise
     try {
       await emailBinding.send({
         to,
-        from: "noreply@batchlyai.com",
+        from: "support@batchlyai.com",
         subject,
         html,
       });
@@ -47,7 +47,7 @@ export async function sendEmail({ to, subject, html }: SendEmailParams): Promise
       body: JSON.stringify({
         personalizations: [{ to: [{ email: to }] }],
         from: {
-          email: "noreply@batchlyai.com",
+          email: "support@batchlyai.com",
           name: "BatchlyAI",
         },
         subject,
