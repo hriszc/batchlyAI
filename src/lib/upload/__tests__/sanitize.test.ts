@@ -8,7 +8,7 @@ describe("sanitizeFilename", () => {
   it("replaces slashes with underscores", () =>
     expect(sanitizeFilename("a/b/c.png")).toBe("a_b_c.png"));
   it("replaces special chars", () =>
-    expect(sanitizeFilename("my photo (1).png")).toBe("my_photo__1_.png"));
+    expect(sanitizeFilename("my photo (1).png")).toBe("my_photo_1_.png"));
   it("removes leading dots", () => expect(sanitizeFilename("..hidden")).toBe("hidden"));
   it("collapses multiple underscores", () => expect(sanitizeFilename("a___b")).toBe("a_b"));
   it("trims leading/trailing underscores", () => expect(sanitizeFilename("_test_")).toBe("test"));
