@@ -125,7 +125,9 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
               updatedAt: Math.floor(Date.now() / 1000),
             });
           }
-        } catch { /* non-fatal */ }
+        } catch {
+          /* non-fatal */
+        }
 
         return jsonResponse({ texts, creditsRemaining: newBalance, isText: true, watermark }, 200);
       } catch (err) {
@@ -211,7 +213,9 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
           updatedAt: Math.floor(Date.now() / 1000),
         });
       }
-    } catch { /* non-fatal */ }
+    } catch {
+      /* non-fatal */
+    }
 
     try {
       await db.insert(generation).values({
@@ -272,7 +276,10 @@ export const Route = createFileRoute("/api/generate")({
           }
           if (count >= 2) {
             return jsonResponse(
-              { error: "Guest limit reached. Sign up for 40 free credits and more daily generations!" },
+              {
+                error:
+                  "Guest limit reached. Sign up for 40 free credits and more daily generations!",
+              },
               402,
             );
           }
@@ -297,16 +304,19 @@ export const Route = createFileRoute("/api/generate")({
             await kv.put(kvKey, String(count + 1), { expirationTtl: 86400 });
           }
 
-          return jsonResponse({
-            predictionIds: guestPredictions.map((p) => p.id),
-            status: "processing",
-            async: true,
-            creditsRemaining: null,
-            modelType: "replicate",
-            isVideo: false,
-            watermark: true,
-            guest: true,
-          }, 200);
+          return jsonResponse(
+            {
+              predictionIds: guestPredictions.map((p) => p.id),
+              status: "processing",
+              async: true,
+              creditsRemaining: null,
+              modelType: "replicate",
+              isVideo: false,
+              watermark: true,
+              guest: true,
+            },
+            200,
+          );
         }
 
         const binding = getD1Binding();

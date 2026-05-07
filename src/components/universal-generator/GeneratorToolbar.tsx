@@ -1,10 +1,10 @@
 import { Settings2Icon } from "lucide-react";
 import { useState } from "react";
 
-import { MODELS } from "./models";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 import { ModelPicker } from "./ModelPicker";
+import { MODELS } from "./models";
 
 const ASPECT_RATIOS = ["16:9", "1:1", "9:16"];
 const QUANTITIES = [1, 2, 4];
@@ -61,7 +61,9 @@ export function GeneratorToolbar({
         </button>
         {showSettings && (
           <div className="absolute bottom-full left-0 z-10 mb-2 w-56 rounded-xl border bg-popover p-3 shadow-lg">
-            <p className="mb-2 text-xs font-semibold text-foreground">{modelInfo?.label} Settings</p>
+            <p className="mb-2 text-xs font-semibold text-foreground">
+              {modelInfo?.label} Settings
+            </p>
             {isImage && (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">
