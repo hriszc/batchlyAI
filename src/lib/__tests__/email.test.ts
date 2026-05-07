@@ -101,3 +101,25 @@ describe("sendEmail", () => {
     expect(body.content).toEqual([{ type: "text/html", value: "<p>Body</p>" }]);
   });
 });
+
+describe("sendEmail edge cases", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    delete (globalThis as Record<string, unknown>).__env__;
+  });
+
+  it("handles empty HTML body", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({ ok: true, text: vi.fn().mockResolvedValue("") });
+    vi.stubGlobal("fetch", mockFetch);
+    const result = await sendEmail({ to: "t@t.com", subject: "Sub", html: "" });
+    expect(result).toBe(true);
+  });
+
+  it("handles long subject", async () => {
+    const mockFetch = vi.fn().mockResolvedValue({ ok: true, text: vi.fn().mockResolvedValue("") });
+    vi.stubGlobal("fetch", mockFetch);
+    const longSubject = "S".repeat(500);
+    const result = await sendEmail({ to: "t@t.com", subject: longSubject, html: "<p>x</p>" });
+    expect(result).toBe(true);
+  });
+});
