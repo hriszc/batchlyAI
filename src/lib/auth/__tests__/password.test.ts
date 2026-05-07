@@ -71,3 +71,21 @@ describe("verifyPassword", () => {
     expect(await verifyPassword({ hash, password: "密码123" })).toBe(false);
   });
 });
+
+describe("password edge cases", () => {
+  it("handles very long passwords", async () => {
+    const long = "a".repeat(1000);
+    const hash = await hashPassword(long);
+    expect(await verifyPassword({ hash, password: long })).toBe(true);
+  });
+
+  it("handles passwords with special characters", async () => {
+    const pw = "p@ss!<>#$%^&*()_+-=[]{}|;':\",./?";
+    const hash = await hashPassword(pw);
+    expect(await verifyPassword({ hash, password: pw })).toBe(true);
+  });
+
+  it("rejects hash with only prefix and no salt", async () => {
+    expect(await verifyPassword({ hash: "pbkdf2$", password: "test" })).toBe(false);
+  });
+});
