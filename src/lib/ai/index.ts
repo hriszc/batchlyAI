@@ -298,7 +298,7 @@ export async function runExpandLLM(description: string): Promise<string[]> {
       { role: "system", content: EXPAND_SYSTEM_PROMPT },
       { role: "user", content: description },
     ],
-    { maxTokens: 100, temperature: 0.7, model: "deepseek-chat" },
+    { maxTokens: 100, temperature: 0.7, model: "deepseek-v4-flash" },
   );
 
   return text

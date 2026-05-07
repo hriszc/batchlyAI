@@ -81,7 +81,7 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
     // Text generation via DeepSeek (synchronous)
     if (model === "z-text-fast" || model === "z-text-pro") {
       try {
-        const textModel = model === "z-text-pro" ? "deepseek-reasoner" : "deepseek-chat";
+        const textModel = model === "z-text-pro" ? "deepseek-v4-pro" : "deepseek-v4-flash";
         const texts = await Promise.all(
           Array.from({ length: n }, () => textFn({ prompt: body.prompt, model: textModel })),
         );
