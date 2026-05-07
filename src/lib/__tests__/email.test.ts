@@ -96,7 +96,7 @@ describe("sendEmail", () => {
 
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
     expect(body.personalizations).toEqual([{ to: [{ email: "user@example.com" }] }]);
-    expect(body.from.email).toBe("noreply@batchlyai.com");
+    expect(body.from.email).toBe("support@batchlyai.com");
     expect(body.subject).toBe("Subject");
     expect(body.content).toEqual([{ type: "text/html", value: "<p>Body</p>" }]);
   });
