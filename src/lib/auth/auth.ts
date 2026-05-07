@@ -32,7 +32,7 @@ export function createAuth(d1Binding?: D1Database) {
         additionalFields: {
           credits: {
             type: "number",
-            defaultValue: 10,
+            defaultValue: 40,
           },
         },
       },
