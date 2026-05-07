@@ -1,3 +1,4 @@
+import { WandSparklesIcon, PaperclipIcon, Loader2Icon, Undo2Icon } from "lucide-react";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 

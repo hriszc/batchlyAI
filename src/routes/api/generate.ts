@@ -112,8 +112,7 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
           const existing = await db
             .select({ id: savedPrompt.id })
             .from(savedPrompt)
-            .where(eq(savedPrompt.userId, userId))
-            .where(eq(savedPrompt.promptTemplate, body.prompt))
+            .where(and(eq(savedPrompt.userId, userId), eq(savedPrompt.promptTemplate, body.prompt)))
             .limit(1);
           if (existing.length === 0) {
             await db.insert(savedPrompt).values({
@@ -199,8 +198,7 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
       const existing = await db
         .select({ id: savedPrompt.id })
         .from(savedPrompt)
-        .where(eq(savedPrompt.userId, userId))
-        .where(eq(savedPrompt.promptTemplate, body.prompt))
+        .where(and(eq(savedPrompt.userId, userId), eq(savedPrompt.promptTemplate, body.prompt)))
         .limit(1);
       if (existing.length === 0) {
         await db.insert(savedPrompt).values({
