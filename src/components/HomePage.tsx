@@ -184,6 +184,23 @@ export function HomePage({ forceLanguage }: HomePageProps) {
           }}
         />
       )}
+
+      <footer className="mt-16 border-t py-6 text-center">
+        <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+          <a href="/blog" className="transition-colors hover:text-foreground">
+            Blog
+          </a>
+          <a href="/templates" className="transition-colors hover:text-foreground">
+            {t("templates")}
+          </a>
+          <a href="/discover" className="transition-colors hover:text-foreground">
+            {t("discover")}
+          </a>
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground/50">
+          &copy; {new Date().getFullYear()} BatchlyAI
+        </p>
+      </footer>
     </main>
   );
 }
