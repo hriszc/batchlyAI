@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+
 import { createTestDb, applyMigrations, seedUser } from "#test/db-setup";
 
 const mocks = vi.hoisted(() => ({
@@ -14,7 +15,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("@/lib/cloudflare/bindings", () => ({
-  getD1Binding: () => ({} as D1Database),
+  getD1Binding: () => ({}) as D1Database,
 }));
 
 import { handleGetPrompts, handleSavePrompt } from "@/routes/api/prompts";
@@ -42,7 +43,10 @@ describe("handleGetPrompts", () => {
     mocks.mockGetSession.mockResolvedValue({ user: { id: "u1" } });
     (globalThis as Record<string, unknown>).__env__ = { batchlyai_db: db };
   });
-  afterEach(() => { vi.restoreAllMocks(); delete (globalThis as Record<string, unknown>).__env__; });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    delete (globalThis as Record<string, unknown>).__env__;
+  });
 
   it("returns 401 when not authenticated", async () => {
     mocks.mockGetSession.mockResolvedValue(null);
@@ -60,7 +64,7 @@ describe("handleGetPrompts", () => {
     seedUser(db, { id: "u1" });
     const resp = await handleGetPrompts(makeGetReq());
     expect(resp.status).toBe(200);
-    const body = await resp.json() as { prompts: unknown[] };
+    const body = (await resp.json()) as { prompts: unknown[] };
     expect(body.prompts).toEqual([]);
   });
 });
@@ -75,7 +79,10 @@ describe("handleSavePrompt", () => {
     mocks.mockGetSession.mockResolvedValue({ user: { id: "u1" } });
     (globalThis as Record<string, unknown>).__env__ = { batchlyai_db: db };
   });
-  afterEach(() => { vi.restoreAllMocks(); delete (globalThis as Record<string, unknown>).__env__; });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    delete (globalThis as Record<string, unknown>).__env__;
+  });
 
   it("returns 401 when not authenticated", async () => {
     mocks.mockGetSession.mockResolvedValue(null);
