@@ -1,11 +1,55 @@
 import { screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { renderWithProviders } from "#test/test-utils";
 
-import { HomePage } from "../HomePage";
+import { HomePage, shouldRedirectToCn } from "../HomePage";
+
+describe("shouldRedirectToCn", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  it("returns true for Chinese browser with no saved preference", () => {
+    vi.stubGlobal("navigator", { language: "zh-CN" });
+    expect(shouldRedirectToCn()).toBe(true);
+  });
+
+  it("returns true for zh-TW variant", () => {
+    vi.stubGlobal("navigator", { language: "zh-TW" });
+    expect(shouldRedirectToCn()).toBe(true);
+  });
+
+  it("returns false when saved language is en", () => {
+    vi.stubGlobal("navigator", { language: "zh-CN" });
+    localStorage.setItem("language", "en");
+    expect(shouldRedirectToCn()).toBe(false);
+  });
+
+  it("returns true when saved language is zh", () => {
+    vi.stubGlobal("navigator", { language: "en-US" });
+    localStorage.setItem("language", "zh");
+    expect(shouldRedirectToCn()).toBe(true);
+  });
+
+  it("returns false for English browser", () => {
+    vi.stubGlobal("navigator", { language: "en-US" });
+    expect(shouldRedirectToCn()).toBe(false);
+  });
+
+  it("returns false for non-Chinese, non-English browser", () => {
+    vi.stubGlobal("navigator", { language: "fr" });
+    expect(shouldRedirectToCn()).toBe(false);
+  });
+});
 
 describe("HomePage", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
   it("renders site title", () => {
     renderWithProviders(<HomePage />);
     expect(screen.getAllByAltText("BatchlyAI")[0]).toBeInTheDocument();
@@ -28,7 +72,6 @@ describe("HomePage", () => {
 
   it("renders with no results initially", () => {
     renderWithProviders(<HomePage />);
-    // ResultsGrid returns null when no results, so Results heading shouldn't exist
     expect(screen.queryByText("Results")).not.toBeInTheDocument();
   });
 
