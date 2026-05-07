@@ -25,11 +25,7 @@ export function createAuth(d1Binding?: D1Database) {
     _auth = betterAuth({
       baseURL: env.VITE_BASE_URL,
       telemetry: { enabled: false },
-      trustedOrigins: [
-        env.VITE_BASE_URL,
-        "http://localhost:3000",
-        (origin: string) => origin.endsWith(".workers.dev"),
-      ],
+      trustedOrigins: [env.VITE_BASE_URL, "http://localhost:3000", "https://*.workers.dev"],
       database: drizzleAdapter(db, { provider: "sqlite", schema }),
       plugins: [tanstackStartCookies()],
       user: {
