@@ -8,6 +8,18 @@ import { useGeneratorState } from "@/components/universal-generator/useGenerator
 import { authClient } from "@/lib/auth/auth-client";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
+function shouldRedirectToCn(): boolean {
+  if (typeof window === "undefined") return false;
+  if (window.location.pathname.startsWith("/cn")) return false;
+  try {
+    const saved = localStorage.getItem("language");
+    if (saved === "en") return false;
+    if (saved === "zh") return true;
+  } catch {}
+  const lang = (navigator.language || "").toLowerCase();
+  return lang.startsWith("zh");
+}
+
 interface HomePageProps {
   forceLanguage?: "en" | "zh";
 }
@@ -20,6 +32,13 @@ export function HomePage({ forceLanguage }: HomePageProps) {
   const { data: session } = authClient.useSession();
   const userCredits = ((session?.user as Record<string, unknown>)?.credits as number) ?? 0;
   const showWatermark = userCredits <= 10;
+
+  // Auto-redirect Chinese browsers from / to /cn
+  useEffect(() => {
+    if (!forceLanguage && shouldRedirectToCn()) {
+      window.location.replace("/cn");
+    }
+  }, [forceLanguage]);
 
   useEffect(() => {
     if (forceLanguage) {

@@ -1,4 +1,4 @@
-import { createContext, use, useState, useEffect, useCallback } from "react";
+import { createContext, use, useState, useCallback } from "react";
 
 import type { Language, TranslationKey } from "./translations";
 import { translations } from "./translations";
@@ -21,18 +21,26 @@ function detectBrowserLanguage(): Language {
   return lang.toLowerCase().startsWith("zh") ? "zh" : "en";
 }
 
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<Language>("en");
-  const [_mounted, setMounted] = useState(false);
+function getInitialLanguage(): Language {
+  if (typeof window === "undefined") return "en";
+  try {
+    const stored = localStorage.getItem("language");
+    if (stored === "en" || stored === "zh") return stored;
+  } catch {
+    // localStorage not available
+  }
+  return detectBrowserLanguage();
+}
 
-  useEffect(() => {
-    const stored = localStorage.getItem("language") as Language | null;
-    setLanguageState(stored === "en" || stored === "zh" ? stored : detectBrowserLanguage());
-    setMounted(true);
-  }, []);
+export function LanguageProvider({ children }: { children: React.ReactNode }) {
+  const [language, setLanguageState] = useState<Language>(getInitialLanguage);
 
   const setLanguage = useCallback((lang: Language) => {
-    localStorage.setItem("language", lang);
+    try {
+      localStorage.setItem("language", lang);
+    } catch {
+      // ignore
+    }
     setLanguageState(lang);
   }, []);
 
