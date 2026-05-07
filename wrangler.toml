@@ -29,6 +29,9 @@ bucket_name = "batchlyai-uploads"
 enabled = true
 head_sampling_rate = 0.1
 
+[[send_email]]
+name = "EMAIL"
+
 # Canary deployment: new versions start at 0% traffic.
 # Test via: https://batchlyai.com/?cwv_debug=2
 # Promote:  npx wrangler versions promote
