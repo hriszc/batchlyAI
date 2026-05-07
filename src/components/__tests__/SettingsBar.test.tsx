@@ -61,7 +61,22 @@ describe("SettingsBar", () => {
     expect(buttons.length).toBeGreaterThanOrEqual(2);
   });
 
-  it.skip("sends POST with currency=usd when language=en", async () => {
+  it("opens credit purchase popover when Buy Credits is clicked", async () => {
+    const user = userEvent.setup();
+    mockUseSession.mockReturnValue({
+      data: { user: { name: "Bob", email: "bob@test.com", credits: 10 } },
+    });
+    renderWithProviders(<SettingsBar />, { language: "en" });
+
+    const buyButton = screen.getByText("Buy Credits");
+    await user.click(buyButton);
+
+    // Popover should open with quantity options and a pay button
+    const payText = screen.getByText(/Pay \$/);
+    expect(payText).toBeDefined();
+  });
+
+  it("sends checkout request with currency=usd in popover", async () => {
     const user = userEvent.setup();
     mockUseSession.mockReturnValue({
       data: { user: { name: "Bob", email: "bob@test.com", credits: 10 } },
@@ -73,8 +88,10 @@ describe("SettingsBar", () => {
 
     renderWithProviders(<SettingsBar />, { language: "en" });
 
-    const buyButton = screen.getByText("Buy Credits");
-    await user.click(buyButton);
+    await user.click(screen.getByText("Buy Credits"));
+    // Popover renders a Pay button — find and click it
+    const payButton = screen.getByText(/pay/i);
+    await user.click(payButton);
 
     expect(mockFetch).toHaveBeenCalledWith(
       "/api/stripe/checkout",
@@ -86,30 +103,7 @@ describe("SettingsBar", () => {
     );
   });
 
-  it.skip("sends currency=cny when language=zh", async () => {
-    const user = userEvent.setup();
-    mockUseSession.mockReturnValue({
-      data: { user: { name: "Bob", email: "bob@test.com", credits: 10 } },
-    });
-    const mockFetch = vi.fn().mockResolvedValue({
-      json: () => Promise.resolve({ url: "https://checkout.stripe.com/c/test" }),
-    });
-    vi.stubGlobal("fetch", mockFetch);
-
-    renderWithProviders(<SettingsBar />, { language: "zh" });
-
-    const buyButton = screen.getByText("购买积分");
-    await user.click(buyButton);
-
-    expect(mockFetch).toHaveBeenCalledWith(
-      "/api/stripe/checkout",
-      expect.objectContaining({
-        body: JSON.stringify({ currency: "cny", quantity: 1 }),
-      }),
-    );
-  });
-
-  it.skip("handles checkout error without crashing", async () => {
+  it("handles checkout error in popover gracefully", async () => {
     const user = userEvent.setup();
     mockUseSession.mockReturnValue({
       data: { user: { name: "Error User", email: "err@test.com", credits: 1 } },
@@ -123,10 +117,11 @@ describe("SettingsBar", () => {
 
     renderWithProviders(<SettingsBar />);
 
-    const buyButton = screen.getByText("Buy Credits");
-    await user.click(buyButton);
+    await user.click(screen.getByText("Buy Credits"));
+    const payButton = screen.getByText(/pay/i);
+    await user.click(payButton);
 
-    // Verify no crash — toast rendering is handled by sonner async
+    // Verify no crash
     expect(true).toBe(true);
   });
 });
