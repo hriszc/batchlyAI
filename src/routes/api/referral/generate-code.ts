@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
@@ -39,17 +39,16 @@ export async function handleReferralGenerateCode(request: Request): Promise<Resp
       return jsonResponse({ code: existing.code, shareUrl: `${origin}/r/${existing.code}` }, 200);
     }
 
-    // Activity gate
-    const [userRecord] = await db
-      .select({ credits: userTable.credits })
-      .from(userTable)
-      .where(eq(userTable.id, userId));
+    // Activity gate: user must have at least one generation
+    const { generation: genTable } = await import("@/lib/db/schema/data-flywheel.schema");
+    const [genCount] = await db
+      .select({ count: sql<number>`COUNT(*)`.mapWith(Number) })
+      .from(genTable)
+      .where(eq(genTable.userId, userId));
 
-    if (!userRecord || userRecord.credits >= 10) {
+    if (!genCount || genCount.count === 0) {
       return jsonResponse(
-        {
-          error: "You must generate at least one image before creating a referral link",
-        },
+        { error: "You must generate at least one image before creating a referral link" },
         403,
       );
     }

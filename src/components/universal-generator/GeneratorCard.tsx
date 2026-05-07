@@ -1,4 +1,4 @@
-import { WandSparklesIcon, PaperclipIcon, Loader2Icon, Undo2Icon, SaveIcon } from "lucide-react";
+import { WandSparklesIcon, PaperclipIcon, Loader2Icon, Undo2Icon } from "lucide-react";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
 
@@ -166,32 +166,6 @@ export function GeneratorCard({ state, actions }: GeneratorCardProps) {
             title={t("attach")}
           >
             <PaperclipIcon className="h-4 w-4 text-muted-foreground" />
-          </button>
-          <button
-            type="button"
-            onClick={async () => {
-              if (!state.promptTemplate.trim()) return;
-              const name = state.promptTemplate.slice(0, 30);
-              try {
-                await fetch("/api/prompts", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    name,
-                    promptTemplate: state.promptTemplate,
-                    variableGroups: JSON.stringify(state.variableGroups),
-                    model: state.model,
-                  }),
-                });
-                toast.success(t("savedSuccessfully"));
-              } catch {
-                toast.error("Failed to save");
-              }
-            }}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border bg-muted/30 transition-colors hover:bg-muted"
-            title={t("savePrompt")}
-          >
-            <SaveIcon className="h-4 w-4 text-muted-foreground" />
           </button>
         </div>
 

@@ -8,7 +8,7 @@ import { getCachedResult, setCachedResult } from "@/lib/cache/prompt-cache";
 import { getD1Binding, getKvBinding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
 import { user as userTable } from "@/lib/db/schema/auth.schema";
-import { generation } from "@/lib/db/schema/data-flywheel.schema";
+import { generation, savedPrompt } from "@/lib/db/schema/data-flywheel.schema";
 import { generateRequestSchema } from "@/lib/validation/schemas";
 
 export const CREDIT_COST: Record<string, number> = {
@@ -107,6 +107,26 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
           // Generation history insert is non-fatal
         }
 
+        // Auto-save prompt
+        try {
+          const existing = await db
+            .select({ id: savedPrompt.id })
+            .from(savedPrompt)
+            .where(and(eq(savedPrompt.userId, userId), eq(savedPrompt.promptTemplate, body.prompt)))
+            .limit(1);
+          if (existing.length === 0) {
+            await db.insert(savedPrompt).values({
+              id: crypto.randomUUID(),
+              userId,
+              name: body.prompt.slice(0, 40),
+              promptTemplate: body.prompt,
+              model,
+              createdAt: Math.floor(Date.now() / 1000),
+              updatedAt: Math.floor(Date.now() / 1000),
+            });
+          }
+        } catch { /* non-fatal */ }
+
         return jsonResponse({ texts, creditsRemaining: newBalance, isText: true, watermark }, 200);
       } catch (err) {
         await db
@@ -172,6 +192,26 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
 
     const predictionIds = predictions.map((p) => p.id);
     const newBalance = deducted.credits;
+
+    // Auto-save prompt
+    try {
+      const existing = await db
+        .select({ id: savedPrompt.id })
+        .from(savedPrompt)
+        .where(and(eq(savedPrompt.userId, userId), eq(savedPrompt.promptTemplate, body.prompt)))
+        .limit(1);
+      if (existing.length === 0) {
+        await db.insert(savedPrompt).values({
+          id: crypto.randomUUID(),
+          userId,
+          name: body.prompt.slice(0, 40),
+          promptTemplate: body.prompt,
+          model,
+          createdAt: Math.floor(Date.now() / 1000),
+          updatedAt: Math.floor(Date.now() / 1000),
+        });
+      }
+    } catch { /* non-fatal */ }
 
     try {
       await db.insert(generation).values({

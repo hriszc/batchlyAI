@@ -4,6 +4,23 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 import type { GeneratedResult } from "./types";
 
+function renderMarkdown(text: string): string {
+  let html = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  html = html.replace(/^### (.+)$/gm, "<h3 class='text-sm font-semibold mt-2 mb-1'>$1</h3>");
+  html = html.replace(/^## (.+)$/gm, "<h2 class='text-base font-semibold mt-3 mb-1'>$1</h2>");
+  html = html.replace(/^# (.+)$/gm, "<h1 class='text-lg font-bold mt-3 mb-1'>$1</h1>");
+  html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  html = html.replace(/\*(.+?)\*/g, "<em>$1</em>");
+  html = html.replace(/`(.+?)`/g, "<code class='bg-muted/50 px-1 rounded text-xs'>$1</code>");
+  html = html.replace(/^- (.+)$/gm, "<li class='ml-4 text-sm'>$1</li>");
+  html = html.replace(/\n\n/g, "<br/><br/>");
+  html = html.replace(/\n/g, "<br/>");
+  return html;
+}
+
 interface ResultCardProps {
   result: GeneratedResult;
   showWatermark?: boolean;
@@ -49,11 +66,11 @@ export function ResultCard({ result, showWatermark = false }: ResultCardProps) {
             )}
           </div>
         ) : result.textContent ? (
-          <div className="relative flex h-full w-full flex-col items-center justify-center p-4">
-            <FileTextIcon className="mb-2 size-6 text-muted-foreground/40" />
-            <p className="line-clamp-6 text-center text-sm leading-relaxed text-foreground/80">
-              {result.textContent}
-            </p>
+          <div className="relative flex h-full w-full flex-col items-center justify-start overflow-y-auto p-4">
+            <div
+              className="prose prose-sm max-w-none text-left text-foreground/80"
+              dangerouslySetInnerHTML={{ __html: renderMarkdown(result.textContent) }}
+            />
             {hasDownloadable && (
               <button
                 onClick={() => {
