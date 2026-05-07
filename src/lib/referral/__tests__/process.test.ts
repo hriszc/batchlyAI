@@ -75,8 +75,8 @@ describe("processReferralAfterSignup", () => {
     const refs = getReferrals(db, "new-ref");
     expect(refs).toHaveLength(1);
     expect(refs[0].status).toBe("credited");
-    expect(refs[0].referrer_credits_awarded).toBe(5);
-    expect(refs[0].referee_credits_awarded).toBe(3);
+    expect(refs[0].referrer_credits_awarded).toBe(50);
+    expect(refs[0].referee_credits_awarded).toBe(30);
   });
 
   it("prevents self-referral (creates pending)", async () => {
