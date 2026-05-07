@@ -15,13 +15,13 @@ export async function trackServer(
   if (!id || !secret) return;
 
   void fetch(
-      `https://www.google-analytics.com/mp/collect?measurement_id=${id}&api_secret=${secret}`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          client_id: clientId,
-          events: [{ name: event, params: props }],
-        }),
-      },
-    ).catch(() => {});
+    `https://www.google-analytics.com/mp/collect?measurement_id=${id}&api_secret=${secret}`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        client_id: clientId,
+        events: [{ name: event, params: props }],
+      }),
+    },
+  ).catch(() => {});
 }

@@ -91,7 +91,12 @@ export const Route = createFileRoute("/api/auth/$")({
                   };
                   await processReferralAfterSignup(request, body);
 
-                  const refCode = (await request.clone().json().catch(() => ({})) as Record<string, unknown>)?.ref as string | undefined;
+                  const refCode = (
+                    (await request
+                      .clone()
+                      .json()
+                      .catch(() => ({}))) as Record<string, unknown>
+                  )?.ref as string | undefined;
                   const { trackServer } = await import("@/lib/analytics/server");
                   await trackServer("signup_completed", body.user?.id || "unknown", {
                     method: "email",

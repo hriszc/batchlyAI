@@ -5,11 +5,11 @@ import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 
-import { env } from "@/env/client";
 import { GoogleOneTap } from "@/components/GoogleOneTap";
 import { SettingsBar } from "@/components/SettingsBar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { env } from "@/env/client";
 import type { AuthQueryResult } from "@/lib/auth/queries";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 import { createPageMeta } from "@/lib/seo/meta";
