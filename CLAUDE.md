@@ -16,7 +16,9 @@
   4. 若改了前端 UI（登录页、首页组件等），确认 JS bundle 中包含改动后的代码关键词
   5. 若改了错误处理逻辑，测试错误路径（错误密码、空输入等），确认返回合理的错误信息
 - 使用 `absolute` 定位的 dropdown/popover 组件，必须检查所有祖先元素是否有 `overflow: hidden/auto/scroll/clip`（包括 `overflow-x-auto` 等单方向设置）。CSS 规范：任一方向设置非 visible overflow，另一方向自动变为 auto，会裁剪绝对定位子元素。
-- 部署命令：`npx vite build && npx wrangler deploy`
+- **部署命令**：`npx vite build && npx wrangler deploy`
+- **⚠️ 部署权限**：只能 `wrangler versions upload` 上传版本，**禁止直接 `wrangler deploy`**（会立即全量部署到生产环境）。rollout/promote 必须经用户确认后才能执行。
+- **auth-client 跨域**：`createAuthClient({ baseURL })` 必须用相对路径（`window.location.origin` 或空字符串），不能用 `VITE_BASE_URL`（绝对 URL 会导致 workers.dev 等辅助域名被 CORS 拦截）。
 - **Replicate API 注意**：`prunaai/z-image-turbo` 模型的 predictions 端点要求 `version` 字段（不是 `model`），版本 hash: `cba7f388939b0db49dbea3341f8d732577aa0a964d9eefea5d186ab47e60deba`。该模型输入参数使用 `width`/`height`（不是 `aspect_ratio`）。
 
 ## Better Auth 疑难问题
@@ -47,3 +49,11 @@ const result = await apiMethod.call(auth.api, { body, headers, request, asRespon
 - `tanstackStartCookies` 插件的 `after` hook 不触发（session 通过 token 在客户端管理）
 
 **排查历程**：去掉邮件回调 → 去掉 cookies 插件 → 去掉 experimental joins → 尝试 auth.api 成功 → 确认 handler 问题 → 尝试干净 Request 重建 → 注册成功但登录失败 → 发现 `this` 绑定问题 → `.call()` 修复 → 两端点均正常。
+
+## 生产安全规则
+
+以下配置错误曾导致严重线上事故，CI 已有检查脚本 `scripts/check-production-safety.sh`：
+
+1. **`.env.production` 必须存在且包含 `VITE_BASE_URL=https://batchlyai.com`**。缺失会导致前端 JS 请求 `localhost:3000`，用户登录/注册报 `ERR_CONNECTION_REFUSED`。
+2. **`requireEmailVerification: true` 必须配合真实邮件发送**。若 `sendEmailVerification` 等回调是 `console.log` 占位，会导致新用户注册后永远无法验证邮箱，下次登录被 403。老用户的 `email_verified` 字段需批量改为 `true`。
+3. **smoke 测试不可依赖 `grep 'token'`**。注册 API 返回 `"token":null` 也会匹配，需用更严格的正则（如 `grep '"token":"'`）。
