@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { generateRequestSchema, VALID_MODELS, VALID_ASPECT_RATIOS } from "@/lib/validation/schemas";
 
 describe("generateRequestSchema", () => {
@@ -21,11 +22,15 @@ describe("generateRequestSchema", () => {
     expect(generateRequestSchema.safeParse({ prompt: "t", n: 11 }).success).toBe(false);
   });
   it("rejects invalid model", () => {
-    expect(generateRequestSchema.safeParse({ prompt: "t", model: "bad-model" }).success).toBe(false);
+    expect(generateRequestSchema.safeParse({ prompt: "t", model: "bad-model" }).success).toBe(
+      false,
+    );
   });
   it("accepts valid aspect ratios", () => {
     for (const ratio of VALID_ASPECT_RATIOS) {
-      expect(generateRequestSchema.safeParse({ prompt: "t", aspectRatio: ratio }).success).toBe(true);
+      expect(generateRequestSchema.safeParse({ prompt: "t", aspectRatio: ratio }).success).toBe(
+        true,
+      );
     }
   });
   it("has all 6 models", () => expect(VALID_MODELS).toHaveLength(6));
