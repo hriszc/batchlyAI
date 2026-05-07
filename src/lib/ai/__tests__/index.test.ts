@@ -13,11 +13,21 @@ vi.mock("@/env/server", () => ({
   },
 }));
 
-import { createGrsaiPredictions, createReplicatePredictions, pollReplicatePrediction, generateText, runExpandLLM } from "@/lib/ai";
+import {
+  createGrsaiPredictions,
+  createReplicatePredictions,
+  pollReplicatePrediction,
+  generateText,
+  runExpandLLM,
+} from "@/lib/ai";
 
 describe("createGrsaiPredictions", () => {
-  beforeEach(() => { mockFetch.mockClear(); });
-  afterEach(() => { vi.restoreAllMocks(); });
+  beforeEach(() => {
+    mockFetch.mockClear();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it("sends correct request to GRS AI API", async () => {
     mockFetch.mockResolvedValue({
@@ -26,12 +36,19 @@ describe("createGrsaiPredictions", () => {
     });
 
     const results = await createGrsaiPredictions({ prompt: "a cat", aspectRatio: "16:9", n: 2 });
-    expect(results).toEqual([{ id: "grs-001", status: "processing" }, { id: "grs-001", status: "processing" }]);
+    expect(results).toEqual([
+      { id: "grs-001", status: "processing" },
+      { id: "grs-001", status: "processing" },
+    ]);
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
   it("throws on GRS API error (non-ok response)", async () => {
-    mockFetch.mockResolvedValue({ ok: false, status: 500, text: () => Promise.resolve("server error") });
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 500,
+      text: () => Promise.resolve("server error"),
+    });
     await expect(createGrsaiPredictions({ prompt: "test" })).rejects.toThrow("grsai API error 500");
   });
 
@@ -40,7 +57,9 @@ describe("createGrsaiPredictions", () => {
       ok: true,
       json: () => Promise.resolve({ code: 1, data: null, msg: "bad" }),
     });
-    await expect(createGrsaiPredictions({ prompt: "test" })).rejects.toThrow("grsai API unexpected response");
+    await expect(createGrsaiPredictions({ prompt: "test" })).rejects.toThrow(
+      "grsai API unexpected response",
+    );
   });
 
   it("includes webhook URL in the request body", async () => {
@@ -56,15 +75,24 @@ describe("createGrsaiPredictions", () => {
 });
 
 describe("createReplicatePredictions", () => {
-  beforeEach(() => { mockFetch.mockClear(); });
-  afterEach(() => { vi.restoreAllMocks(); });
+  beforeEach(() => {
+    mockFetch.mockClear();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it("sends prediction request with correct version", async () => {
     mockFetch.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ id: "rep-001", status: "starting", urls: { get: "u", cancel: "c" } }),
+      json: () =>
+        Promise.resolve({ id: "rep-001", status: "starting", urls: { get: "u", cancel: "c" } }),
     });
-    const results = await createReplicatePredictions({ prompt: "forest", model: "z-image-fast", n: 1 });
+    const results = await createReplicatePredictions({
+      prompt: "forest",
+      model: "z-image-fast",
+      n: 1,
+    });
     expect(results).toHaveLength(1);
     expect(results[0].id).toBe("rep-001");
   });
@@ -72,7 +100,8 @@ describe("createReplicatePredictions", () => {
   it("calculates dimensions for aspect ratio 16:9", async () => {
     mockFetch.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ id: "r1", status: "starting", urls: { get: "g", cancel: "c" } }),
+      json: () =>
+        Promise.resolve({ id: "r1", status: "starting", urls: { get: "g", cancel: "c" } }),
     });
     await createReplicatePredictions({ prompt: "test", aspectRatio: "16:9", n: 1 });
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
@@ -83,7 +112,8 @@ describe("createReplicatePredictions", () => {
   it("calculates portrait dimensions for 9:16", async () => {
     mockFetch.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ id: "r2", status: "starting", urls: { get: "g", cancel: "c" } }),
+      json: () =>
+        Promise.resolve({ id: "r2", status: "starting", urls: { get: "g", cancel: "c" } }),
     });
     await createReplicatePredictions({ prompt: "portrait", aspectRatio: "9:16", n: 1 });
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
@@ -94,7 +124,8 @@ describe("createReplicatePredictions", () => {
   it("defaults to z-image-fast version when model not found", async () => {
     mockFetch.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ id: "r3", status: "starting", urls: { get: "g", cancel: "c" } }),
+      json: () =>
+        Promise.resolve({ id: "r3", status: "starting", urls: { get: "g", cancel: "c" } }),
     });
     await createReplicatePredictions({ prompt: "test", model: "unknown-model", n: 1 });
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
@@ -102,19 +133,30 @@ describe("createReplicatePredictions", () => {
   });
 
   it("throws on Replicate API error", async () => {
-    mockFetch.mockResolvedValue({ ok: false, status: 422, text: () => Promise.resolve("bad prompt") });
-    await expect(createReplicatePredictions({ prompt: "", n: 1 })).rejects.toThrow("Replicate API error 422");
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 422,
+      text: () => Promise.resolve("bad prompt"),
+    });
+    await expect(createReplicatePredictions({ prompt: "", n: 1 })).rejects.toThrow(
+      "Replicate API error 422",
+    );
   });
 });
 
 describe("pollReplicatePrediction", () => {
-  beforeEach(() => { mockFetch.mockClear(); });
-  afterEach(() => { vi.restoreAllMocks(); });
+  beforeEach(() => {
+    mockFetch.mockClear();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it("returns succeeded with urls", async () => {
     mockFetch.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ id: "p1", status: "succeeded", output: ["https://img.png"], urls: {} }),
+      json: () =>
+        Promise.resolve({ id: "p1", status: "succeeded", output: ["https://img.png"], urls: {} }),
     });
     const result = await pollReplicatePrediction("p1");
     expect(result.status).toBe("succeeded");
@@ -148,13 +190,20 @@ describe("pollReplicatePrediction", () => {
 });
 
 describe("generateText", () => {
-  beforeEach(() => { mockFetch.mockClear(); });
-  afterEach(() => { vi.restoreAllMocks(); });
+  beforeEach(() => {
+    mockFetch.mockClear();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it("returns generated text content", async () => {
     mockFetch.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ choices: [{ message: { content: "Hello world" }, finish_reason: "stop" }] }),
+      json: () =>
+        Promise.resolve({
+          choices: [{ message: { content: "Hello world" }, finish_reason: "stop" }],
+        }),
     });
     const text = await generateText({ prompt: "Say hello" });
     expect(text).toBe("Hello world");
@@ -163,7 +212,8 @@ describe("generateText", () => {
   it("uses default model when not specified", async () => {
     mockFetch.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ choices: [{ message: { content: "ok" }, finish_reason: "stop" }] }),
+      json: () =>
+        Promise.resolve({ choices: [{ message: { content: "ok" }, finish_reason: "stop" }] }),
     });
     await generateText({ prompt: "test" });
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
@@ -172,13 +222,20 @@ describe("generateText", () => {
 });
 
 describe("runExpandLLM", () => {
-  beforeEach(() => { mockFetch.mockClear(); });
-  afterEach(() => { vi.restoreAllMocks(); });
+  beforeEach(() => {
+    mockFetch.mockClear();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it("splits comma-separated response into array", async () => {
     mockFetch.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ choices: [{ message: { content: " red, blue , green " }, finish_reason: "stop" }] }),
+      json: () =>
+        Promise.resolve({
+          choices: [{ message: { content: " red, blue , green " }, finish_reason: "stop" }],
+        }),
     });
     const values = await runExpandLLM("colors");
     expect(values).toEqual(["red", "blue", "green"]);
@@ -187,7 +244,10 @@ describe("runExpandLLM", () => {
   it("filters empty values", async () => {
     mockFetch.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ choices: [{ message: { content: "cat, , dog, " }, finish_reason: "stop" }] }),
+      json: () =>
+        Promise.resolve({
+          choices: [{ message: { content: "cat, , dog, " }, finish_reason: "stop" }],
+        }),
     });
     const values = await runExpandLLM("animals");
     expect(values).toEqual(["cat", "dog"]);
