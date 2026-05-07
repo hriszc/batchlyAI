@@ -4,8 +4,8 @@ import { getD1Binding, getKvBinding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
 import { referral as referralTable, referralCode, user as userTable } from "@/lib/db/schema";
 
-const REFERRER_CREDITS = 5;
-const REFEREE_CREDITS = 3;
+const REFERRER_CREDITS = 50;
+const REFEREE_CREDITS = 30;
 const DAILY_CAP = 50;
 
 export async function processReferralAfterSignup(
