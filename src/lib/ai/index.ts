@@ -274,9 +274,39 @@ async function chatDeepseek(
   }
 
   const data = (await resp.json()) as {
-    choices: Array<{ message: { content: string } }>;
+    choices: Array<{
+      message: { content: string };
+      finish_reason: string;
+    }>;
   };
-  return data.choices[0]?.message?.content?.trim() ?? "";
+  const choice = data.choices[0];
+  if (!choice) return "";
+  const text = choice.message.content.trim();
+
+  // DeepSeek v4 reasoning models may use all tokens for internal reasoning,
+  // leaving content empty. Retry once with doubled max_tokens if needed.
+  if (!text && opts?.maxTokens) {
+    const retryOpts = { ...opts, maxTokens: opts.maxTokens * 2 };
+    const retryResp = await fetch(DEEPSEEK_HOST, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${key}`,
+      },
+      body: JSON.stringify({
+        model: opts?.model ?? "deepseek-v4-flash",
+        max_tokens: retryOpts.maxTokens,
+        temperature: retryOpts.temperature ?? 0.7,
+        messages,
+      }),
+    });
+    if (retryResp.ok) {
+      const retryData = (await retryResp.json()) as typeof data;
+      return retryData.choices[0]?.message?.content?.trim() ?? "";
+    }
+  }
+
+  return text;
 }
 
 const EXPAND_SYSTEM_PROMPT =
@@ -298,7 +328,7 @@ export async function runExpandLLM(description: string): Promise<string[]> {
       { role: "system", content: EXPAND_SYSTEM_PROMPT },
       { role: "user", content: description },
     ],
-    { maxTokens: 100, temperature: 0.7, model: "deepseek-v4-flash" },
+    { maxTokens: 500, temperature: 0.7, model: "deepseek-v4-flash" },
   );
 
   return text

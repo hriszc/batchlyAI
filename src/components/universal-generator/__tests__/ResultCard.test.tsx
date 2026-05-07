@@ -132,9 +132,100 @@ describe("ResultCard", () => {
       status: "generating",
     };
     renderWithProviders(<ResultCard result={generatingResult} />);
-    // Should show a spinner, not an error or placeholder
     expect(screen.queryByText("Failed")).not.toBeInTheDocument();
     const spinner = document.querySelector(".animate-spin");
     expect(spinner).not.toBeNull();
+  });
+
+  // --- Text content rendering ---
+  it("renders text content for text generation results", () => {
+    const textResult: GeneratedResult = {
+      id: "result_text",
+      combination: { variables: {}, prompt: "Say hello" },
+      imageUrl: null,
+      textContent: "Hello, world!",
+      watermark: false,
+      status: "complete",
+    };
+    renderWithProviders(<ResultCard result={textResult} />);
+    expect(screen.getByText("Hello, world!")).toBeInTheDocument();
+  });
+
+  it("renders markdown bold in text content", () => {
+    const textResult: GeneratedResult = {
+      id: "result_md",
+      combination: { variables: {}, prompt: "test" },
+      imageUrl: null,
+      textContent: "This is **bold** text",
+      watermark: false,
+      status: "complete",
+    };
+    renderWithProviders(<ResultCard result={textResult} />);
+    const strong = document.querySelector("strong");
+    expect(strong).not.toBeNull();
+    expect(strong?.textContent).toBe("bold");
+  });
+
+  it("renders markdown italic in text content", () => {
+    const textResult: GeneratedResult = {
+      id: "result_md2",
+      combination: { variables: {}, prompt: "test" },
+      imageUrl: null,
+      textContent: "This is *italic* text",
+      watermark: false,
+      status: "complete",
+    };
+    renderWithProviders(<ResultCard result={textResult} />);
+    const em = document.querySelector("em");
+    expect(em).not.toBeNull();
+    expect(em?.textContent).toBe("italic");
+  });
+
+  it("renders markdown code in text content", () => {
+    const textResult: GeneratedResult = {
+      id: "result_md3",
+      combination: { variables: {}, prompt: "test" },
+      imageUrl: null,
+      textContent: "Use `code` here",
+      watermark: false,
+      status: "complete",
+    };
+    renderWithProviders(<ResultCard result={textResult} />);
+    const code = document.querySelector("code");
+    expect(code).not.toBeNull();
+    expect(code?.textContent).toBe("code");
+  });
+
+  // --- Download button ---
+  it("shows download button for complete image result", () => {
+    renderWithProviders(<ResultCard result={completeResult} />);
+    const btn = document.querySelector("button[title='Download']");
+    expect(btn).not.toBeNull();
+  });
+
+  it("shows download button for complete text result", () => {
+    const textResult: GeneratedResult = {
+      id: "result_text2",
+      combination: { variables: {}, prompt: "test" },
+      imageUrl: null,
+      textContent: "Hello",
+      watermark: false,
+      status: "complete",
+    };
+    renderWithProviders(<ResultCard result={textResult} />);
+    const btn = document.querySelector("button[title='Download']");
+    expect(btn).not.toBeNull();
+  });
+
+  it("does not show download button for error result", () => {
+    renderWithProviders(<ResultCard result={errorResult} />);
+    const btn = document.querySelector("button[title='Download']");
+    expect(btn).toBeNull();
+  });
+
+  it("shows watermark download hint for watermarked results", () => {
+    renderWithProviders(<ResultCard result={completeResult} showWatermark />);
+    const btn = document.querySelector("button[title='Download with watermark']");
+    expect(btn).not.toBeNull();
   });
 });

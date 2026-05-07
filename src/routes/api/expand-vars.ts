@@ -53,7 +53,8 @@ export const Route = createFileRoute("/api/expand-vars")({
             await setExpandCache(trimmed, expanded);
             results[desc] = expanded;
           } catch (err) {
-            // Return empty array for this description on failure
+            const message = err instanceof Error ? err.message : "Unknown error";
+            console.error("[expand-vars] Failed for", trimmed, ":", message);
             results[desc] = [];
           }
         }

@@ -52,7 +52,7 @@ export const MODELS: ModelInfo[] = [
     category: "text",
     tier: "fast",
     provider: "deepseek",
-    providerModel: "deepseek-chat",
+    providerModel: "deepseek-v4-flash",
     creditCost: 5,
   },
   {
@@ -61,7 +61,7 @@ export const MODELS: ModelInfo[] = [
     category: "text",
     tier: "pro",
     provider: "deepseek",
-    providerModel: "deepseek-reasoner",
+    providerModel: "deepseek-v4-pro",
     creditCost: 10,
   },
 ];
