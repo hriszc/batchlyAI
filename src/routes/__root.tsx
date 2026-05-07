@@ -5,6 +5,7 @@ import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 
+import { env } from "@/env/client";
 import { GoogleOneTap } from "@/components/GoogleOneTap";
 import { SettingsBar } from "@/components/SettingsBar";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -42,7 +43,21 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
       { rel: "stylesheet", href: appCss },
     ],
-    scripts: [...rootSeo.scripts],
+    scripts: [
+      ...rootSeo.scripts,
+      ...(env.VITE_GA4_MEASUREMENT_ID
+        ? [
+            {
+              src: `https://www.googletagmanager.com/gtag/js?id=${env.VITE_GA4_MEASUREMENT_ID}`,
+              async: true,
+            },
+            {
+              type: "text/javascript",
+              children: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${env.VITE_GA4_MEASUREMENT_ID}');`,
+            },
+          ]
+        : []),
+    ],
   }),
   shellComponent: RootDocument,
 });

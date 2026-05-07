@@ -6,6 +6,7 @@ export const env = createEnv({
   client: {
     VITE_BASE_URL: z.url().default("http://localhost:3000"),
     VITE_GOOGLE_CLIENT_ID: z.string().optional(),
+    VITE_GA4_MEASUREMENT_ID: z.string().optional(),
     VITE_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
   },
   runtimeEnv: import.meta.env,
