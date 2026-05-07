@@ -3,15 +3,15 @@
  * Sends key business events directly from the Worker, immune to adblock.
  */
 
-import { env } from "@/env/server";
-
 export async function trackServer(
   event: string,
   clientId: string,
   props?: Record<string, unknown>,
 ) {
-  const id = env.GA4_MEASUREMENT_ID;
-  const secret = env.GA4_API_SECRET;
+  // @ts-expect-error — server-only env; skip in test/client environments
+  if (typeof process === "undefined" || !process.env?.GA4_MEASUREMENT_ID) return;
+  const id = process.env.GA4_MEASUREMENT_ID;
+  const secret = process.env.GA4_API_SECRET;
   if (!id || !secret) return;
 
   void fetch(
