@@ -33,8 +33,8 @@ export const MODELS: ModelInfo[] = [
     label: "Video Turbo",
     category: "video",
     tier: "fast",
-    provider: "simulated",
-    providerModel: "",
+    provider: "replicate",
+    providerModel: "prunaai/p-video",
     creditCost: 40,
   },
   {
@@ -42,8 +42,8 @@ export const MODELS: ModelInfo[] = [
     label: "Video Pro",
     category: "video",
     tier: "pro",
-    provider: "simulated",
-    providerModel: "",
+    provider: "replicate",
+    providerModel: "alibaba/happyhorse-1.0",
     creditCost: 80,
   },
   {
