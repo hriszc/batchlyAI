@@ -228,4 +228,14 @@ describe("ResultCard", () => {
     const btn = document.querySelector("button[title='Download with watermark']");
     expect(btn).not.toBeNull();
   });
+
+  // --- Mobile download button ---
+  it("download button is always visible on mobile (opacity-100)", () => {
+    renderWithProviders(<ResultCard result={completeResult} />);
+    const btn = document.querySelector("button[title='Download']");
+    expect(btn).not.toBeNull();
+    expect(btn!.className).toContain("opacity-100");
+    expect(btn!.className).toContain("md:opacity-0");
+    expect(btn!.className).toContain("md:group-hover:opacity-100");
+  });
 });

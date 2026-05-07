@@ -151,6 +151,16 @@ export const translations = {
     discoverCTA: "Discover what others are creating",
     signupToCreate: "Sign up to create your own",
     supportEmail: "For any questions, email: support@batchlyai.com",
+    examplePrompt1: "A {{cat, dog}} in {{forest, beach}}",
+    examplePrompt2: "{*3 colors*} product photo on white background",
+    examplePrompt3: "{{realistic, cartoon}} portrait, {{golden hour, studio}} lighting",
+    tryExample: "Try an example:",
+    buyCreditsCTA: "Buy 1000 Credits for $10",
+    disabledNoCombinations: "Enter a prompt with {{variables}} to start",
+    disabledTooManyCombinations:
+      "{count} combinations exceeds the 500 limit. Remove some variable values or use fewer groups",
+    resultsSaved: "Results saved to My Generations — refresh won't lose them.",
+    viewHistory: "View History",
   },
   zh: {
     siteTitle: "BatchlyAI",
@@ -302,6 +312,15 @@ export const translations = {
     discoverCTA: "发现更多精彩作品",
     signupToCreate: "注册开始创作",
     supportEmail: "如有任何问题发送邮件至：support@batchlyai.com",
+    examplePrompt1: "{{一只猫, 一只狗}} 在 {{森林, 海滩}} 上",
+    examplePrompt2: "{*3种颜色*} 白色背景产品图",
+    examplePrompt3: "{{写实, 卡通}} 风格人像，{{黄金时刻, 影棚}} 灯光",
+    tryExample: "点击示例试试:",
+    buyCreditsCTA: "购买 1000 积分 $10",
+    disabledNoCombinations: "输入带 {{变量}} 的提示词开始生成",
+    disabledTooManyCombinations: "{count} 个组合超过了 500 限制，请减少变量值或使用更少的变量组",
+    resultsSaved: "结果已保存到我的素材 — 刷新不会丢失。",
+    viewHistory: "查看历史",
   },
 } as const;
 

@@ -110,7 +110,7 @@ export function ResultCard({ result, showWatermark = false }: ResultCardProps) {
                     downloadUrl(result.imageUrl!, `batchlyai-${result.id}.png`);
                   }
                 }}
-                className="absolute top-2 right-2 rounded-lg bg-black/50 p-1.5 text-white/80 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 hover:bg-black/70"
+                className="absolute top-2 right-2 rounded-lg bg-black/50 p-1.5 text-white/80 opacity-100 backdrop-blur-sm transition-opacity hover:bg-black/70 md:opacity-0 md:group-hover:opacity-100"
                 title={showWatermark ? "Download with watermark" : "Download"}
               >
                 <DownloadIcon className="size-4" />
@@ -131,7 +131,7 @@ export function ResultCard({ result, showWatermark = false }: ResultCardProps) {
                   downloadUrl(url, `batchlyai-${result.id}.txt`);
                   URL.revokeObjectURL(url);
                 }}
-                className="absolute top-2 right-2 rounded-lg bg-black/50 p-1.5 text-white/80 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 hover:bg-black/70"
+                className="absolute top-2 right-2 rounded-lg bg-black/50 p-1.5 text-white/80 opacity-100 backdrop-blur-sm transition-opacity hover:bg-black/70 md:opacity-0 md:group-hover:opacity-100"
                 title="Download"
               >
                 <DownloadIcon className="size-4" />

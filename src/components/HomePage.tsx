@@ -5,6 +5,7 @@ import { GeneratorCard } from "@/components/universal-generator/GeneratorCard";
 import { ResultsGrid } from "@/components/universal-generator/ResultsGrid";
 import { ShareScreenshot } from "@/components/universal-generator/ShareScreenshot";
 import { useGeneratorState } from "@/components/universal-generator/useGeneratorState";
+import { computePromptCombinations } from "@/components/universal-generator/utils";
 import { authClient } from "@/lib/auth/auth-client";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -32,6 +33,25 @@ export function HomePage({ forceLanguage }: HomePageProps) {
   const { data: session } = authClient.useSession();
   const userCredits = ((session?.user as Record<string, unknown>)?.credits as number) ?? 0;
   const showWatermark = userCredits <= 10;
+
+  // Restore pending prompt from sessionStorage (preserved across login redirect)
+  useEffect(() => {
+    try {
+      const pending = sessionStorage.getItem("pendingPrompt");
+      if (pending) {
+        actions.setPromptTemplate(pending);
+        sessionStorage.removeItem("pendingPrompt");
+      }
+    } catch {}
+  }, []);
+
+  // Save prompt to sessionStorage so it survives login redirect
+  useEffect(() => {
+    if (!state.promptTemplate) return;
+    try {
+      sessionStorage.setItem("pendingPrompt", state.promptTemplate);
+    } catch {}
+  }, [state.promptTemplate]);
 
   // Auto-redirect Chinese browsers from / to /cn
   useEffect(() => {
@@ -127,10 +147,15 @@ export function HomePage({ forceLanguage }: HomePageProps) {
     })();
   }, []);
 
+  const prevGeneratingRef = useRef(state.isGenerating);
   useEffect(() => {
-    if (!state.isGenerating && state.results.length > 0 && resultsRef.current) {
-      resultsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (prevGeneratingRef.current && !state.isGenerating && state.results.length > 0) {
+      toast.success(`${state.results.length} images ready!`);
+      if (resultsRef.current) {
+        resultsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     }
+    prevGeneratingRef.current = state.isGenerating;
   }, [state.isGenerating, state.results]);
 
   const hasResults = state.results.length > 0;
@@ -164,6 +189,10 @@ export function HomePage({ forceLanguage }: HomePageProps) {
         <ResultsGrid
           results={state.results}
           isGenerating={state.isGenerating}
+          totalExpected={
+            computePromptCombinations(state.promptTemplate, state.variableGroups).length *
+            state.quantity
+          }
           showWatermark={showWatermark}
           onShare={() => {
             if (state.results.length === 0) return;

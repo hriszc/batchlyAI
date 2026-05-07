@@ -1,4 +1,5 @@
 import { screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, it, expect } from "vitest";
 
 import { renderWithProviders } from "#test/test-utils";
@@ -6,24 +7,25 @@ import { renderWithProviders } from "#test/test-utils";
 import { ResultsGrid } from "../ResultsGrid";
 import type { GeneratedResult } from "../types";
 
-const sampleResults: GeneratedResult[] = [
-  {
-    id: "r1",
-    combination: { variables: { var_0: "cat" }, prompt: "A cat" },
-    imageUrl: "https://example.com/cat.png",
-    textContent: null,
-    watermark: false,
-    status: "complete",
-  },
-  {
-    id: "r2",
-    combination: { variables: { var_0: "dog" }, prompt: "A dog" },
-    imageUrl: null,
-    textContent: null,
-    watermark: false,
-    status: "error",
-  },
-];
+const imageResult: GeneratedResult = {
+  id: "r1",
+  combination: { variables: { var_0: "cat" }, prompt: "A cat" },
+  imageUrl: "https://example.com/cat.png",
+  textContent: null,
+  watermark: false,
+  status: "complete",
+};
+
+const errorResult: GeneratedResult = {
+  id: "r2",
+  combination: { variables: { var_0: "dog" }, prompt: "A dog" },
+  imageUrl: null,
+  textContent: null,
+  watermark: false,
+  status: "error",
+};
+
+const sampleResults: GeneratedResult[] = [imageResult, errorResult];
 
 describe("ResultsGrid", () => {
   it("returns null when not generating and no results", () => {
@@ -36,8 +38,17 @@ describe("ResultsGrid", () => {
     expect(screen.getByText("Results")).toBeInTheDocument();
   });
 
-  it("renders correct number of result cards", () => {
+  it("shows best filter by default (only images, no errors)", () => {
     renderWithProviders(<ResultsGrid results={sampleResults} isGenerating={false} />);
+    // Only the image result should be visible, not the error one
+    expect(screen.getByText("A cat")).toBeInTheDocument();
+    expect(screen.queryByText("A dog")).not.toBeInTheDocument();
+  });
+
+  it("shows all results when show all toggled", async () => {
+    renderWithProviders(<ResultsGrid results={sampleResults} isGenerating={false} />);
+    // Click the Best filter toggle to show all
+    await userEvent.click(screen.getByText(/Best/));
     expect(screen.getByText("A cat")).toBeInTheDocument();
     expect(screen.getByText("A dog")).toBeInTheDocument();
   });
@@ -45,22 +56,36 @@ describe("ResultsGrid", () => {
   it("shows skeleton cards during generation", () => {
     renderWithProviders(<ResultsGrid results={[]} isGenerating={true} />);
     expect(screen.getByText("Results")).toBeInTheDocument();
-    // 6 skeleton cards are rendered
     const skeletonImages = document.querySelectorAll(".animate-pulse");
     expect(skeletonImages.length).toBe(6);
   });
 
   it("renders with Chinese heading", () => {
-    renderWithProviders(<ResultsGrid results={sampleResults} isGenerating={false} />, {
+    renderWithProviders(<ResultsGrid results={[imageResult]} isGenerating={false} />, {
       language: "zh",
     });
     expect(screen.getByText("生成结果")).toBeInTheDocument();
   });
 
   it("shows result cards when not generating", () => {
-    renderWithProviders(<ResultsGrid results={[sampleResults[0]]} isGenerating={false} />);
+    renderWithProviders(<ResultsGrid results={[imageResult]} isGenerating={false} />);
     expect(screen.getByText("A cat")).toBeInTheDocument();
-    // No skeleton cards
     expect(document.querySelectorAll(".animate-pulse").length).toBe(0);
+  });
+
+  it("deduplicates results with same image URL", () => {
+    const dupResults: GeneratedResult[] = [
+      { ...imageResult, id: "r1" },
+      { ...imageResult, id: "r2" },
+    ];
+    renderWithProviders(<ResultsGrid results={dupResults} isGenerating={false} />);
+    // Only one "A cat" should appear (the second is deduped)
+    const cats = screen.getAllByText("A cat");
+    expect(cats.length).toBe(1);
+  });
+
+  it("shows results saved indicator after generation", () => {
+    renderWithProviders(<ResultsGrid results={[imageResult]} isGenerating={false} />);
+    expect(screen.getByText(/Results saved/)).toBeInTheDocument();
   });
 });

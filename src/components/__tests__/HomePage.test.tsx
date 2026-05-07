@@ -31,4 +31,12 @@ describe("HomePage", () => {
     // ResultsGrid returns null when no results, so Results heading shouldn't exist
     expect(screen.queryByText("Results")).not.toBeInTheDocument();
   });
+
+  // --- Prompt preservation across login ---
+  it("restores pending prompt from sessionStorage on mount", () => {
+    sessionStorage.setItem("pendingPrompt", "{{cat, dog}} in a forest");
+    renderWithProviders(<HomePage />);
+    const textarea = screen.getByPlaceholderText(/Describe your image/) as HTMLTextAreaElement;
+    expect(textarea.value).toBe("{{cat, dog}} in a forest");
+  });
 });
