@@ -129,17 +129,15 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
           /* non-fatal */
         }
 
-        // Analytics
-        ctx.waitUntil?.(
-          (async () => {
-            const { trackServer } = await import("@/lib/analytics/server");
-            await trackServer("generation_completed", userId, {
-              model,
-              image_count: texts.length,
-              credit_cost: maxCost,
-            });
-          })(),
-        );
+        // Analytics (non-blocking)
+        void (async () => {
+          const { trackServer } = await import("@/lib/analytics/server");
+          await trackServer("generation_completed", userId, {
+            model,
+            image_count: texts.length,
+            credit_cost: maxCost,
+          });
+        })();
 
         return jsonResponse({ texts, creditsRemaining: newBalance, isText: true, watermark }, 200);
       } catch (err) {
@@ -246,17 +244,15 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
     }
 
     // Analytics (non-blocking)
-    ctx.waitUntil?.(
-      (async () => {
-        const { trackServer } = await import("@/lib/analytics/server");
-        await trackServer("generation_completed", userId, {
-          model,
-          image_count: predictionIds.length,
-          credit_cost: maxCost,
-          is_video: isVideo,
-        });
-      })(),
-    );
+    void (async () => {
+      const { trackServer } = await import("@/lib/analytics/server");
+      await trackServer("generation_completed", userId, {
+        model,
+        image_count: predictionIds.length,
+        credit_cost: maxCost,
+        is_video: isVideo,
+      });
+    })();
 
     return jsonResponse(
       {

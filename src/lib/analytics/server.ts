@@ -14,9 +14,7 @@ export async function trackServer(
   const secret = env.GA4_API_SECRET;
   if (!id || !secret) return;
 
-  const ctx = new ExecutionContext();
-  ctx.waitUntil(
-    fetch(
+  void fetch(
       `https://www.google-analytics.com/mp/collect?measurement_id=${id}&api_secret=${secret}`,
       {
         method: "POST",
@@ -25,6 +23,5 @@ export async function trackServer(
           events: [{ name: event, params: props }],
         }),
       },
-    ).catch(() => {}),
-  );
+    ).catch(() => {});
 }
