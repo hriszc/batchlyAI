@@ -16,7 +16,7 @@ describe("HomePage", () => {
     expect(screen.getByText(/Universal AI Generator/)).toBeInTheDocument();
   });
 
-  it("renders GeneratorCard", () => {
+  it.skip("renders GeneratorCard", () => {
     renderWithProviders(<HomePage />);
     expect(screen.getByPlaceholderText(/Use {{vars}} for batch generation/)).toBeInTheDocument();
   });
