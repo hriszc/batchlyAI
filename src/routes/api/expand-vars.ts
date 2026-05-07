@@ -24,10 +24,7 @@ export async function handleExpandVars(request: Request): Promise<Response> {
   }
 
   if (!body.descriptions?.length || body.descriptions.length > 10) {
-    return jsonResponse(
-      { error: "descriptions must be a non-empty array with max 10 items" },
-      400,
-    );
+    return jsonResponse({ error: "descriptions must be a non-empty array with max 10 items" }, 400);
   }
 
   const results: Record<string, string[]> = {};

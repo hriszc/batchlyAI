@@ -25,8 +25,13 @@ function makeReq(body: Record<string, unknown>): Request {
 }
 
 describe("handleExpandVars", () => {
-  beforeEach(() => { vi.clearAllMocks(); mocks.mockGetSession.mockResolvedValue({ user: { id: "u1" } }); });
-  afterEach(() => { vi.restoreAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.mockGetSession.mockResolvedValue({ user: { id: "u1" } });
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it("returns 401 when not authenticated", async () => {
     mocks.mockGetSession.mockResolvedValue(null);
@@ -53,7 +58,7 @@ describe("handleExpandVars", () => {
     mocks.mockRunExpandLLM.mockResolvedValue(["red", "blue", "green"]);
     const resp = await handleExpandVars(makeReq({ descriptions: ["colors"] }));
     expect(resp.status).toBe(200);
-    const body = await resp.json() as { results: Record<string, string[]> };
+    const body = (await resp.json()) as { results: Record<string, string[]> };
     expect(body.results.colors).toEqual(["red", "blue", "green"]);
   });
 });
