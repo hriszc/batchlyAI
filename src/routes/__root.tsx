@@ -64,11 +64,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 function SupportEmail() {
   const { t } = useLanguage();
-  return (
-    <p className="mt-1 text-xs text-muted-foreground/50">
-      {t("supportEmail")}
-    </p>
-  );
+  return <p className="mt-1 text-xs text-muted-foreground/50">{t("supportEmail")}</p>;
 }
 
 function RootDocument({ children }: { readonly children: React.ReactNode }) {
