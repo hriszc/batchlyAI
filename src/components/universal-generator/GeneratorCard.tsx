@@ -144,20 +144,8 @@ export function GeneratorCard({ state, actions, onRequireAuth }: GeneratorCardPr
             </div>
           </div>
         )}
-        {!state.promptTemplate && (
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground/50">{t("tryExample")}</span>
-            {(["examplePrompt1", "examplePrompt2", "examplePrompt3"] as const).map((key) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => actions.setPromptTemplate(t(key))}
-                className="inline-flex items-center rounded-full border bg-muted/30 px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                {t(key)}
-              </button>
-            ))}
-          </div>
+        {expand.expandBlocks.length === 0 && state.promptTemplate && (
+          <div className="mt-1 text-xs text-muted-foreground/40">{t("promptHint")}</div>
         )}
       </div>
 

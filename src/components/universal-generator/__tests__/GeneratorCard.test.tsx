@@ -206,34 +206,19 @@ describe("GeneratorCard", () => {
     expect(screen.getByText("开始生成")).toBeInTheDocument();
   });
 
-  // --- Example prompt bubbles (blank slate) ---
-  it("shows example prompt bubbles when prompt is empty", () => {
-    renderWithProviders(<GeneratorCard state={baseState} actions={mockActions} />);
-    expect(screen.getByText("Try an example:")).toBeInTheDocument();
-    expect(screen.getByText(/cat, dog/)).toBeInTheDocument();
-    expect(screen.getByText(/3 colors/)).toBeInTheDocument();
-    expect(screen.getByText(/realistic, cartoon/)).toBeInTheDocument();
-  });
-
-  it("hides example bubbles when prompt has content", () => {
+  // --- Prompt hint ---
+  it("shows promptHint when prompt has content and no expand blocks", () => {
     const stateWithPrompt: GeneratorState = {
       ...baseState,
-      promptTemplate: "a test prompt",
+      promptTemplate: "a beautiful landscape",
     };
     renderWithProviders(<GeneratorCard state={stateWithPrompt} actions={mockActions} />);
-    expect(screen.queryByText("Try an example:")).not.toBeInTheDocument();
+    expect(screen.getByText(/{{vars}}/)).toBeInTheDocument();
   });
 
-  it("clicking example bubble fills prompt", async () => {
-    const setPrompt = vi.fn();
-    renderWithProviders(
-      <GeneratorCard
-        state={baseState}
-        actions={{ ...mockActions, setPromptTemplate: setPrompt }}
-      />,
-    );
-    await userEvent.click(screen.getByText(/cat, dog/));
-    expect(setPrompt).toHaveBeenCalledTimes(1);
+  it("does not show promptHint when prompt is empty", () => {
+    renderWithProviders(<GeneratorCard state={baseState} actions={mockActions} />);
+    expect(screen.queryByText(/{{vars}}/)).not.toBeInTheDocument();
   });
 
   // --- Insufficient credits CTA ---
