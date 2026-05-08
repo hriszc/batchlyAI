@@ -19,13 +19,16 @@ interface GrsTaskData {
 
 async function tryUpdateGeneration(kv: KVNamespace, predictionId: string, urls: string[]) {
   try {
-    const genRaw = await kv.get(`gen:${predictionId}`);
+    const kvKey = `gen:${predictionId}`;
+    console.log(`[gen-status] tryUpdateGeneration: looking up KV key=${kvKey}`);
+    const genRaw = await kv.get(kvKey);
     if (!genRaw) {
       console.warn(
-        `[gen-status] No KV entry for prediction ${predictionId}, cannot update generation`,
+        `[gen-status] No KV entry for prediction ${predictionId} (key=${kvKey}), cannot update generation`,
       );
       return;
     }
+    console.log(`[gen-status] Found KV entry for ${predictionId}:`, genRaw.slice(0, 200));
     const genData = JSON.parse(genRaw) as { generationId: string; userId: string };
     const binding = getD1Binding();
     if (!binding) {
@@ -70,6 +73,11 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
     return jsonResponse({ error: "Too many status checks. Please slow down." }, 429);
   }
 
+  // Nitro injects waitUntil from the Cloudflare execution context
+  const req = request as Request & { waitUntil?: (p: Promise<unknown>) => void };
+  const waitUntil = req.waitUntil?.bind(req) ?? ((_p: Promise<unknown>) => {});
+  const mirrorTasks: Promise<void>[] = [];
+
   const url = new URL(request.url);
   const idsParam = url.searchParams.get("ids");
   const type = url.searchParams.get("type") || "replicate";
@@ -91,7 +99,7 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
             if (!raw) return { id, status: "processing", urls: null, error: null };
             const data: GrsTaskData = JSON.parse(raw);
             if (data.status === "succeeded" && data.urls) {
-              void tryUpdateGeneration(kv, id, data.urls);
+              mirrorTasks.push(tryUpdateGeneration(kv, id, data.urls));
               return { id, status: "succeeded", urls: data.urls, error: null };
             }
             if (data.status === "failed") {
@@ -109,6 +117,9 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
         }),
       );
 
+      if (mirrorTasks.length > 0) {
+        waitUntil(Promise.all(mirrorTasks));
+      }
       return jsonResponse({ results }, 200);
     }
 
@@ -129,11 +140,14 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
     if (kv) {
       for (const [i, r] of results.entries()) {
         if (r.status === "succeeded" && r.urls?.length) {
-          void tryUpdateGeneration(kv, ids[i], r.urls);
+          mirrorTasks.push(tryUpdateGeneration(kv, ids[i], r.urls));
         }
       }
     }
 
+    if (mirrorTasks.length > 0) {
+      waitUntil(Promise.all(mirrorTasks));
+    }
     return jsonResponse({ results: results.map((r, i) => ({ id: ids[i], ...r })) }, 200);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

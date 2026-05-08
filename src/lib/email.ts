@@ -23,7 +23,10 @@ function getEmailBinding(): CfEmailBinding | undefined {
 
 export async function sendEmail({ to, subject, html }: SendEmailParams): Promise<boolean> {
   const emailBinding = getEmailBinding();
-  console.log(`[email] Sending to ${to}, subject: ${subject}, binding: ${!!emailBinding}`);
+  const envExists = !!((globalThis as Record<string, unknown>).__env__);
+  console.log(
+    `[email] to=${to} subject="${subject}" binding=${!!emailBinding} __env__=${envExists}`,
+  );
 
   if (emailBinding) {
     try {
@@ -39,6 +42,8 @@ export async function sendEmail({ to, subject, html }: SendEmailParams): Promise
       console.error("[email] Cloudflare Email Service error:", err);
       // Fall through to MailChannels
     }
+  } else {
+    console.warn("[email] No EMAIL binding, will try MailChannels fallback");
   }
 
   // Fallback: MailChannels HTTP API
