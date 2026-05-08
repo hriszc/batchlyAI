@@ -90,6 +90,13 @@ export function ShareScreenshot({
           backgroundColor: "#ffffff",
           useCORS: true,
           allowTaint: false,
+          onclone: (clonedDoc: Document) => {
+            // html2canvas cannot parse oklch() color functions from
+            // Tailwind CSS v4 theme. Remove <style> tags from the clone
+            // so the parser only sees inline/explicit colors (the card
+            // already uses bg-white / text-gray-* which are safe).
+            clonedDoc.querySelectorAll("style").forEach((el: HTMLStyleElement) => el.remove());
+          },
         });
 
         canvas.toBlob((blob: Blob | null) => {
