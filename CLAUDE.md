@@ -23,6 +23,24 @@
 
 ## Better Auth 疑难问题
 
+### 依赖升级后必须验证 callback/API 签名（2026-05-08 教训）
+
+**现象**：Better Auth v1.6.9 升级后，`sendEmailVerification` 回调从不被调用，CF Email Routing 发送计数为 0，用户收不到验证邮件。
+
+**根本原因**：BA v1.6.9 把验证邮件回调从 `emailAndPassword.sendEmailVerification` 移到了 `emailVerification.sendVerificationEmail`。旧配置位置不会报错（类型允许额外字段），但回调从不被触发。
+
+**排查方法**：读 `node_modules/better-auth/dist/api/routes/sign-up.mjs` 第 243 行：
+```js
+ctx.context.options.emailVerification?.sendVerificationEmail({user, url, token}, request)
+```
+对比我们的 `auth.ts` 配置在 `emailAndPassword.sendEmailVerification`，发现路径不匹配。
+
+**举一反三规则**：
+- 依赖升级后，**读 `node_modules` 源码**确认实际读取的 config 路径和回调签名，不完全信任 TypeScript 类型
+- **部署后用诊断端点 + tail 验证**关键路径确实被触发（如 CF 后台计数是否增加）
+- BA config 结构变更需逐项对比：`emailVerification` 下的 `sendVerificationEmail`、`autoSignInAfterVerification`、`sendOnSignUp` 等字段在不同版本位置不同
+- **`requireEmailVerification: true` 必须配合 `autoSignInAfterVerification: true`**，否则用户点验证链接后不会自动登录，手动登录又因邮箱未验证被拒，形成死锁
+
 ### `auth.handler(request)` 在 TanStack Start + Cloudflare Workers Free 计划返回 503
 
 **现象**：注册/登录 API 返回 503，诊断端点甚至可能抛 Error 1102（Worker exceeded resource limits）。

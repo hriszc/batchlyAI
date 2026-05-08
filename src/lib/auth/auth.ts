@@ -95,6 +95,7 @@ export function createAuth(d1Binding?: D1Database) {
         },
       },
       emailVerification: {
+        autoSignInAfterVerification: true,
         sendVerificationEmail: async ({
           user,
           url,
