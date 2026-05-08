@@ -95,6 +95,8 @@ export function useGeneratorState() {
                 aspectRatio: currentState.aspectRatio,
                 n: currentState.quantity,
                 model: currentState.model,
+                promptTemplate: currentState.promptTemplate,
+                variableGroups: currentState.variableGroups,
               }),
             });
             const json = (await resp.json()) as {
@@ -207,6 +209,8 @@ export function useGeneratorState() {
                 prompt: combination.prompt,
                 n: 1,
                 model: currentState.model,
+                promptTemplate: currentState.promptTemplate,
+                variableGroups: currentState.variableGroups,
               }),
             });
             const json = (await resp.json()) as {

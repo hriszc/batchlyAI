@@ -9,7 +9,7 @@ import { computePromptCombinations } from "@/components/universal-generator/util
 import { authClient } from "@/lib/auth/auth-client";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
-function shouldRedirectToCn(): boolean {
+export function shouldRedirectToCn(): boolean {
   if (typeof window === "undefined") return false;
   if (window.location.pathname.startsWith("/cn")) return false;
   try {

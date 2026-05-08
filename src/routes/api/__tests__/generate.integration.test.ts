@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { user as userTable } from "@/lib/db/schema/auth.schema";
+import { generation, savedPrompt } from "@/lib/db/schema/data-flywheel.schema";
 
 import { createTestDb, applyMigrations, seedUser } from "../../../../tests/db-setup";
 import { handleGenerate, CREDIT_COST } from "../generate";
@@ -242,6 +243,124 @@ describe("handleGenerate", () => {
     } as any);
 
     expect(getCredits()).toBe(80); // 100 - 20
+  });
+
+  // --- Generation saving with template ---
+  it("saves generation record with promptTemplate and variableGroups", async () => {
+    const mockGrsai = vi.fn().mockResolvedValue([makePrediction("grs-xyz")]);
+
+    await handleGenerate({
+      request: makeRequest({
+        prompt: "A cat in a forest",
+        n: 1,
+        model: "z-image-pro",
+        promptTemplate: "A {{cat, dog}} in a {{forest, beach}}",
+        variableGroups: [
+          { id: "var_0", values: ["cat", "dog"] },
+          { id: "var_1", values: ["forest", "beach"] },
+        ],
+      }),
+      db,
+      userId,
+      grsaiFn: mockGrsai,
+    } as any);
+
+    const rows = db.select().from(generation).all();
+    expect(rows.length).toBe(1);
+    expect(rows[0].promptTemplate).toBe("A {{cat, dog}} in a {{forest, beach}}");
+    expect(rows[0].resolvedPrompts).toBe(JSON.stringify(["A cat in a forest"]));
+    const parsedGroups = JSON.parse(rows[0].variableGroups);
+    expect(parsedGroups).toHaveLength(2);
+  });
+
+  it("falls back to resolved prompt as template when promptTemplate not sent", async () => {
+    const mockGrsai = vi.fn().mockResolvedValue([makePrediction("grs-fb")]);
+
+    await handleGenerate({
+      request: makeRequest({
+        prompt: "A simple prompt",
+        n: 1,
+        model: "z-image-pro",
+      }),
+      db,
+      userId,
+      grsaiFn: mockGrsai,
+    } as any);
+
+    const rows = db.select().from(generation).all();
+    expect(rows.length).toBe(1);
+    expect(rows[0].promptTemplate).toBe("A simple prompt");
+    expect(rows[0].variableGroups).toBe("[]");
+  });
+
+  // --- Saved prompt dedup ---
+  it("does not create duplicate savedPrompt for same template", async () => {
+    const mockGrsai = vi
+      .fn()
+      .mockResolvedValue([makePrediction("grs-001")])
+      .mockResolvedValue([makePrediction("grs-002")]);
+
+    const makeBody = (resolvedPrompt: string) => ({
+      prompt: resolvedPrompt,
+      n: 1,
+      model: "z-image-pro",
+      promptTemplate: "{{cat, dog}} in a forest",
+      variableGroups: [{ id: "var_0", values: ["cat", "dog"] }],
+    });
+
+    await handleGenerate({
+      request: makeRequest(makeBody("cat in a forest")),
+      db,
+      userId,
+      grsaiFn: mockGrsai,
+    } as any);
+
+    await handleGenerate({
+      request: makeRequest(makeBody("dog in a forest")),
+      db,
+      userId,
+      grsaiFn: mockGrsai,
+    } as any);
+
+    const prompts = db.select().from(savedPrompt).all();
+    expect(prompts.length).toBe(1);
+    expect(prompts[0].promptTemplate).toBe("{{cat, dog}} in a forest");
+  });
+
+  it("creates separate savedPrompts for different templates", async () => {
+    const mockGrsai = vi
+      .fn()
+      .mockResolvedValue([makePrediction("grs-a")])
+      .mockResolvedValue([makePrediction("grs-b")]);
+
+    await handleGenerate({
+      request: makeRequest({
+        prompt: "cat",
+        n: 1,
+        model: "z-image-pro",
+        promptTemplate: "{{cat, dog}}",
+        variableGroups: [{ id: "var_0", values: ["cat", "dog"] }],
+      }),
+      db,
+      userId,
+      grsaiFn: mockGrsai,
+    } as any);
+
+    await handleGenerate({
+      request: makeRequest({
+        prompt: "beach",
+        n: 1,
+        model: "z-image-pro",
+        promptTemplate: "{{forest, beach}}",
+        variableGroups: [{ id: "var_0", values: ["forest", "beach"] }],
+      }),
+      db,
+      userId,
+      grsaiFn: mockGrsai,
+    } as any);
+
+    const prompts = db.select().from(savedPrompt).all();
+    expect(prompts.length).toBe(2);
   });
 });
 

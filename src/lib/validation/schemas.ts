@@ -16,6 +16,8 @@ export const generateRequestSchema = z.object({
   aspectRatio: z.enum(VALID_ASPECT_RATIOS).optional().default("1:1"),
   n: z.number().int().min(1).max(10).optional().default(1),
   model: z.enum(VALID_MODELS).optional().default("z-image-pro"),
+  promptTemplate: z.string().optional(),
+  variableGroups: z.array(z.object({ id: z.string(), values: z.array(z.string()) })).optional(),
 });
 
 export type GenerateRequest = z.infer<typeof generateRequestSchema>;

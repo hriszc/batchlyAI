@@ -57,6 +57,8 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
     const costPerUnit = CREDIT_COST[model] ?? 20;
     const maxCost = costPerUnit * n;
     const watermark = !ctx.stripeCustomerId;
+    const template = body.promptTemplate || body.prompt;
+    const variableGroups = body.variableGroups || [];
 
     // Check prompt cache first
     const cachedUrls = await getCachedFn(body.prompt, model, body.aspectRatio || "1:1", n);
@@ -95,9 +97,9 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
           await db.insert(generation).values({
             id: crypto.randomUUID(),
             userId,
-            promptTemplate: body.prompt,
+            promptTemplate: template,
             resolvedPrompts: JSON.stringify([body.prompt]),
-            variableGroups: JSON.stringify({}),
+            variableGroups: JSON.stringify(variableGroups),
             resultUrls: JSON.stringify(texts),
             model,
             creditsUsed: maxCost,
@@ -107,19 +109,20 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
           // Generation history insert is non-fatal
         }
 
-        // Auto-save prompt
+        // Auto-save prompt (dedup by template, not resolved prompt)
         try {
           const existing = await db
             .select({ id: savedPrompt.id })
             .from(savedPrompt)
-            .where(and(eq(savedPrompt.userId, userId), eq(savedPrompt.promptTemplate, body.prompt)))
+            .where(and(eq(savedPrompt.userId, userId), eq(savedPrompt.promptTemplate, template)))
             .limit(1);
           if (existing.length === 0) {
             await db.insert(savedPrompt).values({
               id: crypto.randomUUID(),
               userId,
-              name: body.prompt.slice(0, 40),
-              promptTemplate: body.prompt,
+              name: template.slice(0, 40),
+              promptTemplate: template,
+              variableGroups: variableGroups.length > 0 ? JSON.stringify(variableGroups) : null,
               model,
               createdAt: Math.floor(Date.now() / 1000),
               updatedAt: Math.floor(Date.now() / 1000),
@@ -205,19 +208,20 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
     const predictionIds = predictions.map((p) => p.id);
     const newBalance = deducted.credits;
 
-    // Auto-save prompt
+    // Auto-save prompt (dedup by template, not resolved prompt)
     try {
       const existing = await db
         .select({ id: savedPrompt.id })
         .from(savedPrompt)
-        .where(and(eq(savedPrompt.userId, userId), eq(savedPrompt.promptTemplate, body.prompt)))
+        .where(and(eq(savedPrompt.userId, userId), eq(savedPrompt.promptTemplate, template)))
         .limit(1);
       if (existing.length === 0) {
         await db.insert(savedPrompt).values({
           id: crypto.randomUUID(),
           userId,
-          name: body.prompt.slice(0, 40),
-          promptTemplate: body.prompt,
+          name: template.slice(0, 40),
+          promptTemplate: template,
+          variableGroups: variableGroups.length > 0 ? JSON.stringify(variableGroups) : null,
           model,
           createdAt: Math.floor(Date.now() / 1000),
           updatedAt: Math.floor(Date.now() / 1000),
@@ -231,10 +235,10 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
       await db.insert(generation).values({
         id: crypto.randomUUID(),
         userId,
-        promptTemplate: body.prompt,
+        promptTemplate: template,
         resolvedPrompts: JSON.stringify([body.prompt]),
-        variableGroups: JSON.stringify({}),
-        resultUrls: JSON.stringify([]), // results arrive via polling
+        variableGroups: JSON.stringify(variableGroups),
+        resultUrls: JSON.stringify([]), // results arrive via polling/webhook
         model,
         creditsUsed: maxCost,
         createdAt: Math.floor(Date.now() / 1000),
