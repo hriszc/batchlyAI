@@ -133,6 +133,26 @@ describe("handleCheckout", () => {
     );
   });
 
+  it("includes wechat_pay payment method for CNY currency", async () => {
+    mockGetSession.mockResolvedValue({ user: { id: "u1", email: "u@test.com" } });
+    await handleCheckout(makeRequest({ body: { currency: "cny" } }));
+    expect(mockCheckoutCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payment_method_types: ["card", "wechat_pay"],
+      }),
+    );
+  });
+
+  it("only includes card payment method for USD currency", async () => {
+    mockGetSession.mockResolvedValue({ user: { id: "u1", email: "u@test.com" } });
+    await handleCheckout(makeRequest({ body: { currency: "usd" } }));
+    expect(mockCheckoutCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payment_method_types: ["card"],
+      }),
+    );
+  });
+
   it("returns 500 when Stripe throws", async () => {
     mockGetSession.mockResolvedValue({ user: { id: "u1", email: "u@test.com" } });
     mockCheckoutCreate.mockRejectedValue(new Error("Stripe failure"));
