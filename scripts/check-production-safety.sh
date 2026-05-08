@@ -26,4 +26,16 @@ if grep -q 'requireEmailVerification: true' src/lib/auth/auth.ts; then
   fi
 fi
 echo "✅ Email verification config OK"
+
+# 4: trustedOrigins must include workers.dev for preview URL login
+if grep -q 'trustedOrigins' src/lib/auth/auth.ts; then
+  if grep -q 'workers.dev' src/lib/auth/auth.ts; then
+    echo "✅ trustedOrigins includes workers.dev"
+  else
+    echo "❌ trustedOrigins missing *.workers.dev — preview login will fail with 403"
+    exit 1
+  fi
+else
+  echo "⚠️  No trustedOrigins found — preview login may fail"
+fi
 echo "=== All safety checks passed ==="
