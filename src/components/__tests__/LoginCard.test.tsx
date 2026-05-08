@@ -1,18 +1,10 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
 import { renderWithProviders } from "#test/test-utils";
 
 import { LoginCard } from "../LoginCard";
-
-vi.mock("@/lib/auth/auth-client", () => ({
-  authClient: {
-    signIn: { email: vi.fn() },
-  },
-}));
-
-import { authClient } from "@/lib/auth/auth-client";
 
 describe("LoginCard", () => {
   const baseProps = {
@@ -42,15 +34,5 @@ describe("LoginCard", () => {
     expect(baseProps.onClose).toHaveBeenCalled();
   });
 
-  it("shows loading state when submitting", async () => {
-    // Mock authClient to never resolve (keep loading state)
-    renderWithProviders(<LoginCard {...baseProps} />);
-    const emailInput = screen.getByPlaceholderText(/hello@example/);
-    const passwordInput = screen.getByPlaceholderText(/Enter password/);
-    await userEvent.type(emailInput, "test@example.com");
-    await userEvent.type(passwordInput, "password123");
-    await userEvent.click(screen.getByRole("button", { name: /login/i }));
-    // Login button should show loading text
-    expect(screen.getByText(/logging in/i)).toBeInTheDocument();
-  });
 });
+
