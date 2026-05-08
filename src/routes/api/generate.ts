@@ -2,6 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { and, eq, gte, sql } from "drizzle-orm";
 
 import { createGrsaiPredictions, createReplicatePredictions, generateText } from "@/lib/ai";
+import {
+  generateImageFallback,
+  generateTextFallback,
+  generateVideoFallback,
+} from "@/lib/ai/fallback";
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getCachedResult, setCachedResult } from "@/lib/cache/prompt-cache";
@@ -147,6 +152,24 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
 
         return jsonResponse({ texts, creditsRemaining: newBalance, isText: true, watermark }, 200);
       } catch (err) {
+        console.warn("[generate] Text primary failed, trying Workers AI fallback:", err);
+        try {
+          const fallbackText = await generateTextFallback(body.prompt);
+          if (fallbackText) {
+            return jsonResponse(
+              {
+                texts: [fallbackText],
+                creditsRemaining: deducted.credits,
+                isText: true,
+                watermark: true,
+                fallback: true,
+              },
+              200,
+            );
+          }
+        } catch (fbErr) {
+          console.error("[generate] Workers AI fallback also failed:", fbErr);
+        }
         await db
           .update(userTable)
           .set({ credits: sql`${userTable.credits} + ${maxCost}` })
@@ -200,6 +223,49 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
         }
       }
     } catch (err) {
+      // Try Workers AI fallback before giving up
+      const isVideoModel = model.startsWith("z-video");
+      console.warn(
+        `[generate] Primary ${isVideoModel ? "video" : "image"} failed, trying Workers AI fallback:`,
+        err,
+      );
+      try {
+        if (isVideoModel) {
+          const fbResult = await generateVideoFallback(
+            body.prompt,
+            body.aspectRatio || "1:1",
+            body.duration || 5,
+          );
+          if (fbResult.urls.length > 0) {
+            return jsonResponse(
+              {
+                urls: fbResult.urls,
+                creditsRemaining: deducted.credits,
+                sync: true,
+                watermark: true,
+                fallback: true,
+              },
+              200,
+            );
+          }
+        } else {
+          const fbResult = await generateImageFallback(body.prompt, body.aspectRatio || "1:1", n);
+          if (fbResult.urls.length > 0) {
+            return jsonResponse(
+              {
+                urls: fbResult.urls,
+                creditsRemaining: deducted.credits,
+                sync: true,
+                watermark: true,
+                fallback: true,
+              },
+              200,
+            );
+          }
+        }
+      } catch (fbErr) {
+        console.error("[generate] Workers AI fallback also failed:", fbErr);
+      }
       // Refund credits on creation failure
       await db
         .update(userTable)
