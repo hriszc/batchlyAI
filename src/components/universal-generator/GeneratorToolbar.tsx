@@ -9,7 +9,7 @@ import type { TextLength, VideoDuration } from "./types";
 import { TEXT_LENGTH_TOKENS, VIDEO_DURATION_SECONDS } from "./types";
 
 const ASPECT_RATIOS = ["16:9", "1:1", "9:16"];
-const QUANTITIES = [1, 2, 4];
+const QUANTITIES = [1, 2, 4, 6, 8];
 
 const TEXT_LENGTHS: { value: TextLength; label: string; labelZh: string }[] = [
   { value: "short", label: "Short", labelZh: "短" },

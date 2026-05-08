@@ -83,6 +83,14 @@ export function useGeneratorState() {
       currentState.variableGroups,
     );
 
+    if (combinations.length > 500) {
+      dispatch({
+        type: "SET_ERROR",
+        payload: "Too many combinations (max 500). Remove some variable values.",
+      });
+      return;
+    }
+
     const model = MODELS.find((m) => m.id === currentState.model);
     const isImageModel = model?.category === "image";
 
