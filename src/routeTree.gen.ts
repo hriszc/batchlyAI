@@ -47,6 +47,7 @@ import { Route as ApiStripePortalRouteImport } from './routes/api/stripe/portal'
 import { Route as ApiStripeCheckoutRouteImport } from './routes/api/stripe/checkout'
 import { Route as ApiReferralStatsRouteImport } from './routes/api/referral/stats'
 import { Route as ApiReferralGenerateCodeRouteImport } from './routes/api/referral/generate-code'
+import { Route as ApiGenerationFilesSplatRouteImport } from './routes/api/generation-files/$'
 import { Route as ApiFilesSplatRouteImport } from './routes/api/files/$'
 import { Route as ApiAuthGoogleOneTapRouteImport } from './routes/api/auth/google-one-tap'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -240,6 +241,11 @@ const ApiReferralGenerateCodeRoute = ApiReferralGenerateCodeRouteImport.update({
   path: '/api/referral/generate-code',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiGenerationFilesSplatRoute = ApiGenerationFilesSplatRouteImport.update({
+  id: '/api/generation-files/$',
+  path: '/api/generation-files/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiFilesSplatRoute = ApiFilesSplatRouteImport.update({
   id: '/api/files/$',
   path: '/api/files/$',
@@ -289,6 +295,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/google-one-tap': typeof ApiAuthGoogleOneTapRoute
   '/api/files/$': typeof ApiFilesSplatRoute
+  '/api/generation-files/$': typeof ApiGenerationFilesSplatRoute
   '/api/referral/generate-code': typeof ApiReferralGenerateCodeRoute
   '/api/referral/stats': typeof ApiReferralStatsRoute
   '/api/stripe/checkout': typeof ApiStripeCheckoutRoute
@@ -331,6 +338,7 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/google-one-tap': typeof ApiAuthGoogleOneTapRoute
   '/api/files/$': typeof ApiFilesSplatRoute
+  '/api/generation-files/$': typeof ApiGenerationFilesSplatRoute
   '/api/referral/generate-code': typeof ApiReferralGenerateCodeRoute
   '/api/referral/stats': typeof ApiReferralStatsRoute
   '/api/stripe/checkout': typeof ApiStripeCheckoutRoute
@@ -375,6 +383,7 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/google-one-tap': typeof ApiAuthGoogleOneTapRoute
   '/api/files/$': typeof ApiFilesSplatRoute
+  '/api/generation-files/$': typeof ApiGenerationFilesSplatRoute
   '/api/referral/generate-code': typeof ApiReferralGenerateCodeRoute
   '/api/referral/stats': typeof ApiReferralStatsRoute
   '/api/stripe/checkout': typeof ApiStripeCheckoutRoute
@@ -419,6 +428,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/auth/google-one-tap'
     | '/api/files/$'
+    | '/api/generation-files/$'
     | '/api/referral/generate-code'
     | '/api/referral/stats'
     | '/api/stripe/checkout'
@@ -461,6 +471,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/auth/google-one-tap'
     | '/api/files/$'
+    | '/api/generation-files/$'
     | '/api/referral/generate-code'
     | '/api/referral/stats'
     | '/api/stripe/checkout'
@@ -504,6 +515,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/auth/google-one-tap'
     | '/api/files/$'
+    | '/api/generation-files/$'
     | '/api/referral/generate-code'
     | '/api/referral/stats'
     | '/api/stripe/checkout'
@@ -544,6 +556,7 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAuthGoogleOneTapRoute: typeof ApiAuthGoogleOneTapRoute
   ApiFilesSplatRoute: typeof ApiFilesSplatRoute
+  ApiGenerationFilesSplatRoute: typeof ApiGenerationFilesSplatRoute
   ApiReferralGenerateCodeRoute: typeof ApiReferralGenerateCodeRoute
   ApiReferralStatsRoute: typeof ApiReferralStatsRoute
   ApiStripeCheckoutRoute: typeof ApiStripeCheckoutRoute
@@ -819,6 +832,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiReferralGenerateCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/generation-files/$': {
+      id: '/api/generation-files/$'
+      path: '/api/generation-files/$'
+      fullPath: '/api/generation-files/$'
+      preLoaderRoute: typeof ApiGenerationFilesSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/files/$': {
       id: '/api/files/$'
       path: '/api/files/$'
@@ -917,6 +937,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAuthGoogleOneTapRoute: ApiAuthGoogleOneTapRoute,
   ApiFilesSplatRoute: ApiFilesSplatRoute,
+  ApiGenerationFilesSplatRoute: ApiGenerationFilesSplatRoute,
   ApiReferralGenerateCodeRoute: ApiReferralGenerateCodeRoute,
   ApiReferralStatsRoute: ApiReferralStatsRoute,
   ApiStripeCheckoutRoute: ApiStripeCheckoutRoute,

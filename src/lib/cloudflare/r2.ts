@@ -17,7 +17,8 @@ export function getR2PublicUrl(key: string): string {
   const endpoint = env?.R2_ENDPOINT as string | undefined;
   const bucket = env?.R2_BUCKET as string | undefined;
   if (endpoint && bucket) return `${endpoint}/${bucket}/${key}`;
-  return key;
+  // Proxy through Worker when no custom R2 domain is configured
+  return `/api/generation-files/${key}`;
 }
 
 export async function uploadToR2(
