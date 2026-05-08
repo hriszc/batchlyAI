@@ -95,6 +95,7 @@ export function createAuth(d1Binding?: D1Database) {
         },
       },
       emailVerification: {
+        sendOnSignUp: true,
         autoSignInAfterVerification: true,
         sendVerificationEmail: async ({
           user,
@@ -104,8 +105,7 @@ export function createAuth(d1Binding?: D1Database) {
           url: string;
           token: string;
         }) => {
-          console.log("[auth] sendVerificationEmail CALLED for", user.email);
-          const result = await sendEmail({
+          await sendEmail({
             to: user.email,
             subject: "Verify your email — BatchlyAI",
             html: [
@@ -115,8 +115,7 @@ export function createAuth(d1Binding?: D1Database) {
               "<p>This link expires in 1 hour.</p>",
               "<p>If you did not create this account, please ignore this email.</p>",
             ].join(""),
-          });
-          console.log("[auth] sendVerificationEmail result:", result, "for", user.email);
+          }).catch((err) => console.error("[auth] sendVerificationEmail failed:", err));
         },
       },
     });

@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { jsonResponse, verifyOrigin } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
+import { env } from "@/env/server";
+import { sendEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { processReferralAfterSignup } from "@/lib/referral/process";
 
@@ -87,14 +89,43 @@ export const Route = createFileRoute("/api/auth/$")({
                 asResponse: true,
               });
 
-              // Post-signup referral processing
+              // Post-signup: send verification email directly
+              // (BA's internal callback is unreliable with direct API calls)
               if (path === "sign-up/email" && response.ok) {
                 try {
                   const cloned = response.clone();
-                  const body = (await cloned.json()) as {
-                    user?: { id: string; email: string };
+                  const json = (await cloned.json()) as {
+                    user?: { id: string; email: string; name?: string };
                   };
-                  await processReferralAfterSignup(request, body);
+                  const user = json.user;
+                  if (user?.email) {
+                    // Send verification email directly — BA's internal callback
+                    // doesn't fire reliably with direct API calls.
+                    // Replicate BA's createEmailVerificationToken logic inline.
+                    const { SignJWT } = await import("jose");
+                    const token = await new SignJWT({
+                      email: user.email.toLowerCase(),
+                    })
+                      .setProtectedHeader({ alg: "HS256" })
+                      .setIssuedAt()
+                      .setExpirationTime(
+                        Math.floor(Date.now() / 1000) + 3600,
+                      )
+                      .sign(new TextEncoder().encode(env.BETTER_AUTH_SECRET));
+                    const verifyUrl = `${env.VITE_BASE_URL}/verify-email?token=${token}&callbackURL=%2F`;
+                    await sendEmail({
+                      to: user.email,
+                      subject: "Verify your email — BatchlyAI",
+                      html: [
+                        `<h1>Welcome to BatchlyAI${user.name ? `, ${user.name}` : ""}!</h1>`,
+                        "<p>Please verify your email address by clicking the link below:</p>",
+                        `<p><a href="${verifyUrl}">Verify Email</a></p>`,
+                        "<p>This link expires in 1 hour.</p>",
+                        "<p>If you did not create this account, please ignore this email.</p>",
+                      ].join(""),
+                    }).catch((err) => console.error("[auth] Failed to send verification email:", err));
+                  }
+                  await processReferralAfterSignup(request, json);
 
                   const refCode = (
                     (await request
@@ -103,7 +134,7 @@ export const Route = createFileRoute("/api/auth/$")({
                       .catch(() => ({}))) as Record<string, unknown>
                   )?.ref as string | undefined;
                   const { trackServer } = await import("@/lib/analytics/server");
-                  await trackServer("signup_completed", body.user?.id || "unknown", {
+                  await trackServer("signup_completed", json.user?.id || "unknown", {
                     method: "email",
                     referral_code: refCode || "",
                   });
