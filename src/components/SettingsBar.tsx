@@ -21,7 +21,7 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 export function SettingsBar() {
   const { theme, setTheme } = useTheme();
   const { language, setLanguage, t } = useLanguage();
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending: sessionLoading } = authClient.useSession();
   const navigate = useNavigate();
 
   // Handle Stripe redirects
@@ -117,7 +117,9 @@ export function SettingsBar() {
 
   return (
     <div className="fixed top-0 right-0 z-50 flex items-center gap-1 p-3">
-      {session?.user ? (
+      {sessionLoading ? (
+        <div className="flex h-8 w-24 animate-pulse items-center rounded-full bg-muted/80" />
+      ) : session?.user ? (
         <div className="flex items-center gap-1">
           <div className="relative">
             <button
