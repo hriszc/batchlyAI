@@ -108,6 +108,8 @@ export function useGeneratorState() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 prompt: combination.prompt,
+                promptTemplate: currentState.promptTemplate,
+                variableGroups: currentState.variableGroups,
                 aspectRatio: currentState.aspectRatio,
                 n: currentState.quantity,
                 model: currentState.model,
@@ -228,6 +230,8 @@ export function useGeneratorState() {
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 prompt: combination.prompt,
+                promptTemplate: currentState.promptTemplate,
+                variableGroups: currentState.variableGroups,
                 n: 1,
                 model: currentState.model,
                 maxTokens: TEXT_LENGTH_TOKENS[currentState.textLength],
