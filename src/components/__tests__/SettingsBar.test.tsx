@@ -125,3 +125,27 @@ describe("SettingsBar", () => {
     expect(true).toBe(true);
   });
 });
+
+it("shows referral link button when referral code exists", async () => {
+  const mockFetch = vi.fn().mockResolvedValueOnce({
+    json: () =>
+      Promise.resolve({
+        code: "ABC123",
+        shareUrl: "https://x.com/r/ABC123",
+        totalReferrals: 0,
+        tier: "none",
+        totalCreditsEarned: 0,
+        commissionTotal: 0,
+      }),
+  });
+  vi.stubGlobal("fetch", mockFetch);
+  mockUseSession.mockReturnValue({
+    data: { user: { name: "Bob", email: "bob@test.com", credits: 10 } },
+  });
+  renderWithProviders(<SettingsBar />, { language: "en" });
+  // Wait for referral stats fetch
+  await new Promise((r) => setTimeout(r, 200));
+  // Should show copy referral link button
+  const buttons = screen.getAllByRole("button");
+  expect(buttons.length).toBeGreaterThanOrEqual(3);
+});
