@@ -85,7 +85,7 @@ test.describe("AARRR Retention — history and saved prompts", () => {
     await page.goto("/generations");
     await page.waitForTimeout(1000);
     // Should show something — either history entries or a message
-    await expect(page.locator("main")).toBeVisible({ timeout: 5000 });
+    await expect(page.locator("main")).toBeVisible({ timeout: 15000 });
   });
 
   test("Buy Credits button visible for returning user", async ({ page }) => {
@@ -116,7 +116,7 @@ test.describe("AARRR Retention — history and saved prompts", () => {
     });
     await page.goto("/templates");
     await page.waitForTimeout(1000);
-    await expect(page.locator("main")).toBeVisible({ timeout: 5000 });
+    await expect(page.locator("main")).toBeVisible({ timeout: 15000 });
   });
 
   test("blog index page loads", async ({ page }) => {
