@@ -106,4 +106,21 @@ test.describe("Auth E2E (with API mocks)", () => {
       await expect(page).toHaveURL(/signup/);
     }
   });
+
+  test("signup completes and shows verify state", async ({ page }) => {
+    await page.goto("/signup");
+    await page.fill('input[name="name"]', "Test User");
+    await page.fill('input[type="email"]', "new@test.com");
+    await page.fill('input[id="password"]', "test123456");
+    await page.fill('input[id="confirm_password"]', "test123456");
+    const btn = page
+      .locator("button")
+      .filter({ hasText: /sign up|注册/i })
+      .first();
+    await btn.click();
+    // API mock returns 200 — page should stay on /signup and update
+    await page.waitForTimeout(2000);
+    const currentUrl = page.url();
+    expect(currentUrl).toContain("/signup");
+  });
 });

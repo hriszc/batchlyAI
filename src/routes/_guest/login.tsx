@@ -55,6 +55,9 @@ function LoginForm() {
     onError: (error) => {
       const msg = error.message || "An error occurred while signing in.";
       setErrorMessage(msg);
+      if (msg.toLowerCase().includes("verify") || msg.toLowerCase().includes("email")) {
+        setErrorMessage(`${msg} Click "Resend verification email" to receive a new link.`);
+      }
       toast.error(msg);
     },
   });
