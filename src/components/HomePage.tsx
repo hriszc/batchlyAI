@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { LoginCard } from "@/components/LoginCard";
 import { GeneratorCard } from "@/components/universal-generator/GeneratorCard";
 import { ResultsGrid } from "@/components/universal-generator/ResultsGrid";
 import { ShareScreenshot } from "@/components/universal-generator/ShareScreenshot";
 import { useGeneratorState } from "@/components/universal-generator/useGeneratorState";
 import { computePromptCombinations } from "@/components/universal-generator/utils";
+import { useAuthGate } from "@/components/useAuthGate";
 import { authClient } from "@/lib/auth/auth-client";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -33,6 +35,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
   const { data: session } = authClient.useSession();
   const userCredits = ((session?.user as Record<string, unknown>)?.credits as number) ?? 0;
   const showWatermark = userCredits <= 10;
+  const authGate = useAuthGate();
 
   // Restore pending prompt from sessionStorage (preserved across login redirect)
   useEffect(() => {
@@ -183,7 +186,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
         {t("siteDescription")}
       </p>
 
-      <GeneratorCard state={state} actions={actions} />
+      <GeneratorCard state={state} actions={actions} onRequireAuth={authGate.checkAuth} />
 
       <div ref={resultsRef}>
         <ResultsGrid
@@ -216,6 +219,10 @@ export function HomePage({ forceLanguage }: HomePageProps) {
             console.error("[share]", msg);
           }}
         />
+      )}
+
+      {authGate.showLoginCard && (
+        <LoginCard onSuccess={authGate.onLoginSuccess} onClose={authGate.closeLogin} />
       )}
     </main>
   );
