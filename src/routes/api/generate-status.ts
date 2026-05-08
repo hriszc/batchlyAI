@@ -1,9 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { eq } from "drizzle-orm";
 
 import { pollReplicatePrediction } from "@/lib/ai";
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
-import { getKvBinding } from "@/lib/cloudflare/bindings";
+import { getD1Binding, getKvBinding } from "@/lib/cloudflare/bindings";
+import { getDb } from "@/lib/db";
+import { generation } from "@/lib/db/schema/data-flywheel.schema";
 import { checkRateLimit } from "@/lib/rate-limit";
 
 interface GrsTaskData {
@@ -11,6 +14,23 @@ interface GrsTaskData {
   status: string;
   urls?: string[];
   error?: string;
+}
+
+async function tryUpdateGeneration(kv: KVNamespace, predictionId: string, urls: string[]) {
+  try {
+    const genRaw = await kv.get(`gen:${predictionId}`);
+    if (!genRaw) return;
+    const genData = JSON.parse(genRaw) as { generationId: string };
+    const binding = getD1Binding();
+    if (!binding) return;
+    const db = getDb(binding);
+    await db
+      .update(generation)
+      .set({ resultUrls: JSON.stringify(urls) })
+      .where(eq(generation.id, genData.generationId));
+  } catch {
+    /* non-fatal */
+  }
 }
 
 export async function handleGenerateStatus(request: Request): Promise<Response> {
@@ -51,6 +71,7 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
             if (!raw) return { id, status: "processing", urls: null, error: null };
             const data: GrsTaskData = JSON.parse(raw);
             if (data.status === "succeeded" && data.urls) {
+              void tryUpdateGeneration(kv, id, data.urls);
               return { id, status: "succeeded", urls: data.urls, error: null };
             }
             if (data.status === "failed") {
@@ -82,6 +103,16 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
         }
       }),
     );
+
+    // Update generation records for succeeded Replicate results
+    const kv = getKvBinding();
+    if (kv) {
+      for (const [i, r] of results.entries()) {
+        if (r.status === "succeeded" && r.urls?.length) {
+          void tryUpdateGeneration(kv, ids[i], r.urls);
+        }
+      }
+    }
 
     return jsonResponse({ results: results.map((r, i) => ({ id: ids[i], ...r })) }, 200);
   } catch (err) {

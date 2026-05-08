@@ -213,15 +213,7 @@ export function GeneratorToolbar({
 
       <span className="text-muted-foreground/40">|</span>
 
-      <span
-        className={`whitespace-nowrap ${
-          comboCount > 500
-            ? "font-medium text-red-500"
-            : comboCount > 100
-              ? "text-yellow-600"
-              : "text-muted-foreground"
-        }`}
-      >
+      <span className="whitespace-nowrap text-muted-foreground">
         {hasGroups && `${groupCount} ${t("groups")} · `}
         {comboCount} {t("variants")}
       </span>
@@ -231,15 +223,6 @@ export function GeneratorToolbar({
       <span className="whitespace-nowrap text-muted-foreground">
         {t("estimatedCredits")}：{creditEstimate} {t("credits")}
       </span>
-
-      {comboCount > 500 && (
-        <span className="text-xs font-medium whitespace-nowrap text-red-500">
-          {t("tooManyCombinations")}
-        </span>
-      )}
-      {comboCount > 100 && comboCount <= 500 && (
-        <span className="text-xs whitespace-nowrap text-yellow-600">{t("manyCombinations")}</span>
-      )}
 
       {creditsRemaining != null && (
         <>

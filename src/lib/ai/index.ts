@@ -129,12 +129,26 @@ async function fetchWithRetry(
   directUrl: string,
   init: RequestInit,
   provider: string,
-  maxRetries = 4,
+  maxRetries = 5,
 ): Promise<Response> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const resp = await fetchWithFallback(url, directUrl, init, provider);
     if (resp.status !== 429 || attempt === maxRetries) return resp;
-    const delay = Math.min(1000 * 2 ** attempt, 16000);
+    // Use the Retry-After header if present, otherwise exponential backoff
+    const retryAfter = resp.headers.get("Retry-After");
+    let delay: number;
+    if (retryAfter) {
+      delay = parseInt(retryAfter, 10) * 1000;
+    } else {
+      // Try to extract retry_after from JSON body
+      try {
+        const body = await resp.clone().json();
+        if (body.retry_after) delay = (body.retry_after as number) * 1000;
+        else delay = Math.min(2000 * 2 ** attempt, 30000);
+      } catch {
+        delay = Math.min(2000 * 2 ** attempt, 30000);
+      }
+    }
     console.warn(
       `[ai] ${provider} 429 throttled, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`,
     );
@@ -171,9 +185,13 @@ export async function createReplicatePredictions({
     }
   }
 
-  // Run predictions sequentially to stay within Replicate's burst limit (5 req/s for low-balance accounts)
+  // Run predictions sequentially with a gap to stay within Replicate's burst limit
   const predictions: ReplicateCreateResult[] = [];
   for (let i = 0; i < n; i++) {
+    if (i > 0) {
+      // 1500ms gap between sequential requests to avoid burst rate limiting
+      await new Promise((r) => setTimeout(r, 1500));
+    }
     const resp = await fetchWithRetry(
       `${REPLICATE_API_BASE}/v1/predictions`,
       `${REPLICATE_DIRECT}`,
