@@ -1,4 +1,7 @@
+import { eq } from "drizzle-orm";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+
+import { createTestDb, applyMigrations, seedUser } from "#test/db-setup";
 
 const mocks = vi.hoisted(() => {
   const mockGetSession = vi.fn();
@@ -20,6 +23,11 @@ vi.mock("@/lib/ai", () => ({
   pollReplicatePrediction: mocks.mockPollReplicate,
 }));
 
+vi.mock("@/lib/db", () => ({
+  getDb: (b: any) => b,
+}));
+
+import { generation } from "@/lib/db/schema/data-flywheel.schema";
 import { handleGenerateStatus } from "@/routes/api/generate-status";
 
 function makeRequest(params: string): Request {
@@ -204,5 +212,113 @@ describe("handleGenerateStatus", () => {
     };
     expect(body.results[0].status).toBe("error");
     expect(body.results[0].error).toBe("KV not available");
+  });
+
+  // --- Generation record update via poll results ---
+  it("updates generation resultUrls when Replicate poll returns succeeded", async () => {
+    const db = createTestDb();
+    applyMigrations(db);
+    seedUser(db, { id: "u1" });
+
+    // Pre-insert generation record
+    const genId = "gen-test-001";
+    db.insert(generation)
+      .values({
+        id: genId,
+        userId: "u1",
+        promptTemplate: "test prompt",
+        resolvedPrompts: JSON.stringify(["test prompt"]),
+        variableGroups: JSON.stringify([]),
+        resultUrls: JSON.stringify([]),
+        model: "z-image-fast",
+        creditsUsed: 10,
+        createdAt: Math.floor(Date.now() / 1000),
+      })
+      .run();
+
+    // Set up KV with generation mapping
+    const kvStore = new Map<string, string>();
+    kvStore.set("gen:pred-abc", JSON.stringify({ generationId: genId }));
+    const mockKv = {
+      get: vi.fn((key: string) => Promise.resolve(kvStore.get(key) ?? null)),
+      put: vi.fn(),
+    };
+
+    (globalThis as Record<string, unknown>).__env__ = {
+      batchlyai_kv: mockKv,
+      batchlyai_db: db,
+    };
+
+    mocks.mockPollReplicate.mockResolvedValue({
+      id: "pred-abc",
+      status: "succeeded",
+      urls: ["https://replicate.delivery/test-output.png"],
+      error: null,
+    });
+
+    await handleGenerateStatus(makeRequest("ids=pred-abc&type=replicate"));
+
+    // Wait for async update
+    await new Promise((r) => setTimeout(r, 100));
+
+    // Verify generation was updated
+    const row = db
+      .select({ resultUrls: generation.resultUrls })
+      .from(generation)
+      .where(eq(generation.id, genId))
+      .get();
+    expect(row).toBeDefined();
+    const urls = JSON.parse(row!.resultUrls);
+    expect(urls).toEqual(["https://replicate.delivery/test-output.png"]);
+  });
+
+  it("does not update generation when KV entry is missing", async () => {
+    const db = createTestDb();
+    applyMigrations(db);
+    seedUser(db, { id: "u1" });
+
+    const genId = "gen-test-002";
+    db.insert(generation)
+      .values({
+        id: genId,
+        userId: "u1",
+        promptTemplate: "test",
+        resolvedPrompts: JSON.stringify(["test"]),
+        variableGroups: JSON.stringify([]),
+        resultUrls: JSON.stringify([]),
+        model: "z-image-fast",
+        creditsUsed: 10,
+        createdAt: Math.floor(Date.now() / 1000),
+      })
+      .run();
+
+    // NO KV entry for this prediction
+    const mockKv = {
+      get: vi.fn(() => Promise.resolve(null)),
+      put: vi.fn(),
+    };
+    (globalThis as Record<string, unknown>).__env__ = {
+      batchlyai_kv: mockKv,
+      batchlyai_db: db,
+    };
+
+    mocks.mockPollReplicate.mockResolvedValue({
+      id: "pred-missing",
+      status: "succeeded",
+      urls: ["https://example.com/img.png"],
+      error: null,
+    });
+
+    await handleGenerateStatus(makeRequest("ids=pred-missing&type=replicate"));
+    await new Promise((r) => setTimeout(r, 100));
+
+    // Generation should still have empty resultUrls
+    const row = db
+      .select({ resultUrls: generation.resultUrls })
+      .from(generation)
+      .where(eq(generation.id, genId))
+      .get();
+    const urls = JSON.parse(row!.resultUrls);
+    expect(urls).toEqual([]);
   });
 });

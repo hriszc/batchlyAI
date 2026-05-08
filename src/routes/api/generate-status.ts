@@ -19,17 +19,26 @@ interface GrsTaskData {
 async function tryUpdateGeneration(kv: KVNamespace, predictionId: string, urls: string[]) {
   try {
     const genRaw = await kv.get(`gen:${predictionId}`);
-    if (!genRaw) return;
+    if (!genRaw) {
+      console.warn(
+        `[gen-status] No KV entry for prediction ${predictionId}, cannot update generation`,
+      );
+      return;
+    }
     const genData = JSON.parse(genRaw) as { generationId: string };
     const binding = getD1Binding();
-    if (!binding) return;
+    if (!binding) {
+      console.warn("[gen-status] D1 binding not available, cannot update generation");
+      return;
+    }
     const db = getDb(binding);
     await db
       .update(generation)
       .set({ resultUrls: JSON.stringify(urls) })
       .where(eq(generation.id, genData.generationId));
-  } catch {
-    /* non-fatal */
+    console.log(`[gen-status] Updated generation ${genData.generationId} with ${urls.length} URLs`);
+  } catch (err) {
+    console.error("[gen-status] Failed to update generation record:", err);
   }
 }
 
