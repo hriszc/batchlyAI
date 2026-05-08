@@ -6,6 +6,7 @@ import { createAuth } from "@/lib/auth/auth";
 import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
 import { user as userTable } from "@/lib/db/schema";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { getStripe } from "@/lib/stripe";
 
 export async function handlePortal(request: Request): Promise<Response> {
@@ -14,6 +15,9 @@ export async function handlePortal(request: Request): Promise<Response> {
 
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user?.id) return jsonResponse({ error: "Unauthorized" }, 401);
+
+  const limit = checkRateLimit(`stripe:portal:${session.user.id}`, 5, 60);
+  if (!limit.allowed) return jsonResponse({ error: "Too many requests. Please try again." }, 429);
 
   const userId = session.user.id;
   const binding = getD1Binding();
@@ -38,9 +42,8 @@ export async function handlePortal(request: Request): Promise<Response> {
 
     return jsonResponse({ url: portalSession.url }, 200);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to create portal session";
-    console.error("[stripe] portal error:", message);
-    return jsonResponse({ error: message }, 500);
+    console.error("[stripe] portal error:", err);
+    return jsonResponse({ error: "Billing service error" }, 500);
   }
 }
 

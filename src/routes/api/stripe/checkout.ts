@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { env } from "@/env/server";
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { getStripe } from "@/lib/stripe";
 
 export async function handleCheckout(request: Request): Promise<Response> {
@@ -11,6 +12,9 @@ export async function handleCheckout(request: Request): Promise<Response> {
 
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user?.id) return jsonResponse({ error: "Unauthorized" }, 401);
+
+  const limit = checkRateLimit(`stripe:checkout:${session.user.id}`, 5, 60);
+  if (!limit.allowed) return jsonResponse({ error: "Too many requests. Please try again." }, 429);
 
   const userId = session.user.id;
   const userEmail = session.user.email;
@@ -43,9 +47,8 @@ export async function handleCheckout(request: Request): Promise<Response> {
 
     return jsonResponse({ url: checkoutSession.url }, 200);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Failed to create checkout";
-    console.error("[stripe] checkout error:", message);
-    return jsonResponse({ error: message }, 500);
+    console.error("[stripe] checkout error:", err);
+    return jsonResponse({ error: "Payment processing error" }, 500);
   }
 }
 

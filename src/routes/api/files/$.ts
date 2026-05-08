@@ -41,7 +41,7 @@ export async function handleFile(request: Request, params: { _splat: string }): 
     obj.writeHttpMetadata(headers);
     headers.set("Cache-Control", "private, max-age=86400");
     headers.set("X-Content-Type-Options", "nosniff");
-    headers.set("Content-Disposition", "inline");
+    headers.set("Content-Disposition", "attachment");
 
     const origin = request.headers.get("Origin");
     if (origin) {

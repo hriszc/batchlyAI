@@ -8,11 +8,11 @@ export const env = createEnv({
       .string()
       .min(32)
       .optional()
-      .default("dev-secret-placeholder-batchlyai-2024"),
+      .default("dev-secret-do-not-use-in-production-42-characters-minimum"),
 
     // AI Gateway
     DEEPSEEK_API_KEY: z.string().optional(),
-    GRSAI_API_KEY: z.string().min(1).optional().default("dev-key"),
+    GRSAI_API_KEY: z.string().min(1).optional(),
     REPLICATE_API_KEY: z.string().optional(),
     GRS_WEBHOOK_SECRET: z.string().min(1).optional(),
 
@@ -29,8 +29,8 @@ export const env = createEnv({
     // Stripe
     STRIPE_SECRET_KEY: z.string().min(1).optional(),
     STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
-    STRIPE_PRICE_ID_USD: z.string().min(1).optional().default("dev-stripe-price-usd"),
-    STRIPE_PRICE_ID_CNY: z.string().min(1).optional().default("dev-stripe-price-cny"),
+    STRIPE_PRICE_ID_USD: z.string().min(1).optional(),
+    STRIPE_PRICE_ID_CNY: z.string().min(1).optional(),
   },
   runtimeEnv: process.env,
 });

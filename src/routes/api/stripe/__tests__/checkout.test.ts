@@ -24,6 +24,10 @@ vi.mock("@/env/server", () => ({
   },
 }));
 
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: () => ({ allowed: true, remaining: 10, resetAt: Date.now() + 60000 }),
+}));
+
 function makeRequest(overrides?: { body?: Record<string, unknown>; url?: string }): Request {
   const body = overrides?.body;
   return {
@@ -138,6 +142,6 @@ describe("handleCheckout", () => {
     mockCheckoutCreate.mockRejectedValue(new Error("Stripe failure"));
     const resp = await handleCheckout(makeRequest({ body: {} }));
     expect(resp.status).toBe(500);
-    expect(((await resp.json()) as Record<string, unknown>).error).toBe("Stripe failure");
+    expect(((await resp.json()) as Record<string, unknown>).error).toBe("Payment processing error");
   });
 });

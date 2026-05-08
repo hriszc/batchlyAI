@@ -100,13 +100,15 @@ function RootDocument({ children }: { readonly children: React.ReactNode }) {
           </LanguageProvider>
         </ThemeProvider>
 
-        <TanStackDevtools
-          plugins={[
-            { name: "TanStack Query", render: <ReactQueryDevtoolsPanel /> },
-            { name: "TanStack Router", render: <TanStackRouterDevtoolsPanel /> },
-            a11yDevtoolsPlugin(),
-          ]}
-        />
+        {import.meta.env.DEV && (
+          <TanStackDevtools
+            plugins={[
+              { name: "TanStack Query", render: <ReactQueryDevtoolsPanel /> },
+              { name: "TanStack Router", render: <TanStackRouterDevtoolsPanel /> },
+              a11yDevtoolsPlugin(),
+            ]}
+          />
+        )}
 
         <Scripts />
       </body>
