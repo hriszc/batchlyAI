@@ -253,3 +253,74 @@ describe("runExpandLLM", () => {
     expect(values).toEqual(["cat", "dog"]);
   });
 });
+
+// --- fetchWithFallback: gateway error → direct API ---
+describe("fetchWithFallback (internal)", () => {
+  beforeEach(() => {
+    mockFetch.mockClear();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("falls back to direct API when gateway returns non-ok", async () => {
+    // First call (gateway) fails with 500, second call (direct) succeeds
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        text: () => Promise.resolve("gateway error"),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ code: 0, data: { id: "grs-direct" }, msg: "ok" }),
+      });
+
+    const results = await createGrsaiPredictions({ prompt: "test", n: 1 });
+    expect(results[0].id).toBe("grs-direct");
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("falls back to direct API when gateway fetch throws", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("network error")).mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ code: 0, data: { id: "grs-direct2" }, msg: "ok" }),
+    });
+
+    const results = await createGrsaiPredictions({ prompt: "test", n: 1 });
+    expect(results[0].id).toBe("grs-direct2");
+  });
+});
+
+// --- fetchWithRetry: 429 retry ---
+describe("fetchWithRetry (internal)", () => {
+  beforeEach(() => {
+    mockFetch.mockClear();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("succeeds when first call is 429 and retry succeeds", async () => {
+    // 429 on gateway → fallback to direct → 429 on direct → retry → success on gateway
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 429,
+        text: () => Promise.resolve("rate limited"),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({ id: "retry-win", status: "starting", urls: { get: "g", cancel: "c" } }),
+      });
+
+    const results = await createReplicatePredictions({
+      prompt: "test",
+      model: "z-image-fast",
+      n: 1,
+    });
+    expect(results[0].id).toBe("retry-win");
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+  });
+});

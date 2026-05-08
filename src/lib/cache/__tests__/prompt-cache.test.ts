@@ -69,3 +69,51 @@ describe("expand cache", () => {
     await expect(setExpandCache("test", ["a", "b"])).resolves.toBeUndefined();
   });
 });
+
+// --- TTL expiry ---
+describe("cache expiry", () => {
+  afterEach(() => {
+    delete (globalThis as any).__env__;
+    vi.restoreAllMocks();
+  });
+
+  it("returns null when cache entry is expired", async () => {
+    // Create an entry that's 25 hours old (TTL is 24h)
+    const oldEntry = { urls: ["https://old.png"], createdAt: Date.now() - 25 * 60 * 60 * 1000 };
+    const mockKv = {
+      get: vi.fn().mockResolvedValue(JSON.stringify(oldEntry)),
+      delete: vi.fn().mockResolvedValue(undefined),
+    };
+    (globalThis as any).__env__ = { batchlyai_kv: mockKv };
+
+    const result = await getCachedResult("p", "m", "1:1", 1);
+    expect(result).toBeNull();
+    // Expired entry should be deleted
+    expect(mockKv.delete).toHaveBeenCalled();
+  });
+
+  it("returns cached result when entry is fresh", async () => {
+    const freshEntry = { urls: ["https://fresh.png"], createdAt: Date.now() - 1000 };
+    const mockKv = { get: vi.fn().mockResolvedValue(JSON.stringify(freshEntry)) };
+    (globalThis as any).__env__ = { batchlyai_kv: mockKv };
+
+    const result = await getCachedResult("p", "m", "1:1", 1);
+    expect(result).toEqual(["https://fresh.png"]);
+  });
+
+  it("handles JSON parse error gracefully", async () => {
+    const mockKv = { get: vi.fn().mockResolvedValue("{invalid json") };
+    (globalThis as any).__env__ = { batchlyai_kv: mockKv };
+
+    const result = await getCachedResult("p", "m", "1:1", 1);
+    expect(result).toBeNull();
+  });
+
+  it("handles KV read error gracefully", async () => {
+    const mockKv = { get: vi.fn().mockRejectedValue(new Error("KV error")) };
+    (globalThis as any).__env__ = { batchlyai_kv: mockKv };
+
+    const result = await getCachedResult("p", "m", "1:1", 1);
+    expect(result).toBeNull();
+  });
+});
