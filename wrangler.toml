@@ -34,7 +34,7 @@ bucket_name = "batchlyai-uploads"
 # Migration: run `npx wrangler d1 migrations apply batchlyai-db` after schema changes
 [[d1_databases.migrations]]
 database_name = "batchlyai-db"
-migrations_dir = "./migrations"
+migrations_dir = "./drizzle"
 
 [observability]
 enabled = true
