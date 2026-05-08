@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { env } from "@/env/server";
 import { jsonResponse } from "@/lib/api-helpers";
 import { getD1Binding, getKvBinding } from "@/lib/cloudflare/bindings";
+import { mirrorImageToR2 } from "@/lib/cloudflare/r2";
 import { getDb } from "@/lib/db";
 import { generation } from "@/lib/db/schema/data-flywheel.schema";
 
@@ -80,24 +81,32 @@ export async function handleGrsWebhook(request: Request): Promise<Response> {
       const urls = body.results.map((r) => r.url);
       (taskData as Record<string, unknown>).urls = urls;
 
-      // Update generation record with result URLs
+      // Mirror images to R2 and update generation record
       try {
         const genRaw = await kv.get(`gen:${taskId}`);
         if (!genRaw) {
           console.warn(`[grs-webhook] No KV entry for task ${taskId}, cannot update generation`);
         } else {
-          const genData = JSON.parse(genRaw) as { generationId: string };
+          const genData = JSON.parse(genRaw) as { generationId: string; userId: string };
           const binding = getD1Binding();
           if (!binding) {
             console.warn("[grs-webhook] D1 binding not available");
           } else {
+            const r2Urls = await Promise.all(
+              urls.map((url, i) =>
+                mirrorImageToR2(
+                  url,
+                  `generations/${genData.userId}/${genData.generationId}/${i}.png`,
+                ),
+              ),
+            );
             const db = getDb(binding);
             await db
               .update(generation)
-              .set({ resultUrls: JSON.stringify(urls) })
+              .set({ resultUrls: JSON.stringify(r2Urls) })
               .where(eq(generation.id, genData.generationId));
             console.log(
-              `[grs-webhook] Updated generation ${genData.generationId} with ${urls.length} URLs`,
+              `[grs-webhook] Updated generation ${genData.generationId} with ${r2Urls.length} URLs (R2 mirrored)`,
             );
           }
         }

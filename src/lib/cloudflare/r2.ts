@@ -28,3 +28,22 @@ export async function uploadToR2(
   await r2.put(key, body);
   return { success: true, publicUrl: getR2PublicUrl(key) };
 }
+
+/**
+ * Download an image from an external URL and mirror it to R2.
+ * Returns the R2 public URL on success, or the original URL on failure.
+ */
+export async function mirrorImageToR2(imageUrl: string, r2Key: string): Promise<string> {
+  const r2 = getR2Binding();
+  if (!r2) return imageUrl;
+
+  try {
+    const resp = await fetch(imageUrl);
+    if (!resp.ok) return imageUrl;
+    const blob = await resp.arrayBuffer();
+    await r2.put(r2Key, blob);
+    return getR2PublicUrl(r2Key);
+  } catch {
+    return imageUrl;
+  }
+}
