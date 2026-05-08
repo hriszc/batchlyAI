@@ -1,4 +1,4 @@
-import { createContext, use, useState, useCallback } from "react";
+import { createContext, use, useState, useEffect, useCallback } from "react";
 
 import type { Language, TranslationKey } from "./translations";
 import { translations } from "./translations";
@@ -21,7 +21,7 @@ function detectBrowserLanguage(): Language {
   return lang.toLowerCase().startsWith("zh") ? "zh" : "en";
 }
 
-function getInitialLanguage(): Language {
+function getStoredLanguage(): Language {
   if (typeof window === "undefined") return "en";
   try {
     const stored = localStorage.getItem("language");
@@ -29,11 +29,23 @@ function getInitialLanguage(): Language {
   } catch {
     // localStorage not available
   }
-  return detectBrowserLanguage();
+  return "en";
 }
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<Language>(getInitialLanguage);
+  // Start with "en" for SSR hydration consistency
+  const [language, setLanguageState] = useState<Language>("en");
+
+  // Sync to stored preference after hydration (SSR-safe)
+  useEffect(() => {
+    const stored = getStoredLanguage();
+    if (stored !== "en") {
+      setLanguageState(stored);
+    } else {
+      const detected = detectBrowserLanguage();
+      if (detected !== "en") setLanguageState(detected);
+    }
+  }, []);
 
   const setLanguage = useCallback((lang: Language) => {
     try {
