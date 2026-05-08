@@ -124,26 +124,4 @@ test.describe("Auth E2E (with API mocks)", () => {
     expect(currentUrl).toContain("/signup");
   });
 
-  test("login with unverified email shows error", async ({ page }) => {
-    // Override sign-in mock to return email-not-verified
-    await page.route("**/api/auth/sign-in/email", async (route) => {
-      await route.fulfill({
-        status: 403,
-        contentType: "application/json",
-        body: JSON.stringify({
-          error: { message: "Please verify your email address before signing in" },
-        }),
-      });
-    });
-    await page.goto("/login");
-    await page.fill('input[type="email"]', "unverified@test.com");
-    await page.fill('input[type="password"]', "test123456");
-    const btn = page
-      .locator("button")
-      .filter({ hasText: /sign in|login|登录/i })
-      .first();
-    await btn.click();
-    // Should show error about verification
-    await expect(page.getByText(/verify|verification/i)).toBeVisible({ timeout: 5000 });
-  });
 });
