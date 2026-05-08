@@ -62,3 +62,7 @@ declare interface KVNamespaceListKey {
   metadata?: Record<string, unknown>;
 }
 declare module "html2canvas";
+
+declare interface Ai {
+  run(model: string, input: Record<string, unknown>): Promise<Record<string, unknown>>;
+}
