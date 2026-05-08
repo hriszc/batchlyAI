@@ -71,6 +71,23 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   shellComponent: RootDocument,
 });
 
+function FooterLinks() {
+  const { t } = useLanguage();
+  return (
+    <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+      <a href="/blog" className="transition-colors hover:text-foreground">
+        {t("blog")}
+      </a>
+      <a href="/templates" className="transition-colors hover:text-foreground">
+        {t("templates")}
+      </a>
+      <a href="/discover" className="transition-colors hover:text-foreground">
+        {t("discover")}
+      </a>
+    </div>
+  );
+}
+
 function SupportEmail() {
   const { t } = useLanguage();
   return <p className="mt-1 text-xs text-muted-foreground/50">{t("supportEmail")}</p>;
@@ -89,17 +106,7 @@ function RootDocument({ children }: { readonly children: React.ReactNode }) {
             <GoogleOneTap />
             {children}
             <footer className="mt-auto border-t py-6 text-center">
-              <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-                <a href="/blog" className="transition-colors hover:text-foreground">
-                  Blog
-                </a>
-                <a href="/templates" className="transition-colors hover:text-foreground">
-                  Templates
-                </a>
-                <a href="/discover" className="transition-colors hover:text-foreground">
-                  Discover
-                </a>
-              </div>
+              <FooterLinks />
               <p className="mt-2 text-xs text-muted-foreground/50">
                 &copy; {new Date().getFullYear()} BatchlyAI
               </p>

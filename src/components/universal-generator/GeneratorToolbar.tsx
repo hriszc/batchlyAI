@@ -89,23 +89,22 @@ export function GeneratorToolbar({
             </p>
             {isImage && (
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">
-                  Aspect ratio: use the ratio buttons in the toolbar.
-                </p>
+                <p className="text-xs text-muted-foreground">{t("aspectRatioSetting")}</p>
               </div>
             )}
             {isText && (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  Output length: {TEXT_LENGTH_TOKENS[textLength]} tokens.
+                  {t("outputLengthSetting", { tokens: String(TEXT_LENGTH_TOKENS[textLength]) })}
                 </p>
               </div>
             )}
             {isVideo && (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  Duration: {VIDEO_DURATION_SECONDS[videoDuration]}s. Aspect ratio: use the ratio
-                  buttons.
+                  {t("durationSetting", {
+                    duration: String(VIDEO_DURATION_SECONDS[videoDuration]),
+                  })}
                 </p>
               </div>
             )}
@@ -113,7 +112,7 @@ export function GeneratorToolbar({
               onClick={() => setShowSettings(false)}
               className="mt-2 w-full rounded bg-muted py-1 text-xs"
             >
-              Close
+              {t("settingsClose")}
             </button>
           </div>
         )}
@@ -172,7 +171,7 @@ export function GeneratorToolbar({
       {/* Text: output length selector */}
       {isText && (
         <div className="flex items-center gap-1">
-          <span className="whitespace-nowrap text-muted-foreground">Length：</span>
+          <span className="whitespace-nowrap text-muted-foreground">{t("length")}：</span>
           {TEXT_LENGTHS.map((len) => (
             <button
               key={len.value}
@@ -193,7 +192,7 @@ export function GeneratorToolbar({
       {/* Video: duration selector */}
       {isVideo && (
         <div className="flex items-center gap-1">
-          <span className="whitespace-nowrap text-muted-foreground">Duration：</span>
+          <span className="whitespace-nowrap text-muted-foreground">{t("duration")}：</span>
           {VIDEO_DURATIONS.map((dur) => (
             <button
               key={dur.value}

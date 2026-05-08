@@ -125,21 +125,19 @@ function SignupForm() {
           <p className="text-sm text-green-600">{t("verifyEmailSent")}</p>
         ) : (
           <>
-            <p className="text-xs text-muted-foreground/70">
-              Didn't receive the email? Check your spam folder.
-            </p>
+            <p className="text-xs text-muted-foreground/70">{t("spamFolderTip")}</p>
             <button
               onClick={handleResend}
               disabled={resending}
               className="inline-flex items-center gap-1.5 rounded-lg border bg-muted/30 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
             >
               {resending && <LoaderCircleIcon className="size-4 animate-spin" />}
-              Resend verification email
+              {t("resendVerification")}
             </button>
           </>
         )}
         <Link to="/login" className="text-sm text-[#0071e3] hover:underline">
-          Back to login
+          {t("backToLogin")}
         </Link>
       </div>
     );

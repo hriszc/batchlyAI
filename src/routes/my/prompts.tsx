@@ -85,7 +85,7 @@ function PromptsPage() {
         to="/"
         className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
-        <ArrowLeftIcon className="size-4" /> Back to Generator
+        <ArrowLeftIcon className="size-4" /> {t("backToGenerator")}
       </Link>
       <h1 className="mb-6 text-2xl font-semibold text-foreground">{t("myPrompts")}</h1>
 
@@ -94,7 +94,7 @@ function PromptsPage() {
           <SearchIcon className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search..."
+            placeholder={t("searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded-lg border bg-muted/30 py-2 pr-3 pl-9 text-sm focus:outline-none"
@@ -103,7 +103,7 @@ function PromptsPage() {
       </div>
 
       {loading ? (
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{t("loading")}</p>
       ) : prompts.length === 0 ? (
         <p className="text-muted-foreground">
           No saved prompts. Use the Save button in the generator.
