@@ -36,12 +36,16 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   // Start with "en" for SSR hydration consistency
   const [language, setLanguageState] = useState<Language>("en");
 
-  // Sync to stored preference after hydration (SSR-safe)
+  // Sync to stored/browser preference after hydration (SSR-safe)
   useEffect(() => {
     const stored = getStoredLanguage();
     if (stored !== "en") {
+      // User explicitly chose a language — respect it
       setLanguageState(stored);
+    } else if (typeof localStorage !== "undefined" && localStorage.getItem("language") === "en") {
+      // User explicitly chose English — keep it
     } else {
+      // No stored preference — use browser detection
       const detected = detectBrowserLanguage();
       if (detected !== "en") setLanguageState(detected);
     }
