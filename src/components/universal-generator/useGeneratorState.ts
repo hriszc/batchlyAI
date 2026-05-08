@@ -194,26 +194,30 @@ export function useGeneratorState() {
             ];
           }
         }),
-      ).then(async (resultGroups) => {
-        let results = resultGroups.flat();
+      )
+        .then(async (resultGroups) => {
+          let results = resultGroups.flat();
 
-        // Unified polling: merge all prediction IDs into a single poll loop
-        if (asyncPendings.length > 0) {
-          const polled = (await unifiedPoll(asyncPendings)) as typeof results;
-          results = [...results, ...polled];
-        }
+          // Unified polling: merge all prediction IDs into a single poll loop
+          if (asyncPendings.length > 0) {
+            const polled = (await unifiedPoll(asyncPendings)) as typeof results;
+            results = [...results, ...polled];
+          }
 
-        if (isWatermarked) {
-          results = results.map((r) => ({ ...r, watermark: true }));
-        }
-        dispatch({ type: "FINISH_GENERATING", payload: results });
-        if (globalError) {
-          dispatch({ type: "SET_ERROR", payload: globalError });
-        }
-        if (creditsRemaining != null) {
-          dispatch({ type: "SET_CREDITS_REMAINING", payload: creditsRemaining });
-        }
-      });
+          if (isWatermarked) {
+            results = results.map((r) => ({ ...r, watermark: true }));
+          }
+          dispatch({ type: "FINISH_GENERATING", payload: results });
+          if (globalError) {
+            dispatch({ type: "SET_ERROR", payload: globalError });
+          }
+          if (creditsRemaining != null) {
+            dispatch({ type: "SET_CREDITS_REMAINING", payload: creditsRemaining });
+          }
+        })
+        .catch((err) => {
+          dispatch({ type: "SET_ERROR", payload: String(err) });
+        });
     } else {
       // Text generation via DeepSeek
       void Promise.all(
@@ -275,12 +279,16 @@ export function useGeneratorState() {
             ];
           }
         }),
-      ).then((resultGroups) => {
-        dispatch({
-          type: "FINISH_GENERATING",
-          payload: resultGroups.flat(),
+      )
+        .then((resultGroups) => {
+          dispatch({
+            type: "FINISH_GENERATING",
+            payload: resultGroups.flat(),
+          });
+        })
+        .catch((err) => {
+          dispatch({ type: "SET_ERROR", payload: String(err) });
         });
-      });
     }
   }, []);
 

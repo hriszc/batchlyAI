@@ -73,7 +73,7 @@ export function GoogleOneTap() {
 
             if (resp.ok) {
               // Reload to refresh session state
-              router.invalidate();
+              void router.invalidate();
             }
           } catch {
             // Silently fail — user can try again

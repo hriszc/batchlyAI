@@ -38,6 +38,7 @@ const themeScript = `!function(){try{var t=localStorage.getItem("theme");if(t!==
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   head: () => ({
+    htmlAttrs: { lang: "en" },
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
@@ -77,7 +78,7 @@ function SupportEmail() {
 
 function RootDocument({ children }: { readonly children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" data-lang="en">
       <head>
         <HeadContent />
       </head>

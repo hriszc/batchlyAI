@@ -1,6 +1,6 @@
 import { SiGithub, SiGoogle } from "@icons-pack/react-simple-icons";
-import { useMutation } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { LoaderCircleIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth/auth-client";
+import { authQueryOptions } from "@/lib/auth/queries";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { createPageMeta } from "@/lib/seo/meta";
 
@@ -32,6 +33,8 @@ export const Route = createFileRoute("/_guest/login")({
 
 function LoginForm() {
   const { redirectUrl } = Route.useRouteContext();
+  const queryClient = useQueryClient();
+  const router = useRouter();
   const { t } = useLanguage();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -50,6 +53,8 @@ function LoginForm() {
         const err = (result as { error: { message?: string } }).error;
         throw new Error(err.message || "Sign in failed");
       }
+      queryClient.invalidateQueries({ queryKey: authQueryOptions().queryKey });
+      void router.invalidate();
       return result;
     },
     onError: (error) => {

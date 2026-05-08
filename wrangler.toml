@@ -23,8 +23,19 @@ bucket_name = "batchlyai-uploads"
 # Secrets: use `wrangler secret put <KEY>` to set each
 #   GRSAI_API_KEY
 #   REPLICATE_API_KEY
+#   DEEPSEEK_API_KEY
+#   GRS_WEBHOOK_SECRET
+#   STRIPE_SECRET_KEY
+#   STRIPE_WEBHOOK_SECRET
+#   GA4_API_SECRET
 #   R2_ENDPOINT
 #   R2_BUCKET
+
+# Migration: run `npx wrangler d1 migrations apply batchlyai-db` after schema changes
+[[d1_databases.migrations]]
+database_name = "batchlyai-db"
+migrations_dir = "./migrations"
+
 [observability]
 enabled = true
 head_sampling_rate = 0.1
