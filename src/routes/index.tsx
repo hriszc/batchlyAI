@@ -19,7 +19,14 @@ export const Route = createFileRoute("/")({
     htmlAttrs: { lang: "en" },
     meta: meta.meta,
     links: [...hreflangLinks("/"), { rel: "canonical", href: "https://batchlyai.com/" }],
-    scripts: meta.scripts,
+    scripts: [
+      // Blocking redirect: Chinese browsers → /cn before first paint
+      {
+        type: "text/javascript",
+        children: `!function(){if(window.location.pathname.startsWith("/cn"))return;try{var s=localStorage.getItem("language");if(s==="en")return;if(s==="zh"){window.location.replace("/cn");return}}catch(e){}var l=(navigator.language||"").toLowerCase();if(l.startsWith("zh")){window.location.replace("/cn")}}()`,
+      },
+      ...meta.scripts,
+    ],
   }),
   component: () => <HomePage />,
 });

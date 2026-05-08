@@ -32,6 +32,10 @@ const rootSeo = createPageMeta({
   jsonLd: softwareAppLd(),
 });
 
+// Blocking inline script: prevents theme flash by setting the theme class
+// before the browser paints the first frame.
+const themeScript = `!function(){try{var t=localStorage.getItem("theme");if(t!=='light'&&t!=='dark'&&t!=='system'){t='system'}var d=matchMedia('(prefers-color-scheme: dark)').matches;var r=t==='system'?(d?'dark':'light'):t;var e=document.documentElement;e.classList.add(r);e.style.colorScheme=r;e.dataset.theme=r}catch(e){}}()`;
+
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   head: () => ({
     meta: [
@@ -44,6 +48,8 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       { rel: "stylesheet", href: appCss },
     ],
     scripts: [
+      // Theme script must be blocking and before any other scripts to prevent FOUC
+      { type: "text/javascript", children: themeScript },
       ...rootSeo.scripts,
       ...(env.VITE_GA4_MEASUREMENT_ID
         ? [
@@ -69,7 +75,7 @@ function SupportEmail() {
 
 function RootDocument({ children }: { readonly children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en">
       <head>
         <HeadContent />
       </head>
