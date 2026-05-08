@@ -57,7 +57,7 @@ function SharedBatchPage() {
         </p>
         <a
           href="/"
-          className="mt-6 inline-flex h-9 items-center justify-center rounded-full bg-[#0071e3] px-5 text-sm font-medium text-white"
+          className="mt-6 inline-flex h-9 items-center justify-center rounded-full bg-accent-blue px-5 text-sm font-medium text-white"
         >
           Try BatchlyAI
         </a>
@@ -96,7 +96,7 @@ function SharedBatchPage() {
           </a>
           <a
             href="/"
-            className="inline-flex h-9 items-center justify-center gap-2 rounded-full bg-[#0071e3] px-5 text-sm font-medium text-white transition-colors hover:bg-[#0077ed]"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-full bg-accent-blue px-5 text-sm font-medium text-white transition-colors hover:bg-accent-blue-hover"
           >
             Try in BatchlyAI
           </a>

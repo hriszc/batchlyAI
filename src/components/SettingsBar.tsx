@@ -125,7 +125,7 @@ export function SettingsBar() {
             <button
               onClick={() => setShowPurchase(!showPurchase)}
               title={t("buyCreditsTitle")}
-              className="inline-flex h-8 items-center justify-center gap-1 rounded-full bg-[#0071e3]/15 px-2.5 text-xs font-medium text-[#0071e3] backdrop-blur-sm transition-colors hover:bg-[#0071e3]/25"
+              className="inline-flex h-8 items-center justify-center gap-1 rounded-full bg-accent-blue/15 px-2.5 text-xs font-medium text-accent-blue backdrop-blur-sm transition-colors hover:bg-accent-blue/25"
             >
               <PlusIcon className="size-3" />
               {t("buyCredits")}
@@ -172,7 +172,7 @@ export function SettingsBar() {
           )}
 
           <span className="inline-flex h-8 items-center justify-center gap-1 rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground backdrop-blur-sm">
-            <span className="font-semibold text-[#0071e3]">
+            <span className="font-semibold text-accent-blue">
               {((session.user as Record<string, unknown>).credits as number) ?? 0}
             </span>
             {t("credits")}
@@ -187,7 +187,7 @@ export function SettingsBar() {
               <ChevronDownIcon className="size-3" />
             </button>
             {showUserMenu && (
-              <div className="absolute top-full right-0 z-10 mt-1 w-44 rounded-xl border bg-popover shadow-lg">
+              <div className="popover-enter absolute top-full right-0 z-10 mt-1 w-44 rounded-xl border bg-popover shadow-lg">
                 <a href="/my/generations" className="block px-3 py-2 text-xs hover:bg-muted">
                   {t("myGenerations")}
                 </a>

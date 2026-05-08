@@ -65,7 +65,7 @@ function TemplatesPage() {
             }}
             className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
               category === c.id
-                ? "bg-[#0071e3] text-white"
+                ? "bg-accent-blue text-white"
                 : "bg-muted text-muted-foreground hover:bg-muted/80"
             }`}
           >
@@ -85,7 +85,7 @@ function TemplatesPage() {
             onKeyDown={(e) => {
               if (e.key === "Enter") fetchTemplates(category, search);
             }}
-            className="w-full rounded-lg border bg-background py-2 pr-4 pl-9 text-sm placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-[#0071e3] focus:outline-none"
+            className="w-full rounded-lg border bg-background py-2 pr-4 pl-9 text-sm placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-accent-blue focus:outline-none"
           />
         </div>
       </div>
@@ -108,7 +108,7 @@ function TemplatesPage() {
               )}
             </div>
             <div className="p-4">
-              <h3 className="font-medium group-hover:text-[#0071e3]">{t.name}</h3>
+              <h3 className="font-medium group-hover:text-accent-blue">{t.name}</h3>
               <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{t.description}</p>
               <div className="mt-2 flex items-center gap-2">
                 <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">

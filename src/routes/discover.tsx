@@ -64,7 +64,7 @@ function DiscoverPage() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`rounded-lg px-3 py-1.5 text-sm whitespace-nowrap ${activeTab === tab ? "bg-[#0071e3] text-white" : "bg-muted/30 text-muted-foreground hover:bg-muted"}`}
+            className={`rounded-lg px-3 py-1.5 text-sm whitespace-nowrap ${activeTab === tab ? "bg-accent-blue text-white" : "bg-muted/30 text-muted-foreground hover:bg-muted"}`}
           >
             {t(tab as keyof typeof t extends infer K ? K : never) || tab}
           </button>

@@ -80,7 +80,7 @@ function WorkDetailPage() {
     return (
       <main className="mx-auto max-w-[980px] px-4 py-16 text-center">
         <p className="text-muted-foreground">Work not found</p>
-        <a href="/discover" className="mt-2 inline-block text-[#0071e3]">
+        <a href="/discover" className="mt-2 inline-block text-accent-blue">
           Discover more
         </a>
       </main>
@@ -138,7 +138,7 @@ function WorkDetailPage() {
         </button>
         <button
           onClick={handleRemix}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-muted/30 px-3 py-2 text-sm text-muted-foreground hover:text-[#0071e3]"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-muted/30 px-3 py-2 text-sm text-muted-foreground hover:text-accent-blue"
         >
           <Repeat2Icon className="size-4" /> {t("remix")} {data.remixCount}
         </button>

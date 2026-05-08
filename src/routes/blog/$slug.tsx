@@ -81,7 +81,7 @@ function BlogPostPage() {
     return (
       <main className="mx-auto max-w-[720px] px-4 py-16 text-center">
         <h1 className="text-2xl font-semibold">Post not found</h1>
-        <Link to="/blog" className="mt-4 inline-block text-[#0071e3] hover:underline">
+        <Link to="/blog" className="mt-4 inline-block text-accent-blue hover:underline">
           Back to blog
         </Link>
       </main>
@@ -153,7 +153,7 @@ function BlogPostPage() {
       </article>
 
       <div className="mt-12 border-t pt-6">
-        <Link to="/blog" className="text-sm text-[#0071e3] hover:underline">
+        <Link to="/blog" className="text-sm text-accent-blue hover:underline">
           ← Back to blog
         </Link>
       </div>
