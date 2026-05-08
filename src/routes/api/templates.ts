@@ -121,7 +121,8 @@ export const Route = createFileRoute("/api/templates")({
         const baseSlug = slugify(body.name);
         let slug = baseSlug;
         let attempt = 0;
-        while (true) {
+        const maxAttempts = 20;
+        while (attempt <= maxAttempts) {
           const [existing] = await db
             .select({ id: templateTable.id })
             .from(templateTable)
@@ -129,6 +130,9 @@ export const Route = createFileRoute("/api/templates")({
           if (!existing) break;
           attempt++;
           slug = `${baseSlug}-${attempt}`;
+        }
+        if (attempt > maxAttempts) {
+          return jsonResponse({ error: "Could not generate unique slug" }, 409);
         }
 
         const id = `tmpl_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;

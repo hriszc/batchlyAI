@@ -142,9 +142,6 @@ export function GeneratorCard({ state, actions, onRequireAuth }: GeneratorCardPr
             </div>
           </div>
         )}
-        {expand.expandBlocks.length === 0 && state.promptTemplate && (
-          <div className="mt-1 text-xs text-muted-foreground/40">{t("promptHint")}</div>
-        )}
       </div>
 
       {/* Error banner */}

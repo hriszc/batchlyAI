@@ -38,9 +38,8 @@ async function fetchWithFallback(
     console.warn(
       `[ai] Gateway ${provider} returned ${resp.status}, falling back to direct. Body: ${errBody.slice(0, 500)}`,
     );
-    // Clone init with fresh body since we consumed the response
-    const fallbackInit = { ...init, body: init.body };
-    return fetch(directUrl, fallbackInit);
+    // Request body is always a JSON string, safe to reuse
+    return fetch(directUrl, init);
   } catch (err) {
     console.warn(`[ai] Gateway ${provider} unreachable (${err}), falling back to direct.`);
   }
