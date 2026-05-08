@@ -5,7 +5,7 @@ import {
   Undo2Icon,
   ShoppingCartIcon,
 } from "lucide-react";
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -16,7 +16,6 @@ import { MODELS } from "./models";
 import type { GeneratorState, GroupId, TextLength, VideoDuration } from "./types";
 import { useExpandVariables } from "./useExpandVariables";
 import { computePromptCombinations } from "./utils";
-import { VariableGroupCard } from "./VariableGroupCard";
 
 interface GeneratorCardProps {
   state: GeneratorState;
@@ -39,7 +38,6 @@ interface GeneratorCardProps {
 }
 
 export function GeneratorCard({ state, actions, onRequireAuth }: GeneratorCardProps) {
-  const [showVariables, setShowVariables] = useState(false);
   const [buyLoading, setBuyLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useLanguage();
@@ -72,19 +70,6 @@ export function GeneratorCard({ state, actions, onRequireAuth }: GeneratorCardPr
   const currentModel = MODELS.find((m) => m.id === state.model);
   const creditEstimate = comboCount * state.quantity * (currentModel?.creditCost ?? 0);
   const hasGroups = state.variableGroups.length > 0;
-
-  // Auto-expand variable editor on first use
-  const VARIABLE_EDITOR_SHOWN_KEY = "batchlyai_variable_editor_shown";
-  useEffect(() => {
-    if (hasGroups && !showVariables) {
-      try {
-        if (!localStorage.getItem(VARIABLE_EDITOR_SHOWN_KEY)) {
-          setShowVariables(true);
-          localStorage.setItem(VARIABLE_EDITOR_SHOWN_KEY, "1");
-        }
-      } catch {}
-    }
-  }, [hasGroups]);
 
   const disabledReason = state.isGenerating
     ? undefined
@@ -250,8 +235,6 @@ export function GeneratorCard({ state, actions, onRequireAuth }: GeneratorCardPr
 
       {/* Bottom toolbar */}
       <GeneratorToolbar
-        showVariables={showVariables}
-        onToggleVariables={() => setShowVariables(!showVariables)}
         currentModel={state.model}
         onSelectModel={actions.setModel}
         aspectRatio={state.aspectRatio}
@@ -268,22 +251,6 @@ export function GeneratorCard({ state, actions, onRequireAuth }: GeneratorCardPr
         creditEstimate={creditEstimate}
         creditsRemaining={state.creditsRemaining}
       />
-
-      {/* Collapsible variable groups editor */}
-      {showVariables && hasGroups && (
-        <div className="space-y-3 border-t bg-muted/10 px-4 py-3">
-          {state.variableGroups.map((group, idx) => (
-            <VariableGroupCard
-              key={group.id}
-              group={group}
-              index={idx}
-              onAddValue={() => actions.addValue(group.id)}
-              onUpdateValue={(i, v) => actions.updateValue(group.id, i, v)}
-              onRemoveValue={(i) => actions.removeValue(group.id, i)}
-            />
-          ))}
-        </div>
-      )}
     </div>
   );
 }

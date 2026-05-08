@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 
@@ -269,21 +269,6 @@ describe("GeneratorCard", () => {
     const genState: GeneratorState = { ...baseState, isGenerating: true };
     renderWithProviders(<GeneratorCard state={genState} actions={mockActions} />);
     expect(screen.getByText("Generating...")).toBeInTheDocument();
-  });
-
-  // --- Auto-expand variable editor on first use (prompt hint removed) ---
-  it("auto-expands variable editor on first variable detection", async () => {
-    localStorage.removeItem("batchlyai_variable_editor_shown");
-    const stateWithVars: GeneratorState = {
-      ...baseState,
-      promptTemplate: "{{cat, dog}}",
-      variableGroups: [{ id: "var_0", values: ["cat", "dog"] }],
-    };
-    renderWithProviders(<GeneratorCard state={stateWithVars} actions={mockActions} />);
-    // Variable editor opens — no longer shows "Detected" message
-    await waitFor(() => {
-      expect(screen.queryByText(/Detected/)).not.toBeInTheDocument();
-    });
   });
 
   // --- Removed UI hints ---

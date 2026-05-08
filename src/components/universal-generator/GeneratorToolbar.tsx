@@ -24,8 +24,6 @@ const VIDEO_DURATIONS: { value: VideoDuration; label: string; labelZh: string }[
 ];
 
 interface GeneratorToolbarProps {
-  showVariables: boolean;
-  onToggleVariables: () => void;
   currentModel: string;
   onSelectModel: (modelId: string) => void;
   aspectRatio: string;
@@ -44,8 +42,6 @@ interface GeneratorToolbarProps {
 }
 
 export function GeneratorToolbar({
-  showVariables,
-  onToggleVariables,
   currentModel,
   onSelectModel,
   aspectRatio,
