@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { SearchIcon } from "lucide-react";
 import { useState } from "react";
 
+import { useLanguage } from "@/lib/i18n/LanguageContext";
+
 export const Route = createFileRoute("/templates/")({
   head: () => ({
     meta: [
@@ -25,6 +27,7 @@ const CATEGORIES = [
 ];
 
 function TemplatesPage() {
+  const { t } = useLanguage();
   const [templates, setTemplates] = useState<Array<{
     slug: string;
     name: string;
@@ -79,7 +82,7 @@ function TemplatesPage() {
           <SearchIcon className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground/50" />
           <input
             type="text"
-            placeholder="Search templates..."
+            placeholder={t("searchTemplatesPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => {

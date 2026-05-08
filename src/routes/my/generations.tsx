@@ -71,12 +71,12 @@ function GenerationsPage() {
         className="mb-6 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeftIcon className="size-4" />
-        Back to Generator
+        {t("backToGenerator")}
       </Link>
       <h1 className="mb-6 text-2xl font-semibold text-foreground">{t("myGenerations")}</h1>
 
       {loading ? (
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{t("loading")}</p>
       ) : generations.length === 0 ? (
         <p className="text-muted-foreground">{t("noGenerations")}</p>
       ) : (

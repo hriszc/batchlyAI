@@ -115,7 +115,7 @@ export function GeneratorCard({ state, actions, onRequireAuth }: GeneratorCardPr
                   onClick={expand.undoExpand}
                   disabled={expand.isExpanding}
                   className="flex h-7 items-center gap-1 rounded-lg px-2 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                  title="Undo"
+                  title={t("undo")}
                 >
                   <Undo2Icon className="size-3" />
                   Undo
