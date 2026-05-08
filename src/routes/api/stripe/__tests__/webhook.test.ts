@@ -202,4 +202,31 @@ describe("handleWebhook", () => {
       .get();
     expect(row?.credits).toBe(10);
   });
+
+  it("handles null amount_total with default 1000 credits", async () => {
+    seedUser(testDb, { id: "test-user-001", credits: 0 });
+    mockConstructEventAsync.mockResolvedValue({
+      type: "checkout.session.completed",
+      data: {
+        object: { id: "cs_null_amt", metadata: { userId: "test-user-001" }, customer: null },
+      },
+    });
+    const resp = await handleWebhook(makeRequest({ signature: "sig" }));
+    expect(resp.status).toBe(200);
+    const row = testDb
+      .select({ credits: userTable.credits })
+      .from(userTable)
+      .where(eq(userTable.id, "test-user-001"))
+      .get();
+    expect(row?.credits).toBe(1000);
+  });
+
+  it("ignores non-checkout event types", async () => {
+    mockConstructEventAsync.mockResolvedValue({
+      type: "payment_intent.created",
+      data: { object: {} },
+    });
+    const resp = await handleWebhook(makeRequest({ signature: "sig" }));
+    expect(resp.status).toBe(200);
+  });
 });
