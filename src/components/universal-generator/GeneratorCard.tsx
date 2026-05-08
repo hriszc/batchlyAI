@@ -144,9 +144,6 @@ export function GeneratorCard({ state, actions, onRequireAuth }: GeneratorCardPr
             </div>
           </div>
         )}
-        {expand.expandBlocks.length === 0 && state.promptTemplate && (
-          <div className="mt-1 text-xs text-muted-foreground/40">{t("promptHint")}</div>
-        )}
         {!state.promptTemplate && (
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <span className="text-xs text-muted-foreground/50">{t("tryExample")}</span>
@@ -287,9 +284,6 @@ export function GeneratorCard({ state, actions, onRequireAuth }: GeneratorCardPr
       {/* Collapsible variable groups editor */}
       {showVariables && hasGroups && (
         <div className="space-y-3 border-t bg-muted/10 px-4 py-3">
-          <p className="text-xs text-muted-foreground">
-            {t("detectedGroups", { count: state.variableGroups.length })}
-          </p>
           {state.variableGroups.map((group, idx) => (
             <VariableGroupCard
               key={group.id}

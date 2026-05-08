@@ -286,7 +286,7 @@ describe("GeneratorCard", () => {
     expect(screen.getByText("Generating...")).toBeInTheDocument();
   });
 
-  // --- Auto-expand variable editor on first use ---
+  // --- Auto-expand variable editor on first use (prompt hint removed) ---
   it("auto-expands variable editor on first variable detection", async () => {
     localStorage.removeItem("batchlyai_variable_editor_shown");
     const stateWithVars: GeneratorState = {
@@ -295,9 +295,30 @@ describe("GeneratorCard", () => {
       variableGroups: [{ id: "var_0", values: ["cat", "dog"] }],
     };
     renderWithProviders(<GeneratorCard state={stateWithVars} actions={mockActions} />);
-    // Variable editor should be visible after effect runs
+    // Variable editor opens — no longer shows "Detected" message
     await waitFor(() => {
-      expect(screen.getByText(/Detected/)).toBeInTheDocument();
+      expect(screen.queryByText(/Detected/)).not.toBeInTheDocument();
     });
+  });
+
+  // --- Removed UI hints ---
+  it("does not render prompt hint text", () => {
+    const stateWithPrompt: GeneratorState = {
+      ...baseState,
+      promptTemplate: "a cat",
+    };
+    renderWithProviders(<GeneratorCard state={stateWithPrompt} actions={mockActions} />);
+    expect(screen.queryByText(/expand variables|自动展开/i)).not.toBeInTheDocument();
+  });
+
+  it("does not render detected groups message", () => {
+    const stateWithVars: GeneratorState = {
+      ...baseState,
+      promptTemplate: "{{cat, dog}}",
+      variableGroups: [{ id: "var_0", values: ["cat", "dog"] }],
+    };
+    renderWithProviders(<GeneratorCard state={stateWithVars} actions={mockActions} />);
+    // Variable groups editor exists but no "Detected N groups" header
+    expect(screen.queryByText(/Detected/)).not.toBeInTheDocument();
   });
 });
