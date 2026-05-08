@@ -41,4 +41,22 @@ describe("handleGetGenerations", () => {
     expect(r.status).toBe(200);
     expect(((await r.json()) as any).generations).toEqual([]);
   });
+
+  it("respects limit parameter", async () => {
+    seedUser(db, { id: "u1" });
+    const r = await handleGetGenerations({
+      url: "https://x.com/api/generations?limit=5",
+      headers: new Headers(),
+    } as any);
+    expect(r.status).toBe(200);
+  });
+
+  it("respects offset parameter", async () => {
+    seedUser(db, { id: "u1" });
+    const r = await handleGetGenerations({
+      url: "https://x.com/api/generations?offset=10",
+      headers: new Headers(),
+    } as any);
+    expect(r.status).toBe(200);
+  });
 });
