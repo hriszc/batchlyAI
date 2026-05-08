@@ -99,21 +99,43 @@ export const Route = createFileRoute("/api/auth/$")({
                   };
                   const user = json.user;
                   if (user?.email) {
-                    // Send verification email directly — BA's internal callback
-                    // doesn't fire reliably with direct API calls.
-                    // Replicate BA's createEmailVerificationToken logic inline.
-                    const { SignJWT } = await import("jose");
-                    const token = await new SignJWT({
-                      email: user.email.toLowerCase(),
-                    })
-                      .setProtectedHeader({ alg: "HS256" })
-                      .setIssuedAt()
-                      .setExpirationTime(
-                        Math.floor(Date.now() / 1000) + 3600,
-                      )
-                      .sign(new TextEncoder().encode(env.BETTER_AUTH_SECRET));
+                    // BA's internal callback doesn't fire with direct API calls.
+                    // Generate verification JWT with Web Crypto and send email ourselves.
+                    const encoder = new TextEncoder();
+                    const secret = encoder.encode(env.BETTER_AUTH_SECRET);
+                    const header = { alg: "HS256", typ: "JWT" };
+                    const now = Math.floor(Date.now() / 1000);
+                    const payload = { email: user.email.toLowerCase(), iat: now, exp: now + 3600 };
+                    const headerB64 = btoa(JSON.stringify(header))
+                      .replace(/=/g, "")
+                      .replace(/\+/g, "-")
+                      .replace(/\//g, "_");
+                    const payloadB64 = btoa(JSON.stringify(payload))
+                      .replace(/=/g, "")
+                      .replace(/\+/g, "-")
+                      .replace(/\//g, "_");
+                    const toSign = `${headerB64}.${payloadB64}`;
+                    const key = await crypto.subtle.importKey(
+                      "raw",
+                      secret,
+                      { name: "HMAC", hash: "SHA-256" },
+                      false,
+                      ["sign"],
+                    );
+                    const sig = await crypto.subtle.sign(
+                      "HMAC",
+                      key,
+                      encoder.encode(toSign),
+                    );
+                    const sigB64 = btoa(
+                      String.fromCharCode(...new Uint8Array(sig)),
+                    )
+                      .replace(/=/g, "")
+                      .replace(/\+/g, "-")
+                      .replace(/\//g, "_");
+                    const token = `${toSign}.${sigB64}`;
                     const verifyUrl = `${env.VITE_BASE_URL}/verify-email?token=${token}&callbackURL=%2F`;
-                    await sendEmail({
+                    sendEmail({
                       to: user.email,
                       subject: "Verify your email — BatchlyAI",
                       html: [
@@ -123,7 +145,9 @@ export const Route = createFileRoute("/api/auth/$")({
                         "<p>This link expires in 1 hour.</p>",
                         "<p>If you did not create this account, please ignore this email.</p>",
                       ].join(""),
-                    }).catch((err) => console.error("[auth] Failed to send verification email:", err));
+                    }).catch((err) =>
+                      console.error("[auth] sendEmail failed:", err),
+                    );
                   }
                   await processReferralAfterSignup(request, json);
 
