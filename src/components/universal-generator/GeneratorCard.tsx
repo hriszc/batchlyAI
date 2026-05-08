@@ -125,7 +125,7 @@ export function GeneratorCard({ state, actions, onRequireAuth }: GeneratorCardPr
               )}
               <button
                 type="button"
-                onClick={() => onRequireAuth ? onRequireAuth(expand.doExpand) : expand.doExpand()}
+                onClick={() => (onRequireAuth ? onRequireAuth(expand.doExpand) : expand.doExpand())}
                 disabled={expand.isExpanding || expand.expandBlocks.length === 0}
                 className="inline-flex h-7 items-center justify-center gap-1.5 rounded-lg bg-muted/50 px-3 text-xs font-medium text-foreground transition-all hover:bg-muted disabled:opacity-40"
               >
@@ -252,7 +252,9 @@ export function GeneratorCard({ state, actions, onRequireAuth }: GeneratorCardPr
         </div>
 
         <button
-          onClick={() => onRequireAuth ? onRequireAuth(actions.startGenerating) : actions.startGenerating()}
+          onClick={() =>
+            onRequireAuth ? onRequireAuth(actions.startGenerating) : actions.startGenerating()
+          }
           disabled={comboCount === 0 || comboCount > 500 || state.isGenerating}
           title={disabledReason}
           className="inline-flex h-9 items-center justify-center gap-2 rounded-[980px] bg-accent-blue px-5 py-2 text-[17px] leading-[1.0] font-normal whitespace-nowrap text-white transition-all hover:bg-accent-blue-hover focus-visible:ring-2 focus-visible:ring-accent-blue focus-visible:ring-offset-2 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"

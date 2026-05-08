@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { LoginCard } from "@/components/LoginCard";
 import { GeneratorCard } from "@/components/universal-generator/GeneratorCard";
 import { ResultsGrid } from "@/components/universal-generator/ResultsGrid";
 import { ShareScreenshot } from "@/components/universal-generator/ShareScreenshot";
 import { useGeneratorState } from "@/components/universal-generator/useGeneratorState";
 import { computePromptCombinations } from "@/components/universal-generator/utils";
-import { LoginCard } from "@/components/LoginCard";
 import { useAuthGate } from "@/components/useAuthGate";
 import { authClient } from "@/lib/auth/auth-client";
 import { useLanguage } from "@/lib/i18n/LanguageContext";

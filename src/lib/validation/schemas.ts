@@ -20,8 +20,6 @@ export const generateRequestSchema = z.object({
   variableGroups: z.array(z.object({ id: z.string(), values: z.array(z.string()) })).optional(),
   maxTokens: z.number().int().min(64).max(8192).optional(),
   duration: z.number().int().min(1).max(60).optional(),
-  promptTemplate: z.string().max(5000).optional(),
-  variableGroups: z.array(z.unknown()).optional(),
 });
 
 export type GenerateRequest = z.infer<typeof generateRequestSchema>;
