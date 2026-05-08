@@ -67,8 +67,10 @@ function SignupForm() {
         throw new Error(err.message || "Sign up failed");
       }
       queryClient.removeQueries({ queryKey: authQueryOptions().queryKey });
-      toast.success(t("verifyEmailDesc"));
-      void navigate({ to: redirectUrl });
+      void navigate({
+        to: "/verify-email",
+        search: { email: data.email },
+      });
       return result;
     },
     onError: (error) => {

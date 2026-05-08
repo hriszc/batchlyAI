@@ -106,4 +106,71 @@ test.describe("Auth E2E (with API mocks)", () => {
       await expect(page).toHaveURL(/signup/);
     }
   });
+
+  test("signup redirects to verify-email page", async ({ page }) => {
+    await page.goto("/signup");
+    // Fill signup form
+    await page.fill('input[name="name"]', "Test User");
+    await page.fill('input[type="email"]', "new@test.com");
+    await page.fill('input[id="password"]', "test123456");
+    await page.fill('input[id="confirm_password"]', "test123456");
+    // Submit
+    const btn = page
+      .locator("button")
+      .filter({ hasText: /sign up|注册/i })
+      .first();
+    await btn.click();
+    // Should redirect to verify-email
+    await expect(page).toHaveURL(/verify-email/, { timeout: 5000 });
+  });
+
+  test("verify-email page shows instructions and resend button", async ({ page }) => {
+    await page.goto("/verify-email?email=new@test.com");
+    // Should show verify email title
+    await expect(page.getByText(/verify your email/i)).toBeVisible();
+    // Should show the email
+    await expect(page.getByText("new@test.com")).toBeVisible();
+    // Should have resend button
+    const resendBtn = page.getByText(/resend/i);
+    await expect(resendBtn).toBeVisible();
+  });
+
+  test("verify-email resend button works", async ({ page }) => {
+    // Mock the send-verification-email endpoint
+    await page.route("**/api/auth/send-verification-email", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ success: true }),
+      });
+    });
+    await page.goto("/verify-email?email=new@test.com");
+    const resendBtn = page.getByText(/resend/i);
+    await resendBtn.click();
+    // Should show success message
+    await expect(page.getByText(/sent|发送/i)).toBeVisible({ timeout: 5000 });
+  });
+
+  test("login with unverified email shows error", async ({ page }) => {
+    // Override sign-in mock to return email-not-verified
+    await page.route("**/api/auth/sign-in/email", async (route) => {
+      await route.fulfill({
+        status: 403,
+        contentType: "application/json",
+        body: JSON.stringify({
+          error: { message: "Please verify your email address before signing in" },
+        }),
+      });
+    });
+    await page.goto("/login");
+    await page.fill('input[type="email"]', "unverified@test.com");
+    await page.fill('input[type="password"]', "test123456");
+    const btn = page
+      .locator("button")
+      .filter({ hasText: /sign in|login|登录/i })
+      .first();
+    await btn.click();
+    // Should show error about verification
+    await expect(page.getByText(/verify|verification/i)).toBeVisible({ timeout: 5000 });
+  });
 });
