@@ -57,3 +57,7 @@ const result = await apiMethod.call(auth.api, { body, headers, request, asRespon
 1. **`.env.production` 必须存在且包含 `VITE_BASE_URL=https://batchlyai.com`**。缺失会导致前端 JS 请求 `localhost:3000`，用户登录/注册报 `ERR_CONNECTION_REFUSED`。
 2. **`requireEmailVerification: true` 必须配合真实邮件发送**。若 `sendEmailVerification` 等回调是 `console.log` 占位，会导致新用户注册后永远无法验证邮箱，下次登录被 403。老用户的 `email_verified` 字段需批量改为 `true`。
 3. **smoke 测试不可依赖 `grep 'token'`**。注册 API 返回 `"token":null` 也会匹配，需用更严格的正则（如 `grep '"token":"'`）。
+
+## trustedOrigins 回归检查
+- `src/lib/auth/auth.ts` 的 `trustedOrigins` 必须包含 `"https://*.workers.dev"`，否则 Worker 预览版登录会报 403 Invalid origin。
+- 每次合并 PR 后检查 `grep trustedOrigins src/lib/auth/auth.ts` 确保该行未被覆盖。
