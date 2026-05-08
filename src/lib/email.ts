@@ -23,6 +23,7 @@ function getEmailBinding(): CfEmailBinding | undefined {
 
 export async function sendEmail({ to, subject, html }: SendEmailParams): Promise<boolean> {
   const emailBinding = getEmailBinding();
+  console.log(`[email] Sending to ${to}, subject: ${subject}, binding: ${!!emailBinding}`);
 
   if (emailBinding) {
     try {
@@ -32,10 +33,11 @@ export async function sendEmail({ to, subject, html }: SendEmailParams): Promise
         subject,
         html,
       });
+      console.log(`[email] CF Email sent successfully to ${to}`);
       return true;
     } catch (err) {
       console.error("[email] Cloudflare Email Service error:", err);
-      return false;
+      // Fall through to MailChannels
     }
   }
 

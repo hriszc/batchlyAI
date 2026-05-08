@@ -329,9 +329,14 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
             }),
           ),
         );
+        console.log(
+          `[generate] Stored ${predictionIds.length} KV entries for generation ${generationId}`,
+        );
+      } else {
+        console.warn("[generate] KV binding not available, R2 mirroring will not work");
       }
-    } catch {
-      /* non-fatal */
+    } catch (err) {
+      console.error("[generate] Failed to store KV entries:", err);
     }
 
     // Analytics (non-blocking)
