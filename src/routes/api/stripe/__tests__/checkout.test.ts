@@ -65,12 +65,12 @@ describe("handleCheckout", () => {
     expect(data.url).toBe("https://checkout.stripe.com/c/test");
   });
 
-  it("uses USD price with card payment", async () => {
+  it("uses card + alipay + wechat_pay payment methods", async () => {
     mockGetSession.mockResolvedValue({ user: { id: "u1", email: "u@test.com" } });
     await handleCheckout(makeRequest({ body: { quantity: 1 } }));
     expect(mockCheckoutCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        line_items: [{ price: "price_usd_test_001", quantity: 1 }],
+        payment_method_types: ["card", "alipay", "wechat_pay"],
       }),
     );
   });
