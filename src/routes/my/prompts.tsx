@@ -132,7 +132,7 @@ function PromptsPage() {
                         setEditing(null);
                         fetchPrompts();
                       }}
-                      className="rounded bg-[#0071e3] px-3 py-1 text-xs text-white"
+                      className="rounded bg-accent-blue px-3 py-1 text-xs text-white"
                     >
                       Save
                     </button>
@@ -189,7 +189,7 @@ function PromptsPage() {
                         return (JSON.parse(p.tags || "[]") as string[]).map((tag: string) => (
                           <span
                             key={tag}
-                            className="rounded bg-[#0071e3]/10 px-1.5 py-0.5 text-[10px] text-[#0071e3]"
+                            className="rounded bg-accent-blue/10 px-1.5 py-0.5 text-[10px] text-accent-blue"
                           >
                             {tag}
                           </span>
@@ -201,7 +201,7 @@ function PromptsPage() {
                   </div>
                   <button
                     onClick={() => handleLoad(p)}
-                    className="mt-3 w-full rounded-lg bg-[#0071e3] py-2 text-xs font-medium text-white hover:bg-[#0077ed]"
+                    className="mt-3 w-full rounded-lg bg-accent-blue py-2 text-xs font-medium text-white hover:bg-accent-blue-hover"
                   >
                     {t("loadPrompt")}
                   </button>

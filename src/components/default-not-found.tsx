@@ -8,9 +8,11 @@ export function DefaultNotFound() {
   const { t } = useLanguage();
 
   return (
-    <div className="space-y-2 p-2">
-      <p>{t("notFoundDesc")}</p>
-      <p className="flex flex-wrap items-center gap-2">
+    <div className="space-y-3 p-2 text-center">
+      <p className="text-6xl">404</p>
+      <p className="text-lg font-medium">{t("notFoundDesc")}</p>
+      <p className="text-sm text-muted-foreground">{t("notFoundFun")}</p>
+      <p className="flex flex-wrap items-center justify-center gap-2">
         <Button type="button" onClick={() => window.history.back()}>
           {t("goBack")}
         </Button>

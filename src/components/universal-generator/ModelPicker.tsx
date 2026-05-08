@@ -47,14 +47,14 @@ export function ModelPicker({ currentModel, onSelect }: ModelPickerProps) {
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-1 font-medium whitespace-nowrap text-foreground transition-colors hover:text-[#0071e3]"
+        className="flex items-center gap-1 font-medium whitespace-nowrap text-foreground transition-colors hover:text-accent-blue"
       >
         {label}
         <ChevronDownIcon className={`size-3 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 z-10 mt-2 w-64 overflow-hidden rounded-xl border bg-popover shadow-[rgba(0,0,0,0.22)_3px_5px_30px_0px]">
+        <div className="popover-enter absolute top-full left-0 z-10 mt-2 w-64 overflow-hidden rounded-xl border bg-popover shadow-[rgba(0,0,0,0.22)_3px_5px_30px_0px]">
           {MODEL_CATEGORIES.map((cat) => {
             const models = MODELS.filter((m) => m.category === cat.key);
             return (
@@ -71,7 +71,9 @@ export function ModelPicker({ currentModel, onSelect }: ModelPickerProps) {
                       setOpen(false);
                     }}
                     className={`flex w-full items-center justify-between px-3 py-2 text-sm transition-colors hover:bg-muted ${
-                      currentModel === m.id ? "bg-[#0071e3]/5 text-[#0071e3]" : "text-foreground"
+                      currentModel === m.id
+                        ? "bg-accent-blue/5 text-accent-blue"
+                        : "text-foreground"
                     }`}
                   >
                     <span>{m.label}</span>

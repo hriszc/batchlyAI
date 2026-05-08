@@ -36,7 +36,7 @@ function BlogIndexPage() {
               <span>·</span>
               <span>{post.author}</span>
             </div>
-            <h2 className="mt-2 text-lg font-semibold hover:text-[#0071e3]">{post.title}</h2>
+            <h2 className="mt-2 text-lg font-semibold hover:text-accent-blue">{post.title}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{post.description}</p>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {post.tags.map((tag) => (

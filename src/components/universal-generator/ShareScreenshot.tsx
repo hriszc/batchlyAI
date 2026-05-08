@@ -121,7 +121,7 @@ export function ShareScreenshot({
     return (
       <div className="fixed top-0 left-0 z-[9999] flex h-full w-full items-center justify-center bg-black/40 backdrop-blur-sm">
         <div className="rounded-2xl bg-card p-8 text-center shadow-lg">
-          <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-[#0071e3] border-t-transparent" />
+          <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-accent-blue border-t-transparent" />
           <p className="text-sm text-foreground">{t("shareLoading")}</p>
         </div>
       </div>

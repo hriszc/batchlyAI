@@ -76,7 +76,7 @@ export function GeneratorToolbar({
           type="button"
           onClick={() => setShowSettings(!showSettings)}
           className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-muted ${
-            showSettings ? "text-[#0071e3]" : "text-muted-foreground"
+            showSettings ? "text-accent-blue" : "text-muted-foreground"
           }`}
           title={t("advancedSettings")}
         >
@@ -135,7 +135,7 @@ export function GeneratorToolbar({
                 onClick={() => onSetAspectRatio(ratio)}
                 className={`rounded px-2 py-1 text-xs whitespace-nowrap transition-colors ${
                   aspectRatio === ratio
-                    ? "bg-[#0071e3]/10 font-medium text-[#0071e3]"
+                    ? "bg-accent-blue/10 font-medium text-accent-blue"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
               >
@@ -159,7 +159,7 @@ export function GeneratorToolbar({
               onClick={() => onSetQuantity(qty)}
               className={`h-6 w-6 rounded text-xs transition-colors ${
                 quantity === qty
-                  ? "bg-[#0071e3]/10 font-medium text-[#0071e3]"
+                  ? "bg-accent-blue/10 font-medium text-accent-blue"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
@@ -180,7 +180,7 @@ export function GeneratorToolbar({
               onClick={() => onSetTextLength(len.value)}
               className={`rounded px-2 py-1 text-xs whitespace-nowrap transition-colors ${
                 textLength === len.value
-                  ? "bg-[#0071e3]/10 font-medium text-[#0071e3]"
+                  ? "bg-accent-blue/10 font-medium text-accent-blue"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
@@ -201,7 +201,7 @@ export function GeneratorToolbar({
               onClick={() => onSetVideoDuration(dur.value)}
               className={`rounded px-2 py-1 text-xs whitespace-nowrap transition-colors ${
                 videoDuration === dur.value
-                  ? "bg-[#0071e3]/10 font-medium text-[#0071e3]"
+                  ? "bg-accent-blue/10 font-medium text-accent-blue"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >

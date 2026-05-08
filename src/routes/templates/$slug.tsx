@@ -65,7 +65,7 @@ function TemplateDetailPage() {
     return (
       <main className="mx-auto max-w-[980px] px-4 py-16 text-center">
         <h1 className="text-2xl font-semibold">Template not found</h1>
-        <a href="/templates" className="mt-4 inline-block text-[#0071e3] hover:underline">
+        <a href="/templates" className="mt-4 inline-block text-accent-blue hover:underline">
           Browse all templates
         </a>
       </main>
@@ -83,7 +83,7 @@ function TemplateDetailPage() {
     <main className="mx-auto max-w-[980px] px-4 py-8">
       <div className="flex flex-col gap-6 lg:flex-row">
         <div className="flex-1">
-          <span className="text-xs font-medium text-[#0071e3]">{data.category}</span>
+          <span className="text-xs font-medium text-accent-blue">{data.category}</span>
           <h1 className="mt-1 text-2xl font-semibold">{data.name}</h1>
           <p className="mt-2 text-muted-foreground">{data.description}</p>
 
@@ -103,7 +103,7 @@ function TemplateDetailPage() {
                     {group.values.map((v, j) => (
                       <span
                         key={j}
-                        className="rounded-full bg-[#0071e3]/10 px-2 py-0.5 text-xs font-medium text-[#0071e3]"
+                        className="rounded-full bg-accent-blue/10 px-2 py-0.5 text-xs font-medium text-accent-blue"
                       >
                         {v}
                       </span>
@@ -116,7 +116,7 @@ function TemplateDetailPage() {
 
           <button
             onClick={handleUseTemplate}
-            className="mt-6 inline-flex h-10 items-center justify-center gap-2 rounded-full bg-[#0071e3] px-6 text-sm font-medium text-white transition-colors hover:bg-[#0077ed]"
+            className="mt-6 inline-flex h-10 items-center justify-center gap-2 rounded-full bg-accent-blue px-6 text-sm font-medium text-white transition-colors hover:bg-accent-blue-hover"
           >
             Use this template
             <ArrowRightIcon className="size-4" />

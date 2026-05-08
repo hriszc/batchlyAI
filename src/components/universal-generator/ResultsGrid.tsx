@@ -160,7 +160,7 @@ export function ResultsGrid({
       {showActions && (
         <p className="mt-6 text-center text-xs text-muted-foreground/60">
           {t("resultsSaved")}{" "}
-          <a href="/my/generations" className="text-[#0071e3] hover:underline">
+          <a href="/my/generations" className="text-accent-blue hover:underline">
             {t("viewHistory")} →
           </a>
         </p>

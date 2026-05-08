@@ -173,7 +173,7 @@ export function GeneratorCard({ state, actions }: GeneratorCardProps) {
                 type="button"
                 onClick={handleBuyCredits}
                 disabled={buyLoading}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-[#0071e3] px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-[#0077ed] disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-accent-blue px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-accent-blue-hover disabled:opacity-50"
               >
                 {buyLoading ? (
                   <Loader2Icon className="size-3 animate-spin" />
@@ -254,7 +254,7 @@ export function GeneratorCard({ state, actions }: GeneratorCardProps) {
           onClick={actions.startGenerating}
           disabled={comboCount === 0 || comboCount > 500 || state.isGenerating}
           title={disabledReason}
-          className="inline-flex h-9 items-center justify-center gap-2 rounded-[980px] bg-[#0071e3] px-5 py-2 text-[17px] leading-[1.0] font-normal whitespace-nowrap text-white transition-all hover:bg-[#0077ed] focus-visible:ring-2 focus-visible:ring-[#0071e3] focus-visible:ring-offset-2 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
+          className="inline-flex h-9 items-center justify-center gap-2 rounded-[980px] bg-accent-blue px-5 py-2 text-[17px] leading-[1.0] font-normal whitespace-nowrap text-white transition-all hover:bg-accent-blue-hover focus-visible:ring-2 focus-visible:ring-accent-blue focus-visible:ring-offset-2 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
         >
           {state.isGenerating ? t("generating") : t("generate")}
         </button>

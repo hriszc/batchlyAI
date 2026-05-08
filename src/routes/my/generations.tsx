@@ -57,7 +57,7 @@ function GenerationsPage() {
     return (
       <main className="mx-auto max-w-[980px] px-4 py-16 text-center">
         <p className="text-muted-foreground">Please log in to view your generations.</p>
-        <Link to="/login" className="mt-2 inline-block text-[#0071e3]">
+        <Link to="/login" className="mt-2 inline-block text-accent-blue">
           Login
         </Link>
       </main>

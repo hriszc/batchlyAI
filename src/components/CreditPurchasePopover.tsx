@@ -90,7 +90,7 @@ export function CreditPurchasePopover({ onClose }: CreditPurchasePopoverProps) {
   return (
     <div
       ref={popoverRef}
-      className="absolute top-full right-0 z-50 mt-1 w-72 overflow-hidden rounded-xl border bg-popover shadow-lg"
+      className="popover-enter absolute top-full right-0 z-50 mt-1 w-72 overflow-hidden rounded-xl border bg-popover shadow-lg"
     >
       <div className="flex items-center justify-between border-b px-4 py-3">
         <span className="text-sm font-semibold text-foreground">{t("buyCredits")}</span>
@@ -115,7 +115,7 @@ export function CreditPurchasePopover({ onClose }: CreditPurchasePopoverProps) {
               }}
               className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
                 !isCustom && quantity === p
-                  ? "bg-[#0071e3]/10 text-[#0071e3]"
+                  ? "bg-accent-blue/10 text-accent-blue"
                   : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
               }`}
             >
@@ -129,7 +129,7 @@ export function CreditPurchasePopover({ onClose }: CreditPurchasePopoverProps) {
             }}
             className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
               isCustom
-                ? "bg-[#0071e3]/10 text-[#0071e3]"
+                ? "bg-accent-blue/10 text-accent-blue"
                 : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
             }`}
           >
@@ -151,7 +151,7 @@ export function CreditPurchasePopover({ onClose }: CreditPurchasePopoverProps) {
                 if (v === "" || /^\d+$/.test(v)) setCustomValue(v);
               }}
               placeholder={t("enterQuantity")}
-              className="h-8 w-24 rounded-lg border bg-muted/30 px-2.5 text-sm placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-[#0071e3] focus:outline-none"
+              className="h-8 w-24 rounded-lg border bg-muted/30 px-2.5 text-sm placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-accent-blue focus:outline-none"
             />
             <span className="text-xs text-muted-foreground">
               {currencySymbol}
@@ -173,7 +173,7 @@ export function CreditPurchasePopover({ onClose }: CreditPurchasePopoverProps) {
           </div>
           <div className="mt-0.5 flex justify-between font-medium text-foreground">
             <span>{t("totalCredits")}</span>
-            <span className="text-[#0071e3]">{totalCredits.toLocaleString()}</span>
+            <span className="text-accent-blue">{totalCredits.toLocaleString()}</span>
           </div>
           <div className="mt-1 border-t pt-1 text-[10px] text-muted-foreground/70">
             <span>
@@ -187,7 +187,7 @@ export function CreditPurchasePopover({ onClose }: CreditPurchasePopoverProps) {
         <button
           onClick={handleBuy}
           disabled={loading || effectiveQuantity < 1}
-          className="flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-[#0071e3] text-sm font-medium text-white transition-all hover:bg-[#0077ed] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
+          className="flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-accent-blue text-sm font-medium text-white transition-all hover:bg-accent-blue-hover active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
         >
           {loading ? (
             <Loader2Icon className="size-4 animate-spin" />
