@@ -13,7 +13,7 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { GeneratorToolbar } from "./GeneratorToolbar";
 import { getRandomPrompt } from "./inspire-prompts";
 import { MODELS } from "./models";
-import type { GeneratorState, GroupId } from "./types";
+import type { GeneratorState, GroupId, TextLength, VideoDuration } from "./types";
 import { useExpandVariables } from "./useExpandVariables";
 import { computePromptCombinations } from "./utils";
 import { VariableGroupCard } from "./VariableGroupCard";
@@ -28,6 +28,8 @@ interface GeneratorCardProps {
     addValue: (groupId: GroupId) => void;
     updateValue: (groupId: GroupId, index: number, value: string) => void;
     removeValue: (groupId: GroupId, index: number) => void;
+    setTextLength: (value: TextLength) => void;
+    setVideoDuration: (value: VideoDuration) => void;
     startGenerating: () => void;
     setError: (value: string | null) => void;
     uploadFile: (file: File) => void;
@@ -268,6 +270,10 @@ export function GeneratorCard({ state, actions }: GeneratorCardProps) {
         onSetAspectRatio={actions.setAspectRatio}
         quantity={state.quantity}
         onSetQuantity={actions.setQuantity}
+        textLength={state.textLength}
+        onSetTextLength={actions.setTextLength}
+        videoDuration={state.videoDuration}
+        onSetVideoDuration={actions.setVideoDuration}
         comboCount={comboCount}
         groupCount={state.variableGroups.length}
         hasGroups={hasGroups}

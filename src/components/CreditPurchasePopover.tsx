@@ -1,9 +1,10 @@
 "use client";
 
 import { XIcon, PlusIcon, Loader2Icon } from "lucide-react";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 
+import { MODELS } from "@/components/universal-generator/models";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 const PRESETS = [1, 5, 10, 50, 100];
@@ -44,6 +45,23 @@ export function CreditPurchasePopover({ onClose }: CreditPurchasePopoverProps) {
   const totalCredits = effectiveQuantity * CREDITS_PER_UNIT;
   const currency = language === "zh" ? "cny" : "usd";
   const currencySymbol = currency === "cny" ? "¥" : "$";
+
+  const equivalence = useMemo(() => {
+    const cheapestImage = MODELS.filter((m) => m.category === "image").reduce((a, b) =>
+      a.creditCost < b.creditCost ? a : b,
+    );
+    const cheapestText = MODELS.filter((m) => m.category === "text").reduce((a, b) =>
+      a.creditCost < b.creditCost ? a : b,
+    );
+    const cheapestVideo = MODELS.filter((m) => m.category === "video").reduce((a, b) =>
+      a.creditCost < b.creditCost ? a : b,
+    );
+    return {
+      images: Math.floor(totalCredits / cheapestImage.creditCost),
+      texts: Math.floor(totalCredits / cheapestText.creditCost),
+      videoSeconds: Math.floor(totalCredits / cheapestVideo.creditCost),
+    };
+  }, [totalCredits]);
 
   const handleBuy = useCallback(async () => {
     if (effectiveQuantity < 1) return;
@@ -156,6 +174,12 @@ export function CreditPurchasePopover({ onClose }: CreditPurchasePopoverProps) {
           <div className="mt-0.5 flex justify-between font-medium text-foreground">
             <span>{t("totalCredits")}</span>
             <span className="text-[#0071e3]">{totalCredits.toLocaleString()}</span>
+          </div>
+          <div className="mt-1 border-t pt-1 text-[10px] text-muted-foreground/70">
+            <span>
+              ~{equivalence.images} images · ~{equivalence.texts} texts · ~
+              {equivalence.videoSeconds}s video
+            </span>
           </div>
         </div>
 

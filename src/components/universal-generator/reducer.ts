@@ -10,6 +10,8 @@ export const initialState: GeneratorState = {
   quantity: 2,
   aspectRatio: "9:16",
   model: DEFAULT_MODEL,
+  textLength: "medium",
+  videoDuration: "5s",
   error: null,
   creditsRemaining: null,
   attachedFiles: [],
@@ -39,6 +41,12 @@ export function reducer(state: GeneratorState, action: GeneratorAction): Generat
 
     case "SET_MODEL":
       return { ...state, model: action.payload };
+
+    case "SET_TEXT_LENGTH":
+      return { ...state, textLength: action.payload };
+
+    case "SET_VIDEO_DURATION":
+      return { ...state, videoDuration: action.payload };
 
     case "ADD_VALUE":
       return {

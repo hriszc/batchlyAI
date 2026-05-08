@@ -22,6 +22,8 @@ export function createGeneratorState(overrides?: Partial<GeneratorState>): Gener
     quantity: 2,
     aspectRatio: "9:16",
     model: DEFAULT_MODEL,
+    textLength: "medium",
+    videoDuration: "5s",
     error: null,
     creditsRemaining: null,
     attachedFiles: [],

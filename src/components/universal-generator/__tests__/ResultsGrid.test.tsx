@@ -1,6 +1,6 @@
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
 import { renderWithProviders } from "#test/test-utils";
 
@@ -87,5 +87,51 @@ describe("ResultsGrid", () => {
   it("shows results saved indicator after generation", () => {
     renderWithProviders(<ResultsGrid results={[imageResult]} isGenerating={false} />);
     expect(screen.getByText(/Results saved/)).toBeInTheDocument();
+  });
+
+  // --- Share button ---
+  it("renders share button when onShare provided", () => {
+    const onShare = vi.fn();
+    renderWithProviders(
+      <ResultsGrid results={[imageResult]} isGenerating={false} onShare={onShare} />,
+    );
+    const btn = screen.getByTitle("Share Results");
+    expect(btn).toBeInTheDocument();
+  });
+
+  it("clicking share button calls onShare", async () => {
+    const onShare = vi.fn();
+    renderWithProviders(
+      <ResultsGrid results={[imageResult]} isGenerating={false} onShare={onShare} />,
+    );
+    await userEvent.click(screen.getByTitle("Share Results"));
+    expect(onShare).toHaveBeenCalledOnce();
+  });
+
+  it("does not show share button during generation", () => {
+    const onShare = vi.fn();
+    renderWithProviders(<ResultsGrid results={[]} isGenerating={true} onShare={onShare} />);
+    expect(screen.queryByTitle("Share Results")).not.toBeInTheDocument();
+  });
+
+  // --- Download All button ---
+  it("shows download all button when results >= 2", () => {
+    const multiResults: GeneratedResult[] = [
+      { ...imageResult, id: "r1", imageUrl: "https://a.com/1.png" },
+      { ...imageResult, id: "r2", imageUrl: "https://a.com/2.png" },
+    ];
+    renderWithProviders(<ResultsGrid results={multiResults} isGenerating={false} />);
+    const btn = screen.getByTitle("Download All");
+    expect(btn).toBeInTheDocument();
+  });
+
+  it("hides download all button when results < 2", () => {
+    renderWithProviders(<ResultsGrid results={[imageResult]} isGenerating={false} />);
+    expect(screen.queryByTitle("Download All")).not.toBeInTheDocument();
+  });
+
+  it("hides download all button during generation", () => {
+    renderWithProviders(<ResultsGrid results={[]} isGenerating={true} />);
+    expect(screen.queryByTitle("Download All")).not.toBeInTheDocument();
   });
 });
