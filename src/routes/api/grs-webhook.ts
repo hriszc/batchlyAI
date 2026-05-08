@@ -83,19 +83,26 @@ export async function handleGrsWebhook(request: Request): Promise<Response> {
       // Update generation record with result URLs
       try {
         const genRaw = await kv.get(`gen:${taskId}`);
-        if (genRaw) {
+        if (!genRaw) {
+          console.warn(`[grs-webhook] No KV entry for task ${taskId}, cannot update generation`);
+        } else {
           const genData = JSON.parse(genRaw) as { generationId: string };
           const binding = getD1Binding();
-          if (binding) {
+          if (!binding) {
+            console.warn("[grs-webhook] D1 binding not available");
+          } else {
             const db = getDb(binding);
             await db
               .update(generation)
               .set({ resultUrls: JSON.stringify(urls) })
               .where(eq(generation.id, genData.generationId));
+            console.log(
+              `[grs-webhook] Updated generation ${genData.generationId} with ${urls.length} URLs`,
+            );
           }
         }
-      } catch {
-        /* non-fatal */
+      } catch (err) {
+        console.error("[grs-webhook] Failed to update generation record:", err);
       }
     } else if (body.status === "failed" || body.error) {
       taskData.status = "failed";
