@@ -65,13 +65,12 @@ describe("handleCheckout", () => {
     expect(data.url).toBe("https://checkout.stripe.com/c/test");
   });
 
-  it("uses USD price with card + wechat_pay payment methods", async () => {
+  it("uses USD price with card payment", async () => {
     mockGetSession.mockResolvedValue({ user: { id: "u1", email: "u@test.com" } });
     await handleCheckout(makeRequest({ body: { quantity: 1 } }));
     expect(mockCheckoutCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         line_items: [{ price: "price_usd_test_001", quantity: 1 }],
-        payment_method_types: ["card", "wechat_pay"],
       }),
     );
   });
@@ -126,11 +125,11 @@ describe("handleCheckout", () => {
     );
   });
 
-  it("returns 500 when Stripe throws", async () => {
+  it("returns 500 with error message when Stripe throws", async () => {
     mockGetSession.mockResolvedValue({ user: { id: "u1", email: "u@test.com" } });
     mockCheckoutCreate.mockRejectedValue(new Error("Stripe failure"));
     const resp = await handleCheckout(makeRequest({ body: {} }));
     expect(resp.status).toBe(500);
-    expect(((await resp.json()) as Record<string, unknown>).error).toBe("Payment processing error");
+    expect(((await resp.json()) as Record<string, unknown>).error).toBe("Stripe failure");
   });
 });
