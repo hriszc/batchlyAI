@@ -282,12 +282,10 @@ describe("fetchWithFallback (internal)", () => {
   });
 
   it("falls back to direct API when gateway fetch throws", async () => {
-    mockFetch
-      .mockRejectedValueOnce(new Error("network error"))
-      .mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ code: 0, data: { id: "grs-direct2" }, msg: "ok" }),
-      });
+    mockFetch.mockRejectedValueOnce(new Error("network error")).mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ code: 0, data: { id: "grs-direct2" }, msg: "ok" }),
+    });
 
     const results = await createGrsaiPredictions({ prompt: "test", n: 1 });
     expect(results[0].id).toBe("grs-direct2");
