@@ -86,11 +86,6 @@ test.describe("Generator E2E (with API mocks)", () => {
     await textarea.fill("A {{cat, dog}} in {{forest, beach}}");
     // Wait for debounce (500ms) + render
     await page.waitForTimeout(1000);
-    // Variable group UI should appear — look for detected groups text or value inputs
-    const groupsIndicator = page.getByText(/group|变量组|detected|检测到/i);
-    // May or may not appear depending on authentication state
-    const visible = await groupsIndicator.isVisible().catch(() => false);
-    // If visible, great; if not, the textarea still has the value (no crash)
     const value = await textarea.inputValue();
     expect(value).toContain("cat");
   });
