@@ -43,8 +43,7 @@ export function CreditPurchasePopover({ onClose }: CreditPurchasePopoverProps) {
   const effectiveQuantity = isCustom ? Math.max(1, parseInt(customValue, 10) || 0) : quantity;
   const totalPrice = effectiveQuantity * PRICE_PER_UNIT;
   const totalCredits = effectiveQuantity * CREDITS_PER_UNIT;
-  const currency = language === "zh" ? "cny" : "usd";
-  const currencySymbol = currency === "cny" ? "¥" : "$";
+  const currencySymbol = "$";
 
   const equivalence = useMemo(() => {
     const cheapestImage = MODELS.filter((m) => m.category === "image").reduce((a, b) =>
@@ -68,11 +67,11 @@ export function CreditPurchasePopover({ onClose }: CreditPurchasePopoverProps) {
     setLoading(true);
     try {
       const { track } = await import("@/lib/analytics/client");
-      track("checkout_started", { quantity: effectiveQuantity, currency });
+      track("checkout_started", { quantity: effectiveQuantity });
       const resp = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currency, quantity: effectiveQuantity }),
+        body: JSON.stringify({ quantity: effectiveQuantity }),
       });
       const data = (await resp.json()) as { url?: string; error?: string };
       if (data.url) {
@@ -85,7 +84,7 @@ export function CreditPurchasePopover({ onClose }: CreditPurchasePopoverProps) {
     } finally {
       setLoading(false);
     }
-  }, [effectiveQuantity, currency, t]);
+  }, [effectiveQuantity, t]);
 
   return (
     <div

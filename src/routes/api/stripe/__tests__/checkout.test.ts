@@ -20,7 +20,6 @@ vi.mock("@/lib/auth/auth", () => ({
 vi.mock("@/env/server", () => ({
   env: {
     STRIPE_PRICE_ID_USD: "price_usd_test_001",
-    STRIPE_PRICE_ID_CNY: "price_cny_test_001",
   },
 }));
 
@@ -58,38 +57,38 @@ describe("handleCheckout", () => {
     expect(((await resp.json()) as Record<string, unknown>).error).toBe("Unauthorized");
   });
 
-  it("returns 200 with checkout URL for authenticated user (default USD)", async () => {
+  it("returns 200 with checkout URL for authenticated user", async () => {
     mockGetSession.mockResolvedValue({ user: { id: "u1", email: "u@test.com" } });
-    const resp = await handleCheckout(makeRequest({ body: { currency: "usd" } }));
+    const resp = await handleCheckout(makeRequest({ body: {} }));
     expect(resp.status).toBe(200);
     const data = (await resp.json()) as { url: string };
     expect(data.url).toBe("https://checkout.stripe.com/c/test");
   });
 
-  it("uses CNY price when currency=cny is passed", async () => {
+  it("uses USD price with card + wechat_pay payment methods", async () => {
     mockGetSession.mockResolvedValue({ user: { id: "u1", email: "u@test.com" } });
-    await handleCheckout(makeRequest({ body: { currency: "cny" } }));
-    expect(mockCheckoutCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        line_items: [{ price: "price_cny_test_001", quantity: 1 }],
-      }),
-    );
-  });
-
-  it("uses USD price when currency=usd is passed", async () => {
-    mockGetSession.mockResolvedValue({ user: { id: "u1", email: "u@test.com" } });
-    await handleCheckout(makeRequest({ body: { currency: "usd" } }));
+    await handleCheckout(makeRequest({ body: { quantity: 1 } }));
     expect(mockCheckoutCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         line_items: [{ price: "price_usd_test_001", quantity: 1 }],
+        payment_method_types: ["card", "wechat_pay"],
       }),
     );
   });
 
-  it("defaults to USD when no body is provided", async () => {
+  it("passes quantity from request body", async () => {
+    mockGetSession.mockResolvedValue({ user: { id: "u1", email: "u@test.com" } });
+    await handleCheckout(makeRequest({ body: { quantity: 5 } }));
+    expect(mockCheckoutCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        line_items: [{ price: "price_usd_test_001", quantity: 5 }],
+      }),
+    );
+  });
+
+  it("defaults to quantity 1 when no body is provided", async () => {
     mockGetSession.mockResolvedValue({ user: { id: "u1", email: "u@test.com" } });
     const req = makeRequest() as unknown as Request & { json: () => never };
-    // Override json to throw
     Object.defineProperty(req, "json", {
       value: () => {
         throw new Error("no body");
@@ -103,17 +102,7 @@ describe("handleCheckout", () => {
     );
   });
 
-  it("defaults to USD when body has no currency field", async () => {
-    mockGetSession.mockResolvedValue({ user: { id: "u1", email: "u@test.com" } });
-    await handleCheckout(makeRequest({ body: { other: true } }));
-    expect(mockCheckoutCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        line_items: [{ price: "price_usd_test_001", quantity: 1 }],
-      }),
-    );
-  });
-
-  it("includes customer_email and metadata in the session", async () => {
+  it("includes customer_email and metadata", async () => {
     mockGetSession.mockResolvedValue({ user: { id: "u2", email: "dev@batchlyai.com" } });
     await handleCheckout(makeRequest({ body: {} }));
     expect(mockCheckoutCreate).toHaveBeenCalledWith(
@@ -124,7 +113,7 @@ describe("handleCheckout", () => {
     );
   });
 
-  it("includes success_url and cancel_url with origin", async () => {
+  it("includes success_url and cancel_url", async () => {
     mockGetSession.mockResolvedValue({ user: { id: "u1", email: "u@test.com" } });
     await handleCheckout(
       makeRequest({ url: "https://batchlyai.com/api/stripe/checkout", body: {} }),
@@ -133,26 +122,6 @@ describe("handleCheckout", () => {
       expect.objectContaining({
         success_url: "https://batchlyai.com/?purchase=success",
         cancel_url: "https://batchlyai.com/?purchase=canceled",
-      }),
-    );
-  });
-
-  it("includes wechat_pay payment method for CNY currency", async () => {
-    mockGetSession.mockResolvedValue({ user: { id: "u1", email: "u@test.com" } });
-    await handleCheckout(makeRequest({ body: { currency: "cny" } }));
-    expect(mockCheckoutCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        payment_method_types: ["card", "wechat_pay"],
-      }),
-    );
-  });
-
-  it("only includes card payment method for USD currency", async () => {
-    mockGetSession.mockResolvedValue({ user: { id: "u1", email: "u@test.com" } });
-    await handleCheckout(makeRequest({ body: { currency: "usd" } }));
-    expect(mockCheckoutCreate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        payment_method_types: ["card"],
       }),
     );
   });
