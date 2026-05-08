@@ -123,5 +123,4 @@ test.describe("Auth E2E (with API mocks)", () => {
     const currentUrl = page.url();
     expect(currentUrl).toContain("/signup");
   });
-
 });
