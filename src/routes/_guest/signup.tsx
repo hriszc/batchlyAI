@@ -1,7 +1,7 @@
 import { SiGithub, SiGoogle } from "@icons-pack/react-simple-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { LoaderCircleIcon } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { LoaderCircleIcon, MailCheckIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -34,9 +34,11 @@ export const Route = createFileRoute("/_guest/signup")({
 function SignupForm() {
   const { redirectUrl } = Route.useRouteContext();
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const { t } = useLanguage();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [signupEmail, setSignupEmail] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
 
   const refCode = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -67,10 +69,7 @@ function SignupForm() {
         throw new Error(err.message || "Sign up failed");
       }
       queryClient.removeQueries({ queryKey: authQueryOptions().queryKey });
-      void navigate({
-        to: "/verify-email",
-        search: { email: data.email },
-      });
+      setSignupEmail(data.email);
       return result;
     },
     onError: (error) => {
@@ -79,6 +78,20 @@ function SignupForm() {
       toast.error(msg);
     },
   });
+
+  const handleResend = async () => {
+    if (!signupEmail) return;
+    setResending(true);
+    try {
+      await authClient.sendVerificationEmail({ email: signupEmail });
+      setResent(true);
+      toast.success(t("verifyEmailSent"));
+    } catch {
+      toast.error("Failed to resend verification email");
+    } finally {
+      setResending(false);
+    }
+  };
 
   const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -100,6 +113,37 @@ function SignupForm() {
 
     signupMutate({ name, email, password, ref: refCode });
   };
+
+  if (signupEmail) {
+    return (
+      <div className="flex flex-col items-center gap-4 text-center">
+        <MailCheckIcon className="size-12 text-[#0071e3]" />
+        <h1 className="text-xl font-bold text-foreground">{t("verifyEmailTitle")}</h1>
+        <p className="text-sm text-muted-foreground">{t("verifyEmailDesc")}</p>
+        <p className="text-sm font-medium text-foreground">{signupEmail}</p>
+        {resent ? (
+          <p className="text-sm text-green-600">{t("verifyEmailSent")}</p>
+        ) : (
+          <>
+            <p className="text-xs text-muted-foreground/70">
+              Didn't receive the email? Check your spam folder.
+            </p>
+            <button
+              onClick={handleResend}
+              disabled={resending}
+              className="inline-flex items-center gap-1.5 rounded-lg border bg-muted/30 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-50"
+            >
+              {resending && <LoaderCircleIcon className="size-4 animate-spin" />}
+              Resend verification email
+            </button>
+          </>
+        )}
+        <Link to="/login" className="text-sm text-[#0071e3] hover:underline">
+          Back to login
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">

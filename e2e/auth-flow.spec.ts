@@ -107,36 +107,24 @@ test.describe("Auth E2E (with API mocks)", () => {
     }
   });
 
-  test("signup redirects to verify-email page", async ({ page }) => {
+  test("signup shows verify-email inline after success", async ({ page }) => {
     await page.goto("/signup");
-    // Fill signup form
     await page.fill('input[name="name"]', "Test User");
     await page.fill('input[type="email"]', "new@test.com");
     await page.fill('input[id="password"]', "test123456");
     await page.fill('input[id="confirm_password"]', "test123456");
-    // Submit
     const btn = page
       .locator("button")
       .filter({ hasText: /sign up|注册/i })
       .first();
     await btn.click();
-    // Should redirect to verify-email
-    await expect(page).toHaveURL(/verify-email/, { timeout: 5000 });
-  });
-
-  test("verify-email page shows instructions and resend button", async ({ page }) => {
-    await page.goto("/verify-email?email=new@test.com");
-    // Should show verify email title
-    await expect(page.getByText(/verify your email/i)).toBeVisible();
-    // Should show the email
+    // Should show verify email message inline
+    await expect(page.getByText(/verify your email/i)).toBeVisible({ timeout: 5000 });
     await expect(page.getByText("new@test.com")).toBeVisible();
-    // Should have resend button
-    const resendBtn = page.getByText(/resend/i);
-    await expect(resendBtn).toBeVisible();
+    await expect(page.getByText(/resend/i)).toBeVisible();
   });
 
-  test("verify-email resend button works", async ({ page }) => {
-    // Mock the send-verification-email endpoint
+  test("signup verify state resend button works", async ({ page }) => {
     await page.route("**/api/auth/send-verification-email", async (route) => {
       await route.fulfill({
         status: 200,
@@ -144,11 +132,19 @@ test.describe("Auth E2E (with API mocks)", () => {
         body: JSON.stringify({ success: true }),
       });
     });
-    await page.goto("/verify-email?email=new@test.com");
+    await page.goto("/signup");
+    await page.fill('input[name="name"]', "Test User");
+    await page.fill('input[type="email"]', "new@test.com");
+    await page.fill('input[id="password"]', "test123456");
+    await page.fill('input[id="confirm_password"]', "test123456");
+    const btn = page
+      .locator("button")
+      .filter({ hasText: /sign up|注册/i })
+      .first();
+    await btn.click();
     const resendBtn = page.getByText(/resend/i);
     await resendBtn.click();
-    // Should show success message
-    await expect(page.getByText(/sent|发送/i)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/sent|已发送/i)).toBeVisible({ timeout: 5000 });
   });
 
   test("login with unverified email shows error", async ({ page }) => {
