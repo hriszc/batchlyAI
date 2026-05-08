@@ -46,14 +46,9 @@ test.describe("AARRR Revenue — buy credits flow", () => {
       await buyBtn.click();
       await page.waitForTimeout(300);
     }
-    // Popover should show Pay button or quantity selector
-    const payText = page.getByText(/pay/i);
-    const qtyText = page.getByText("1x");
-    const _popoverVisible =
-      (await payText.isVisible().catch(() => false)) ||
-      (await qtyText.isVisible().catch(() => false));
-    expect(true).toBe(true);
-    expect(true).toBe(true);
+    // Popover should show quantity selector and Pay button
+    await expect(page.getByText("1x")).toBeVisible({ timeout: 3000 });
+    await expect(page.getByText(/pay/i)).toBeVisible({ timeout: 3000 });
   });
 
   test("can select quantity in purchase popover", async ({ page }) => {

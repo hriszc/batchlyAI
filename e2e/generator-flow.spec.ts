@@ -98,11 +98,12 @@ test.describe("Generator E2E (with API mocks)", () => {
     await expect(description).toContainText(/[一-鿿]/);
   });
 
-  test("theme toggle exists", async ({ page }) => {
+  test("theme toggle button exists", async ({ page }) => {
     await page.goto("/");
-    const buttons = page.locator("button");
-    const count = await buttons.count();
-    expect(count).toBeGreaterThanOrEqual(2);
+    // ThemeToggle renders a sun/moon icon button
+    const svgButton = page.locator("button").filter({ has: page.locator("svg") });
+    const count = await svgButton.count();
+    expect(count).toBeGreaterThanOrEqual(1);
   });
 
   test("login page loads from nav", async ({ page }) => {

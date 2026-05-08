@@ -129,16 +129,10 @@ test.describe("AARRR Activation — signup → verify → first generate → res
       .locator("button")
       .filter({ hasText: /generate|开始生成/i })
       .first();
-    if (await genBtn.isEnabled()) {
-      await genBtn.click();
-      // Wait for polling to complete
-      await page.waitForTimeout(4000);
-    }
-    // Results heading may appear
-    const heading = page.getByText(/results|生成结果/i);
-    if (await heading.isVisible({ timeout: 3000 }).catch(() => false)) {
-      await expect(heading).toBeVisible();
-    }
+    expect(await genBtn.isEnabled()).toBe(true);
+    await genBtn.click();
+    // Polling mock returns succeeded immediately — results appear within timeout
+    await expect(page.getByText(/results|生成结果/i)).toBeVisible({ timeout: 8000 });
   });
 
   test("Chinese signup flow works", async ({ page }) => {
