@@ -18,7 +18,7 @@ vi.mock("@/lib/cloudflare/bindings", () => ({
   getD1Binding: () => ((globalThis as any).__env__?.batchlyai_db as any) ?? undefined,
 }));
 
-import { handleGetPrompts, handleSavePrompt } from "@/routes/api/prompts";
+import { handleGetPrompts, handleSavePrompt, handleDeletePrompt } from "@/routes/api/prompts";
 
 function makeGetReq(search?: string): Request {
   const url = new URL("https://batchlyai.com/api/prompts");
@@ -92,6 +92,42 @@ describe("handleSavePrompt", () => {
 
   it("returns 400 when name is missing", async () => {
     const resp = await handleSavePrompt(makePostReq({}));
+    expect(resp.status).toBe(400);
+  });
+});
+
+// --- DELETE handler ---
+function makeDeleteReq(body: Record<string, unknown>): Request {
+  return {
+    json: () => Promise.resolve(body),
+    url: "https://batchlyai.com/api/prompts",
+    headers: new Headers(),
+  } as unknown as Request;
+}
+
+describe("handleDeletePrompt", () => {
+  let db: ReturnType<typeof createTestDb>;
+  beforeEach(() => {
+    db = createTestDb();
+    applyMigrations(db);
+    seedUser(db, { id: "u1" });
+    vi.clearAllMocks();
+    mocks.mockGetSession.mockResolvedValue({ user: { id: "u1" } });
+    (globalThis as any).__env__ = { batchlyai_db: db };
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    delete (globalThis as any).__env__;
+  });
+
+  it("returns 401 when not authenticated", async () => {
+    mocks.mockGetSession.mockResolvedValue(null);
+    const resp = await handleDeletePrompt(makeDeleteReq({}));
+    expect(resp.status).toBe(401);
+  });
+
+  it("returns 400 when id is missing", async () => {
+    const resp = await handleDeletePrompt(makeDeleteReq({}));
     expect(resp.status).toBe(400);
   });
 });

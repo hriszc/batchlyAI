@@ -92,34 +92,36 @@ export async function handleSavePrompt(request: Request): Promise<Response> {
   }
 }
 
+export async function handleDeletePrompt(request: Request): Promise<Response> {
+  const auth = createAuth();
+  if (!auth) return jsonResponse({ error: "Auth unavailable" }, 501);
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session?.user?.id) return jsonResponse({ error: "Unauthorized" }, 401);
+
+  const binding = getD1Binding();
+  if (!binding) return jsonResponse({ error: "DB unavailable" }, 501);
+  const db = getDb(binding);
+
+  try {
+    const { id } = (await request.json()) as { id: string };
+    if (!id) return jsonResponse({ error: "Missing id" }, 400);
+
+    await db
+      .delete(savedPrompt)
+      .where(and(eq(savedPrompt.id, id), eq(savedPrompt.userId, session.user.id)));
+
+    return jsonResponse({ success: true }, 200);
+  } catch (err) {
+    return jsonResponse({ error: "Failed to delete prompt" }, 500);
+  }
+}
+
 export const Route = createFileRoute("/api/prompts")({
   server: {
     handlers: {
       GET: async ({ request }) => handleGetPrompts(request),
       POST: async ({ request }) => handleSavePrompt(request),
-      DELETE: async ({ request }) => {
-        const auth = createAuth();
-        if (!auth) return jsonResponse({ error: "Auth unavailable" }, 501);
-        const session = await auth.api.getSession({ headers: request.headers });
-        if (!session?.user?.id) return jsonResponse({ error: "Unauthorized" }, 401);
-
-        const binding = getD1Binding();
-        if (!binding) return jsonResponse({ error: "DB unavailable" }, 501);
-        const db = getDb(binding);
-
-        try {
-          const { id } = (await request.json()) as { id: string };
-          if (!id) return jsonResponse({ error: "Missing id" }, 400);
-
-          await db
-            .delete(savedPrompt)
-            .where(and(eq(savedPrompt.id, id), eq(savedPrompt.userId, session.user.id)));
-
-          return jsonResponse({ success: true }, 200);
-        } catch (err) {
-          return jsonResponse({ error: "Failed to delete prompt" }, 500);
-        }
-      },
+      DELETE: async ({ request }) => handleDeletePrompt(request),
     },
   },
 });
