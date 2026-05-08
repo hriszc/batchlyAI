@@ -61,4 +61,19 @@ describe("handleExpandVars", () => {
     const body = (await resp.json()) as { results: Record<string, string[]> };
     expect(body.results.colors).toEqual(["red", "blue", "green"]);
   });
+
+  it("skips description over 200 chars", async () => {
+    const longDesc = "a".repeat(201);
+    mocks.mockRunExpandLLM.mockResolvedValue(["x"]);
+    const resp = await handleExpandVars(makeReq({ descriptions: [longDesc] }));
+    const body = (await resp.json()) as { results: Record<string, string[]> };
+    expect(body.results[longDesc]).toEqual([]);
+  });
+
+  it("returns empty array on LLM failure", async () => {
+    mocks.mockRunExpandLLM.mockRejectedValue(new Error("LLM error"));
+    const resp = await handleExpandVars(makeReq({ descriptions: ["test"] }));
+    const body = (await resp.json()) as { results: Record<string, string[]> };
+    expect(body.results.test).toEqual([]);
+  });
 });
