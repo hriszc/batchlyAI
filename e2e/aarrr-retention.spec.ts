@@ -82,7 +82,7 @@ test.describe("AARRR Retention — history and saved prompts", () => {
   });
 
   test("generations history page shows entries", async ({ page }) => {
-    await page.goto("/generations");
+    await page.goto("/my/generations");
     await page.waitForTimeout(1000);
     // Should show something — either history entries or a message
     await expect(page.locator("main")).toBeVisible({ timeout: 15000 });
