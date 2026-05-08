@@ -5,6 +5,7 @@ import { pollReplicatePrediction } from "@/lib/ai";
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getD1Binding, getKvBinding } from "@/lib/cloudflare/bindings";
+import { mirrorImageToR2 } from "@/lib/cloudflare/r2";
 import { getDb } from "@/lib/db";
 import { generation } from "@/lib/db/schema/data-flywheel.schema";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -25,18 +26,28 @@ async function tryUpdateGeneration(kv: KVNamespace, predictionId: string, urls: 
       );
       return;
     }
-    const genData = JSON.parse(genRaw) as { generationId: string };
+    const genData = JSON.parse(genRaw) as { generationId: string; userId: string };
     const binding = getD1Binding();
     if (!binding) {
       console.warn("[gen-status] D1 binding not available, cannot update generation");
       return;
     }
+
+    // Mirror images to R2 for permanent storage
+    const r2Urls = await Promise.all(
+      urls.map((url, i) =>
+        mirrorImageToR2(url, `generations/${genData.userId}/${genData.generationId}/${i}.png`),
+      ),
+    );
+
     const db = getDb(binding);
     await db
       .update(generation)
-      .set({ resultUrls: JSON.stringify(urls) })
+      .set({ resultUrls: JSON.stringify(r2Urls) })
       .where(eq(generation.id, genData.generationId));
-    console.log(`[gen-status] Updated generation ${genData.generationId} with ${urls.length} URLs`);
+    console.log(
+      `[gen-status] Updated generation ${genData.generationId} with ${r2Urls.length} URLs`,
+    );
   } catch (err) {
     console.error("[gen-status] Failed to update generation record:", err);
   }
