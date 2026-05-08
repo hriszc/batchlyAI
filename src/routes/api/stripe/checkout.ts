@@ -35,6 +35,9 @@ export async function handleCheckout(request: Request): Promise<Response> {
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card", "alipay", "wechat_pay"],
+      payment_method_options: {
+        wechat_pay: { client: "web" },
+      },
       line_items: [{ price: env.STRIPE_PRICE_ID_USD, quantity }],
       customer_email: userEmail,
       metadata: { userId },
