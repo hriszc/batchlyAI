@@ -34,7 +34,7 @@ export async function handleCheckout(request: Request): Promise<Response> {
     const stripe = getStripe();
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: "payment",
-      payment_method_types: ["card", "wechat_pay"],
+      payment_method_types: ["card", "alipay", "wechat_pay"],
       line_items: [{ price: env.STRIPE_PRICE_ID_USD, quantity }],
       customer_email: userEmail,
       metadata: { userId },
@@ -44,8 +44,9 @@ export async function handleCheckout(request: Request): Promise<Response> {
 
     return jsonResponse({ url: checkoutSession.url }, 200);
   } catch (err) {
-    console.error("[stripe] checkout error:", err);
-    return jsonResponse({ error: "Payment processing error" }, 500);
+    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("[stripe] checkout error:", message);
+    return jsonResponse({ error: message }, 500);
   }
 }
 
