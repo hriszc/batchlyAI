@@ -20,26 +20,22 @@ export async function handleCheckout(request: Request): Promise<Response> {
   const userEmail = session.user.email;
   const origin = new URL(request.url).origin;
 
-  let currency = "usd";
   let quantity = 1;
   try {
     const body = await request.json();
-    if (body.currency === "cny") currency = "cny";
     if (typeof body.quantity === "number" && body.quantity >= 1 && body.quantity <= 100) {
       quantity = Math.floor(body.quantity);
     }
   } catch {
-    // no body or invalid JSON, default to usd + quantity 1
+    // no body or invalid JSON, default to quantity 1
   }
-
-  const priceId = currency === "cny" ? env.STRIPE_PRICE_ID_CNY : env.STRIPE_PRICE_ID_USD;
 
   try {
     const stripe = getStripe();
     const checkoutSession = await stripe.checkout.sessions.create({
       mode: "payment",
-      payment_method_types: currency === "cny" ? ["card", "wechat_pay"] : ["card"],
-      line_items: [{ price: priceId, quantity }],
+      payment_method_types: ["card", "wechat_pay"],
+      line_items: [{ price: env.STRIPE_PRICE_ID_USD, quantity }],
       customer_email: userEmail,
       metadata: { userId },
       success_url: `${origin}/?purchase=success`,
