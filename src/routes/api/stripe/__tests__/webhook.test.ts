@@ -83,7 +83,9 @@ describe("handleWebhook", () => {
     mockConstructEventAsync.mockRejectedValue(new Error("Invalid signature"));
     const resp = await handleWebhook(makeRequest({ signature: "bad_sig" }));
     expect(resp.status).toBe(400);
-    expect(((await resp.json()) as Record<string, unknown>).error).toBe("Invalid signature");
+    expect(((await resp.json()) as Record<string, unknown>).error).toBe(
+      "Webhook verification failed",
+    );
   });
 
   it("returns 400 when checkout session has no userId in metadata", async () => {

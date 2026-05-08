@@ -31,7 +31,7 @@ export async function handleWebhook(request: Request): Promise<Response> {
   } catch (err) {
     const message = err instanceof Error ? err.message : "Signature verification failed";
     console.error("[stripe] webhook signature error:", message);
-    return jsonResponse({ error: message }, 400);
+    return jsonResponse({ error: "Webhook verification failed" }, 400);
   }
 
   if (event.type === "checkout.session.completed") {

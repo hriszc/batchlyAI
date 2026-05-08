@@ -77,7 +77,7 @@ export async function processReferralAfterSignup(
   // If daily cap exceeded, create pending without crediting
   if ((todayCount?.count ?? 0) >= DAILY_CAP) {
     await db.insert(referralTable).values({
-      id: `ref_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      id: `ref_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
       referrerId,
       refereeId: userId,
       code: refCode,
@@ -100,7 +100,7 @@ export async function processReferralAfterSignup(
     await kv.put(kvKey, String(count + 1), { expirationTtl: 86400 });
   }
 
-  const refId = `ref_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const refId = `ref_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
 
   if (needsExtendedPending) {
     // 72h pending for suspicious

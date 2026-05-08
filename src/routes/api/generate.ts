@@ -9,6 +9,7 @@ import { getD1Binding, getKvBinding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
 import { user as userTable } from "@/lib/db/schema/auth.schema";
 import { generation, savedPrompt } from "@/lib/db/schema/data-flywheel.schema";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { generateRequestSchema } from "@/lib/validation/schemas";
 
 export const CREDIT_COST: Record<string, number> = {
@@ -291,8 +292,7 @@ export const Route = createFileRoute("/api/generate")({
         // Guest generation: 2 free per day, IP-tracked, Image Turbo only
         if (!session?.user?.id) {
           const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-          const ua = request.headers.get("User-Agent") || "";
-          const guestKey = `guest:${ip}:${ua.slice(0, 50)}`;
+          const guestKey = `guest:${ip}`;
           const today = new Date().toISOString().slice(0, 10);
           const kvKey = `guest-gen:${guestKey}:${today}`;
 
@@ -344,6 +344,14 @@ export const Route = createFileRoute("/api/generate")({
               guest: true,
             },
             200,
+          );
+        }
+
+        const userLimit = checkRateLimit(`generate:user:${session.user.id}`, 30, 60);
+        if (!userLimit.allowed) {
+          return jsonResponse(
+            { error: "Rate limit exceeded. Please wait before generating more." },
+            429,
           );
         }
 

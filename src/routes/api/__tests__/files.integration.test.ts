@@ -86,7 +86,7 @@ describe("handleFile", () => {
     expect(resp.status).toBe(200);
     expect(resp.headers.get("Cache-Control")).toBe("private, max-age=86400");
     expect(resp.headers.get("X-Content-Type-Options")).toBe("nosniff");
-    expect(resp.headers.get("Content-Disposition")).toBe("inline");
+    expect(resp.headers.get("Content-Disposition")).toBe("attachment");
   });
 
   it("sets CORS header for allowed origin", async () => {

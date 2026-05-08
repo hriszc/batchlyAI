@@ -22,6 +22,10 @@ vi.mock("@/lib/db", () => ({
   getDb: () => testDb,
 }));
 
+vi.mock("@/lib/rate-limit", () => ({
+  checkRateLimit: () => ({ allowed: true, remaining: 10, resetAt: Date.now() + 60000 }),
+}));
+
 import { handlePortal } from "@/routes/api/stripe/portal";
 
 function makeRequest(url?: string): Request {
@@ -95,6 +99,6 @@ describe("handlePortal", () => {
     mockPortalCreate.mockRejectedValue(new Error("Stripe failure"));
     const resp = await handlePortal(makeRequest());
     expect(resp.status).toBe(500);
-    expect(((await resp.json()) as Record<string, unknown>).error).toBe("Stripe failure");
+    expect(((await resp.json()) as Record<string, unknown>).error).toBe("Billing service error");
   });
 });

@@ -4,18 +4,69 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 import type { GeneratedResult } from "./types";
 
-function renderMarkdown(text: string): string {
-  let html = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  html = html.replace(/^### (.+)$/gm, "<h3 class='text-sm font-semibold mt-2 mb-1'>$1</h3>");
-  html = html.replace(/^## (.+)$/gm, "<h2 class='text-base font-semibold mt-3 mb-1'>$1</h2>");
-  html = html.replace(/^# (.+)$/gm, "<h1 class='text-lg font-bold mt-3 mb-1'>$1</h1>");
-  html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-  html = html.replace(/\*(.+?)\*/g, "<em>$1</em>");
-  html = html.replace(/`(.+?)`/g, "<code class='bg-muted/50 px-1 rounded text-xs'>$1</code>");
-  html = html.replace(/^- (.+)$/gm, "<li class='ml-4 text-sm'>$1</li>");
-  html = html.replace(/\n\n/g, "<br/><br/>");
-  html = html.replace(/\n/g, "<br/>");
-  return html;
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function InlineMarkdown({ text }: { text: string }) {
+  const lines = text.split("\n");
+  return (
+    <>
+      {lines.map((line, i) => {
+        if (line.startsWith("### "))
+          return (
+            <h3 key={i} className="mt-2 mb-1 text-sm font-semibold">
+              {escapeHtml(line.slice(4))}
+            </h3>
+          );
+        if (line.startsWith("## "))
+          return (
+            <h2 key={i} className="mt-3 mb-1 text-base font-semibold">
+              {escapeHtml(line.slice(3))}
+            </h2>
+          );
+        if (line.startsWith("# "))
+          return (
+            <h1 key={i} className="mt-3 mb-1 text-lg font-bold">
+              {escapeHtml(line.slice(2))}
+            </h1>
+          );
+        if (line.startsWith("- "))
+          return (
+            <li key={i} className="ml-4 text-sm">
+              {renderInline(line.slice(2))}
+            </li>
+          );
+        if (line === "") return <br key={i} />;
+        return (
+          <p key={i} className="text-sm">
+            {renderInline(line)}
+          </p>
+        );
+      })}
+    </>
+  );
+}
+
+function renderInline(text: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**"))
+      return <strong key={i}>{escapeHtml(part.slice(2, -2))}</strong>;
+    if (part.startsWith("*") && part.endsWith("*"))
+      return <em key={i}>{escapeHtml(part.slice(1, -1))}</em>;
+    if (part.startsWith("`") && part.endsWith("`"))
+      return (
+        <code key={i} className="rounded bg-muted/50 px-1 text-xs">
+          {escapeHtml(part.slice(1, -1))}
+        </code>
+      );
+    return <span key={i}>{escapeHtml(part)}</span>;
+  });
 }
 
 interface ResultCardProps {
@@ -119,10 +170,9 @@ export function ResultCard({ result, showWatermark = false }: ResultCardProps) {
           </div>
         ) : result.textContent ? (
           <div className="relative flex h-full w-full flex-col items-center justify-start overflow-y-auto p-4">
-            <div
-              className="prose prose-sm max-w-none text-left text-foreground/80"
-              dangerouslySetInnerHTML={{ __html: renderMarkdown(result.textContent) }}
-            />
+            <div className="prose prose-sm max-w-none text-left text-foreground/80">
+              <InlineMarkdown text={result.textContent} />
+            </div>
             {hasDownloadable && (
               <button
                 onClick={() => {
