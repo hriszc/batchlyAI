@@ -5,6 +5,7 @@ interface ImageGenerationParams {
   aspectRatio?: string;
   n?: number;
   model?: string;
+  duration?: number;
 }
 
 // Cloudflare AI Gateway — provides caching, retries, analytics.
@@ -148,6 +149,7 @@ export async function createReplicatePredictions({
   aspectRatio = "1:1",
   n = 1,
   model,
+  duration,
 }: ImageGenerationParams): Promise<ReplicateCreateResult[]> {
   const version =
     (model ? REPLICATE_MODEL_VERSIONS[model] : null) ?? REPLICATE_MODEL_VERSIONS["z-image-fast"];
@@ -180,7 +182,13 @@ export async function createReplicatePredictions({
         headers,
         body: JSON.stringify({
           version,
-          input: { prompt, width, height, num_outputs: 1 },
+          input: {
+            prompt,
+            width,
+            height,
+            num_outputs: 1,
+            ...(duration ? { duration } : {}),
+          },
         }),
       },
       "replicate",
@@ -340,12 +348,17 @@ export async function runExpandLLM(description: string): Promise<string[]> {
 export interface TextGenerationParams {
   prompt: string;
   model?: string;
+  maxTokens?: number;
 }
 
-export async function generateText({ prompt, model }: TextGenerationParams): Promise<string> {
+export async function generateText({
+  prompt,
+  model,
+  maxTokens,
+}: TextGenerationParams): Promise<string> {
   return chatDeepseek([{ role: "user", content: prompt }], {
     model: model ?? "deepseek-v4-flash",
-    maxTokens: 2048,
+    maxTokens: maxTokens ?? 2048,
     temperature: 0.8,
   });
 }

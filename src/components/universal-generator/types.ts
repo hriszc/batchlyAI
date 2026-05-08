@@ -32,6 +32,21 @@ export interface AttachedFile {
   uploading: boolean;
 }
 
+export type TextLength = "short" | "medium" | "long";
+export type VideoDuration = "5s" | "10s" | "15s";
+
+export const TEXT_LENGTH_TOKENS: Record<TextLength, number> = {
+  short: 256,
+  medium: 1024,
+  long: 2048,
+};
+
+export const VIDEO_DURATION_SECONDS: Record<VideoDuration, number> = {
+  "5s": 5,
+  "10s": 10,
+  "15s": 15,
+};
+
 export interface GeneratorState {
   promptTemplate: string;
   variableGroups: VariableGroup[];
@@ -40,6 +55,8 @@ export interface GeneratorState {
   quantity: number;
   aspectRatio: string;
   model: string;
+  textLength: TextLength;
+  videoDuration: VideoDuration;
   error: string | null;
   creditsRemaining: number | null;
   attachedFiles: AttachedFile[];
@@ -51,6 +68,8 @@ export type GeneratorAction =
   | { type: "SET_QUANTITY"; payload: number }
   | { type: "SET_ASPECT_RATIO"; payload: string }
   | { type: "SET_MODEL"; payload: string }
+  | { type: "SET_TEXT_LENGTH"; payload: TextLength }
+  | { type: "SET_VIDEO_DURATION"; payload: VideoDuration }
   | { type: "ADD_VALUE"; payload: { groupId: GroupId } }
   | { type: "UPDATE_VALUE"; payload: { groupId: GroupId; index: number; value: string } }
   | { type: "REMOVE_VALUE"; payload: { groupId: GroupId; index: number } }

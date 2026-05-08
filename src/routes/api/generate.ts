@@ -85,7 +85,9 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
       try {
         const textModel = model === "z-text-pro" ? "deepseek-v4-pro" : "deepseek-v4-flash";
         const texts = await Promise.all(
-          Array.from({ length: n }, () => textFn({ prompt: body.prompt, model: textModel })),
+          Array.from({ length: n }, () =>
+            textFn({ prompt: body.prompt, model: textModel, maxTokens: body.maxTokens }),
+          ),
         );
         const newBalance = deducted.credits - maxCost;
 
@@ -164,6 +166,7 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
           aspectRatio: body.aspectRatio,
           n,
           model,
+          duration: body.duration,
         });
         isVideo = model.startsWith("z-video");
       } else {

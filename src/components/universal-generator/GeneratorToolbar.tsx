@@ -5,9 +5,23 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 import { ModelPicker } from "./ModelPicker";
 import { MODELS } from "./models";
+import type { TextLength, VideoDuration } from "./types";
+import { TEXT_LENGTH_TOKENS, VIDEO_DURATION_SECONDS } from "./types";
 
 const ASPECT_RATIOS = ["16:9", "1:1", "9:16"];
 const QUANTITIES = [1, 2, 4];
+
+const TEXT_LENGTHS: { value: TextLength; label: string; labelZh: string }[] = [
+  { value: "short", label: "Short", labelZh: "短" },
+  { value: "medium", label: "Medium", labelZh: "中" },
+  { value: "long", label: "Long", labelZh: "长" },
+];
+
+const VIDEO_DURATIONS: { value: VideoDuration; label: string; labelZh: string }[] = [
+  { value: "5s", label: "5s", labelZh: "5秒" },
+  { value: "10s", label: "10s", labelZh: "10秒" },
+  { value: "15s", label: "15s", labelZh: "15秒" },
+];
 
 interface GeneratorToolbarProps {
   showVariables: boolean;
@@ -18,6 +32,10 @@ interface GeneratorToolbarProps {
   onSetAspectRatio: (ratio: string) => void;
   quantity: number;
   onSetQuantity: (qty: number) => void;
+  textLength: TextLength;
+  onSetTextLength: (len: TextLength) => void;
+  videoDuration: VideoDuration;
+  onSetVideoDuration: (dur: VideoDuration) => void;
   comboCount: number;
   groupCount: number;
   hasGroups: boolean;
@@ -34,17 +52,22 @@ export function GeneratorToolbar({
   onSetAspectRatio,
   quantity,
   onSetQuantity,
+  textLength,
+  onSetTextLength,
+  videoDuration,
+  onSetVideoDuration,
   comboCount,
   groupCount,
   hasGroups,
   creditEstimate,
   creditsRemaining,
 }: GeneratorToolbarProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [showSettings, setShowSettings] = useState(false);
   const modelInfo = MODELS.find((m) => m.id === currentModel);
   const isImage = modelInfo?.category === "image";
   const isText = modelInfo?.category === "text";
+  const isVideo = modelInfo?.category === "video";
 
   return (
     <div className="flex flex-wrap items-center gap-3 border-t bg-muted/20 px-4 py-2.5 text-sm">
@@ -74,14 +97,17 @@ export function GeneratorToolbar({
             {isText && (
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  Text models generate creative responses. Try different prompts for varied results.
+                  Output length: {TEXT_LENGTH_TOKENS[textLength]} tokens.
                 </p>
               </div>
             )}
-            {!isImage && !isText && (
-              <p className="text-xs text-muted-foreground">
-                Video generation uses the selected quantity and aspect ratio.
-              </p>
+            {isVideo && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Duration: {VIDEO_DURATION_SECONDS[videoDuration]}s. Aspect ratio: use the ratio
+                  buttons.
+                </p>
+              </div>
             )}
             <button
               onClick={() => setShowSettings(false)}
@@ -97,44 +123,93 @@ export function GeneratorToolbar({
 
       <ModelPicker currentModel={currentModel} onSelect={onSelectModel} />
 
+      {/* Aspect ratio: shown for image and video, hidden for text */}
+      {!isText && (
+        <>
+          <span className="text-muted-foreground/40">|</span>
+          <div className="flex items-center gap-1">
+            {ASPECT_RATIOS.map((ratio) => (
+              <button
+                key={ratio}
+                type="button"
+                onClick={() => onSetAspectRatio(ratio)}
+                className={`rounded px-2 py-1 text-xs whitespace-nowrap transition-colors ${
+                  aspectRatio === ratio
+                    ? "bg-[#0071e3]/10 font-medium text-[#0071e3]"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                {ratio}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
       <span className="text-muted-foreground/40">|</span>
 
-      <div className="flex items-center gap-1">
-        {ASPECT_RATIOS.map((ratio) => (
-          <button
-            key={ratio}
-            type="button"
-            onClick={() => onSetAspectRatio(ratio)}
-            className={`rounded px-2 py-1 text-xs whitespace-nowrap transition-colors ${
-              aspectRatio === ratio
-                ? "bg-[#0071e3]/10 font-medium text-[#0071e3]"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            }`}
-          >
-            {ratio}
-          </button>
-        ))}
-      </div>
+      {/* Image: quantity selector */}
+      {isImage && (
+        <div className="flex items-center gap-1">
+          <span className="whitespace-nowrap text-muted-foreground">{t("quantity")}：</span>
+          {QUANTITIES.map((qty) => (
+            <button
+              key={qty}
+              type="button"
+              onClick={() => onSetQuantity(qty)}
+              className={`h-6 w-6 rounded text-xs transition-colors ${
+                quantity === qty
+                  ? "bg-[#0071e3]/10 font-medium text-[#0071e3]"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              {qty}
+            </button>
+          ))}
+        </div>
+      )}
 
-      <span className="text-muted-foreground/40">|</span>
+      {/* Text: output length selector */}
+      {isText && (
+        <div className="flex items-center gap-1">
+          <span className="whitespace-nowrap text-muted-foreground">Length：</span>
+          {TEXT_LENGTHS.map((len) => (
+            <button
+              key={len.value}
+              type="button"
+              onClick={() => onSetTextLength(len.value)}
+              className={`rounded px-2 py-1 text-xs whitespace-nowrap transition-colors ${
+                textLength === len.value
+                  ? "bg-[#0071e3]/10 font-medium text-[#0071e3]"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              {language === "zh" ? len.labelZh : len.label}
+            </button>
+          ))}
+        </div>
+      )}
 
-      <div className="flex items-center gap-1">
-        <span className="whitespace-nowrap text-muted-foreground">{t("quantity")}：</span>
-        {QUANTITIES.map((qty) => (
-          <button
-            key={qty}
-            type="button"
-            onClick={() => onSetQuantity(qty)}
-            className={`h-6 w-6 rounded text-xs transition-colors ${
-              quantity === qty
-                ? "bg-[#0071e3]/10 font-medium text-[#0071e3]"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            }`}
-          >
-            {qty}
-          </button>
-        ))}
-      </div>
+      {/* Video: duration selector */}
+      {isVideo && (
+        <div className="flex items-center gap-1">
+          <span className="whitespace-nowrap text-muted-foreground">Duration：</span>
+          {VIDEO_DURATIONS.map((dur) => (
+            <button
+              key={dur.value}
+              type="button"
+              onClick={() => onSetVideoDuration(dur.value)}
+              className={`rounded px-2 py-1 text-xs whitespace-nowrap transition-colors ${
+                videoDuration === dur.value
+                  ? "bg-[#0071e3]/10 font-medium text-[#0071e3]"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`}
+            >
+              {language === "zh" ? dur.labelZh : dur.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <span className="text-muted-foreground/40">|</span>
 

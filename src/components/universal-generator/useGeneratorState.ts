@@ -3,7 +3,15 @@ import { useReducer, useCallback, useRef, useEffect } from "react";
 import { DEFAULT_MODEL, MODELS } from "./models";
 import { unifiedPoll } from "./poll";
 import { reducer, initialState } from "./reducer";
-import type { GeneratorState, GeneratorAction, GroupId, PromptCombination } from "./types";
+import type {
+  GeneratorState,
+  GeneratorAction,
+  GroupId,
+  PromptCombination,
+  TextLength,
+  VideoDuration,
+} from "./types";
+import { TEXT_LENGTH_TOKENS, VIDEO_DURATION_SECONDS } from "./types";
 import { computePromptCombinations } from "./utils";
 
 function generateResultId(): string {
@@ -44,6 +52,14 @@ export function useGeneratorState() {
 
   const setModel = useCallback((value: string) => {
     dispatch({ type: "SET_MODEL", payload: value });
+  }, []);
+
+  const setTextLength = useCallback((value: TextLength) => {
+    dispatch({ type: "SET_TEXT_LENGTH", payload: value });
+  }, []);
+
+  const setVideoDuration = useCallback((value: VideoDuration) => {
+    dispatch({ type: "SET_VIDEO_DURATION", payload: value });
   }, []);
 
   const addValue = useCallback((groupId: GroupId) => {
@@ -95,8 +111,9 @@ export function useGeneratorState() {
                 aspectRatio: currentState.aspectRatio,
                 n: currentState.quantity,
                 model: currentState.model,
-                promptTemplate: currentState.promptTemplate,
-                variableGroups: currentState.variableGroups,
+                ...(model?.category === "video"
+                  ? { duration: VIDEO_DURATION_SECONDS[currentState.videoDuration] }
+                  : {}),
               }),
             });
             const json = (await resp.json()) as {
@@ -209,8 +226,7 @@ export function useGeneratorState() {
                 prompt: combination.prompt,
                 n: 1,
                 model: currentState.model,
-                promptTemplate: currentState.promptTemplate,
-                variableGroups: currentState.variableGroups,
+                maxTokens: TEXT_LENGTH_TOKENS[currentState.textLength],
               }),
             });
             const json = (await resp.json()) as {
@@ -321,6 +337,8 @@ export function useGeneratorState() {
       addValue,
       updateValue,
       removeValue,
+      setTextLength,
+      setVideoDuration,
       startGenerating,
       setError,
       uploadFile,

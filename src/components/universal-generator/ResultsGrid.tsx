@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { Share2Icon, DownloadIcon } from "lucide-react";
+import { useState, useMemo, useCallback } from "react";
 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -41,22 +42,94 @@ export function ResultsGrid({
   isGenerating,
   showWatermark = false,
   totalExpected,
+  onShare,
 }: ResultsGridProps) {
   const { t } = useLanguage();
   const [showAll, setShowAll] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   const displayResults = useMemo(() => {
     if (isGenerating) return results;
     return showAll ? results : filterBest(results);
   }, [results, isGenerating, showAll]);
 
+  const handleDownloadAll = useCallback(async () => {
+    const downloadable = displayResults.filter(
+      (r) => r.status === "complete" && (r.imageUrl || r.textContent),
+    );
+    if (downloadable.length === 0) return;
+    setDownloading(true);
+    for (let i = 0; i < downloadable.length; i++) {
+      const r = downloadable[i];
+      const url = r.imageUrl;
+      const ext = url ? "png" : "txt";
+      const filename = `batchlyai-${r.id}.${ext}`;
+      try {
+        const content = url || r.textContent || "";
+        if (url) {
+          const resp = await fetch(url);
+          const blob = await resp.blob();
+          const objUrl = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = objUrl;
+          a.download = filename;
+          a.click();
+          URL.revokeObjectURL(objUrl);
+        } else {
+          const blob = new Blob([content], { type: "text/plain" });
+          const objUrl = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = objUrl;
+          a.download = filename;
+          a.click();
+          URL.revokeObjectURL(objUrl);
+        }
+        if (i < downloadable.length - 1) {
+          await new Promise((r) => setTimeout(r, 300));
+        }
+      } catch {
+        // Skip failed downloads
+      }
+    }
+    setDownloading(false);
+  }, [displayResults]);
+
   if (!isGenerating && results.length === 0) return null;
+
+  const showActions = !isGenerating && results.length > 0;
 
   return (
     <div className="mt-8">
-      <h2 className="mb-6 text-center text-[28px] leading-[1.10] font-semibold text-foreground sm:text-[32px] md:text-[40px]">
-        {t("results")}
-      </h2>
+      <div className="mb-6 flex items-center justify-center gap-3">
+        <h2 className="text-[28px] leading-[1.10] font-semibold text-foreground sm:text-[32px] md:text-[40px]">
+          {t("results")}
+        </h2>
+        {showActions && (
+          <div className="flex items-center gap-1">
+            {onShare && (
+              <button
+                type="button"
+                onClick={onShare}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border bg-muted/30 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                title="Share Results"
+              >
+                <Share2Icon className="size-4" />
+              </button>
+            )}
+            {displayResults.length >= 2 && (
+              <button
+                type="button"
+                onClick={handleDownloadAll}
+                disabled={downloading}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border bg-muted/30 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+                title="Download All"
+              >
+                <DownloadIcon className="size-4" />
+              </button>
+            )}
+          </div>
+        )}
+      </div>
 
       {isGenerating && (
         <p className="mb-4 text-center text-sm text-muted-foreground">
@@ -64,7 +137,7 @@ export function ResultsGrid({
         </p>
       )}
 
-      {!isGenerating && results.length > 0 && (
+      {showActions && (
         <div className="mb-4 flex justify-center">
           <button
             type="button"
@@ -84,7 +157,7 @@ export function ResultsGrid({
             ))}
       </div>
 
-      {!isGenerating && results.length > 0 && (
+      {showActions && (
         <p className="mt-6 text-center text-xs text-muted-foreground/60">
           {t("resultsSaved")}{" "}
           <a href="/my/generations" className="text-[#0071e3] hover:underline">
