@@ -57,3 +57,35 @@ const result = await apiMethod.call(auth.api, { body, headers, request, asRespon
 1. **`.env.production` 必须存在且包含 `VITE_BASE_URL=https://batchlyai.com`**。缺失会导致前端 JS 请求 `localhost:3000`，用户登录/注册报 `ERR_CONNECTION_REFUSED`。
 2. **`requireEmailVerification: true` 必须配合真实邮件发送**。若 `sendEmailVerification` 等回调是 `console.log` 占位，会导致新用户注册后永远无法验证邮箱，下次登录被 403。老用户的 `email_verified` 字段需批量改为 `true`。
 3. **smoke 测试不可依赖 `grep 'token'`**。注册 API 返回 `"token":null` 也会匹配，需用更严格的正则（如 `grep '"token":"'`）。
+
+## trustedOrigins 回归检查
+- `src/lib/auth/auth.ts` 的 `trustedOrigins` 必须包含 `"https://*.workers.dev"`，否则 Worker 预览版登录会报 403 Invalid origin。
+- 每次合并 PR 后检查 `grep trustedOrigins src/lib/auth/auth.ts` 确保该行未被覆盖。
+
+## 合并 PR 后自检清单
+
+**每次批量合并 PR 后必须执行以下检查，防止 squash merge 冲突覆盖之前的修复：**
+
+```bash
+# 1. 运行安全脚本
+bash scripts/check-production-safety.sh
+
+# 2. 验证前端 JS 不会请求 localhost
+grep -r 'localhost:3000' .output/public/assets/ && echo "❌ localhost leak!" || echo "✅"
+
+# 3. 验证 Workers 预览版登录未受影响
+curl -s -X POST https://98ae3cd3-batchlyai.hriszc.workers.dev/api/auth/sign-in/email \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@test.com","password":"test123456"}' | grep -q '"token"' && echo "✅" || echo "❌"
+
+# 4. 验证生产域名登录正常
+curl -s -X POST https://batchlyai.com/api/auth/sign-in/email \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@test.com","password":"test123456"}' | grep -q '"token"' && echo "✅" || echo "❌"
+```
+
+**常见合并冲突导致回归的模式：**
+- `auth.ts` 改了 trustedOrigins → 后续 PR 的旧版 auth.ts 用 `--theirs` 覆盖
+- `wrangler.toml` 加了 bindings → 后续 PR 不带 bindings 的版本覆盖
+- `translations.ts` 加了 key → 后续 PR 的旧版翻译导致 key 丢失
+- `.env.production` → 后续 PR 可能在 .gitignore 导致文件被删
