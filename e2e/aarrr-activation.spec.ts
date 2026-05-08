@@ -71,7 +71,7 @@ test.describe("AARRR Activation — complete signup-to-result flow", () => {
     await page.fill('input[type="email"]', "new@test.com");
     const nameInput = page.locator('input[name="name"]').or(page.locator('input[id="name"]'));
     if (await nameInput.isVisible()) await nameInput.fill("Test User");
-    await page.fill('input[type="password"]').first().fill("test123456");
+    await page.locator('input[type="password"]').first().fill("test123456");
     const btn = page
       .locator("button")
       .filter({ hasText: /sign up|注册/i })
