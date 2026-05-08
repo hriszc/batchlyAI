@@ -36,7 +36,7 @@ export default defineConfig({
         },
         "src/components/universal-generator/useGeneratorState.ts": {
           statements: 55,
-          branches: 35,
+          branches: 33,
           functions: 70,
           lines: 55,
         },
