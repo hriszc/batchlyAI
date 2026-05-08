@@ -90,9 +90,7 @@ export function GeneratorCard({ state, actions, onRequireAuth }: GeneratorCardPr
     ? undefined
     : comboCount === 0
       ? t("disabledNoCombinations")
-      : comboCount > 500
-        ? t("disabledTooManyCombinations", { count: String(comboCount) })
-        : undefined;
+      : undefined;
 
   return (
     <div className="rounded-2xl bg-card shadow-[rgba(0,0,0,0.22)_3px_5px_30px_0px]">
@@ -240,7 +238,7 @@ export function GeneratorCard({ state, actions, onRequireAuth }: GeneratorCardPr
           onClick={() =>
             onRequireAuth ? onRequireAuth(actions.startGenerating) : actions.startGenerating()
           }
-          disabled={comboCount === 0 || comboCount > 500 || state.isGenerating}
+          disabled={comboCount === 0 || state.isGenerating}
           title={disabledReason}
           className="inline-flex h-9 items-center justify-center gap-2 rounded-[980px] bg-accent-blue px-5 py-2 text-[17px] leading-[1.0] font-normal whitespace-nowrap text-white transition-all hover:bg-accent-blue-hover focus-visible:ring-2 focus-visible:ring-accent-blue focus-visible:ring-offset-2 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
         >

@@ -1,8 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { eq } from "drizzle-orm";
 
 import { env } from "@/env/server";
 import { jsonResponse } from "@/lib/api-helpers";
-import { getKvBinding } from "@/lib/cloudflare/bindings";
+import { getD1Binding, getKvBinding } from "@/lib/cloudflare/bindings";
+import { getDb } from "@/lib/db";
+import { generation } from "@/lib/db/schema/data-flywheel.schema";
 
 function hexToBuf(hex: string): Uint8Array {
   const bytes = new Uint8Array(Math.ceil(hex.length / 2));
@@ -74,7 +77,26 @@ export async function handleGrsWebhook(request: Request): Promise<Response> {
 
     if (body.status === "succeeded" && body.results?.length) {
       taskData.status = "succeeded";
-      (taskData as Record<string, unknown>).urls = body.results.map((r) => r.url);
+      const urls = body.results.map((r) => r.url);
+      (taskData as Record<string, unknown>).urls = urls;
+
+      // Update generation record with result URLs
+      try {
+        const genRaw = await kv.get(`gen:${taskId}`);
+        if (genRaw) {
+          const genData = JSON.parse(genRaw) as { generationId: string };
+          const binding = getD1Binding();
+          if (binding) {
+            const db = getDb(binding);
+            await db
+              .update(generation)
+              .set({ resultUrls: JSON.stringify(urls) })
+              .where(eq(generation.id, genData.generationId));
+          }
+        }
+      } catch {
+        /* non-fatal */
+      }
     } else if (body.status === "failed" || body.error) {
       taskData.status = "failed";
       (taskData as Record<string, unknown>).error = body.error || "Generation failed";

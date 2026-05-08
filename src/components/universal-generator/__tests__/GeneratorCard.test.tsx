@@ -248,23 +248,6 @@ describe("GeneratorCard", () => {
     expect(btn.getAttribute("title")).toContain("{{variables}}");
   });
 
-  it("shows disabled tooltip when too many combinations", () => {
-    const manyComboState: GeneratorState = {
-      ...baseState,
-      promptTemplate:
-        "{{a, b, c, d, e, f, g, h, i}} {{1, 2, 3, 4, 5, 6, 7, 8, 9}} {{x, y, z, w, v, u, t}}",
-      variableGroups: [
-        { id: "var_0", values: Array.from({ length: 9 }, (_, i) => `v${i}`) },
-        { id: "var_1", values: Array.from({ length: 9 }, (_, i) => `v${i}`) },
-        { id: "var_2", values: Array.from({ length: 7 }, (_, i) => `v${i}`) },
-      ],
-    };
-    renderWithProviders(<GeneratorCard state={manyComboState} actions={mockActions} />);
-    const btn = screen.getByText("Generate");
-    // 9*9*7 = 567 > 500
-    expect(btn.getAttribute("title")).toContain("exceeds the 500 limit");
-  });
-
   it("shows generating state with no title tooltip", () => {
     const genState: GeneratorState = { ...baseState, isGenerating: true };
     renderWithProviders(<GeneratorCard state={genState} actions={mockActions} />);

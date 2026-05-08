@@ -235,9 +235,10 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
       /* non-fatal */
     }
 
+    const generationId = crypto.randomUUID();
     try {
       await db.insert(generation).values({
-        id: crypto.randomUUID(),
+        id: generationId,
         userId,
         promptTemplate: template,
         resolvedPrompts: JSON.stringify([body.prompt]),
@@ -249,6 +250,22 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
       });
     } catch {
       // Generation history insert is non-fatal
+    }
+
+    // Store generation ID in KV so webhook/poll can update resultUrls
+    try {
+      const kv = getKvBinding();
+      if (kv) {
+        await Promise.all(
+          predictionIds.map((pid) =>
+            kv.put(`gen:${pid}`, JSON.stringify({ generationId, userId }), {
+              expirationTtl: 3600,
+            }),
+          ),
+        );
+      }
+    } catch {
+      /* non-fatal */
     }
 
     // Analytics (non-blocking)
