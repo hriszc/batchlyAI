@@ -19,13 +19,20 @@ export function createAuth(d1Binding?: D1Database) {
   const binding = d1Binding ?? getD1Binding();
   if (!binding) return null;
 
+  if (env.BETTER_AUTH_SECRET === "dev-secret-do-not-use-in-production-42-characters-minimum") {
+    console.error(
+      "[auth] FATAL: BETTER_AUTH_SECRET is the public dev default. Set a real secret via `wrangler secret put BETTER_AUTH_SECRET`.",
+    );
+    return null;
+  }
+
   try {
     const db = getDb(binding);
 
     _auth = betterAuth({
       baseURL: env.VITE_BASE_URL,
       telemetry: { enabled: false },
-      trustedOrigins: [env.VITE_BASE_URL, "http://localhost:3000", "https://*.workers.dev"],
+      trustedOrigins: [env.VITE_BASE_URL, "http://localhost:3000"],
       database: drizzleAdapter(db, { provider: "sqlite", schema }),
       plugins: [tanstackStartCookies()],
       user: {

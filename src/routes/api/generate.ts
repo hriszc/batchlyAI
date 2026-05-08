@@ -90,7 +90,7 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
             textFn({ prompt: body.prompt, model: textModel, maxTokens: body.maxTokens }),
           ),
         );
-        const newBalance = deducted.credits - maxCost;
+        const newBalance = deducted.credits;
 
         if (texts.length > 0) {
           await setCachedFn(body.prompt, model, body.aspectRatio || "1:1", texts.length, texts);

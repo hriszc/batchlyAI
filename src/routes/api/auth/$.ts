@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { jsonResponse } from "@/lib/api-helpers";
+import { jsonResponse, verifyOrigin } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { processReferralAfterSignup } from "@/lib/referral/process";
@@ -47,6 +47,11 @@ export const Route = createFileRoute("/api/auth/$")({
         try {
           const auth = createAuth();
           if (!auth) return dbUnavailable();
+
+          // CSRF protection for state-changing operations
+          if (!verifyOrigin(request)) {
+            return jsonResponse({ error: "Invalid origin" }, 403);
+          }
 
           const url = new URL(request.url);
           const path = url.pathname.replace("/api/auth/", "");

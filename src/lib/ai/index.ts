@@ -295,19 +295,21 @@ async function chatDeepseek(
   // leaving content empty. Retry once with doubled max_tokens if needed.
   if (!text && opts?.maxTokens) {
     const retryOpts = { ...opts, maxTokens: opts.maxTokens * 2 };
-    const retryResp = await fetch(DEEPSEEK_HOST, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${key}`,
+    const retryResp = await fetchWithFallback(
+      DEEPSEEK_HOST,
+      DEEPSEEK_DIRECT,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          model: opts?.model ?? "deepseek-v4-flash",
+          max_tokens: retryOpts.maxTokens,
+          temperature: retryOpts.temperature ?? 0.7,
+          messages,
+        }),
       },
-      body: JSON.stringify({
-        model: opts?.model ?? "deepseek-v4-flash",
-        max_tokens: retryOpts.maxTokens,
-        temperature: retryOpts.temperature ?? 0.7,
-        messages,
-      }),
-    });
+      "deepseek",
+    );
     if (retryResp.ok) {
       const retryData = (await retryResp.json()) as typeof data;
       return retryData.choices[0]?.message?.content?.trim() ?? "";
