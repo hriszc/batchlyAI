@@ -12,6 +12,7 @@ interface ResultsGridProps {
   totalExpected?: number;
   showWatermark?: boolean;
   onShare?: () => void;
+  onPublish?: () => void;
 }
 
 function SkeletonCard() {
@@ -43,6 +44,7 @@ export function ResultsGrid({
   showWatermark = false,
   totalExpected,
   onShare,
+  onPublish,
 }: ResultsGridProps) {
   const { t } = useLanguage();
   const [showAll, setShowAll] = useState(false);
@@ -114,6 +116,16 @@ export function ResultsGrid({
                 title="Share Results"
               >
                 <Share2Icon className="size-4" />
+              </button>
+            )}
+            {onPublish && (
+              <button
+                type="button"
+                onClick={onPublish}
+                className="inline-flex h-8 items-center gap-1 rounded-lg border bg-muted/30 px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                title={t("publishWork")}
+              >
+                {t("publish")}
               </button>
             )}
             {displayResults.length >= 2 && (
