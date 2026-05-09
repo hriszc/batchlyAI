@@ -91,11 +91,21 @@ export function ShareScreenshot({
           useCORS: true,
           allowTaint: false,
           onclone: (clonedDoc: Document) => {
-            // html2canvas cannot parse oklch() color functions from
-            // Tailwind CSS v4 theme. Remove <style> tags from the clone
-            // so the parser only sees inline/explicit colors (the card
-            // already uses bg-white / text-gray-* which are safe).
-            clonedDoc.querySelectorAll("style").forEach((el: HTMLStyleElement) => el.remove());
+            // html2canvas cannot parse oklch() color functions from Tailwind v4.
+            // Replace them with safe fallback colors instead of removing the
+            // entire <style> tags (which would break all class-based styling).
+            clonedDoc.querySelectorAll("style").forEach((el: HTMLStyleElement) => {
+              el.textContent = el
+                .textContent!.replace(/oklch\([^)]+\)/g, "#000000")
+                .replace(/oklch\([^)]+\)/g, "#000000");
+            });
+            // Also fix inline/dynamic oklch in the card itself
+            clonedDoc.querySelectorAll("[style*='oklch']").forEach((el: Element) => {
+              (el as HTMLElement).style.cssText = (el as HTMLElement).style.cssText.replace(
+                /oklch\([^)]+\)/g,
+                "#000000",
+              );
+            });
           },
         });
 
