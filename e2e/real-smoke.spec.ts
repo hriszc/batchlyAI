@@ -81,11 +81,11 @@ test.describe("Real Environment Smoke Tests (no mocking)", () => {
   });
 
   // --- API-level tests (no browser, direct HTTP) ---
-  // Skip in CI: local dev server lacks D1 bindings. Run locally with `wrangler dev` or
-  // against a deployed preview URL by setting E2E_BASE_URL in CI.
-  const apiTest = test.skip(!!process.env.CI, "Requires D1 — run locally or against preview URL");
+  // Skip in CI: local dev server lacks D1 bindings.
+  // Run locally with `wrangler dev` or set E2E_BASE_URL to a deployed preview.
 
-  apiTest("sign-up API returns token with 10 credits", async ({ request }) => {
+  test("sign-up API returns token with 10 credits", async ({ request }) => {
+    test.skip(!!process.env.CI, "Requires D1");
     const resp = await request.post("/api/auth/sign-up/email", {
       data: { email: TEST_EMAIL, password: "e2e-test-123456", name: "E2E API" },
     });
@@ -95,7 +95,8 @@ test.describe("Real Environment Smoke Tests (no mocking)", () => {
     expect(body.user?.credits).toBe(10);
   });
 
-  apiTest("sign-in API returns token", async ({ request }) => {
+  test("sign-in API returns token", async ({ request }) => {
+    test.skip(!!process.env.CI, "Requires D1");
     const resp = await request.post("/api/auth/sign-in/email", {
       data: { email: TEST_EMAIL, password: "e2e-test-123456" },
     });
@@ -104,32 +105,22 @@ test.describe("Real Environment Smoke Tests (no mocking)", () => {
     expect(body.token).toBeTruthy();
   });
 
-  apiTest("text generation API consumes 5 credits (z-text-fast)", async ({ request }) => {
-    // Sign up first to get a fresh token
+  test("text generation API consumes 5 credits (z-text-fast)", async ({ request }) => {
+    test.skip(!!process.env.CI, "Requires D1");
     const signup = await request.post("/api/auth/sign-up/email", {
-      data: {
-        email: `e2e-text-${Date.now()}@batchlyai.com`,
-        password: "e2e-test-123456",
-        name: "TextE2E",
-      },
+      data: { email: `e2e-text-${Date.now()}@batchlyai.com`, password: "e2e-test-123456", name: "TextE2E" },
     });
     const { token } = (await signup.json()) as { token: string };
 
-    // Call generate with text model
     const resp = await request.post("/api/generate", {
       headers: { Cookie: `better-auth.session_token=${token}` },
       data: { prompt: "Say hello in one word", n: 1, model: "z-text-fast" },
     });
     expect(resp.status()).toBe(200);
-    const body = (await resp.json()) as {
-      texts?: string[];
-      creditsRemaining?: number;
-      isText?: boolean;
-    };
+    const body = (await resp.json()) as { texts?: string[]; creditsRemaining?: number; isText?: boolean };
     expect(body.isText).toBe(true);
     expect(body.texts).toBeTruthy();
     expect(body.texts!.length).toBeGreaterThan(0);
-    // 10 initial - 5 for text-fast = 5 remaining
     expect(body.creditsRemaining).toBe(5);
   });
 });
