@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { env } from "@/env/server";
 import { jsonResponse, verifyOrigin } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
-import { env } from "@/env/server";
 import { sendEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { processReferralAfterSignup } from "@/lib/referral/process";
@@ -122,14 +122,8 @@ export const Route = createFileRoute("/api/auth/$")({
                       false,
                       ["sign"],
                     );
-                    const sig = await crypto.subtle.sign(
-                      "HMAC",
-                      key,
-                      encoder.encode(toSign),
-                    );
-                    const sigB64 = btoa(
-                      String.fromCharCode(...new Uint8Array(sig)),
-                    )
+                    const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(toSign));
+                    const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sig)))
                       .replace(/=/g, "")
                       .replace(/\+/g, "-")
                       .replace(/\//g, "_");
@@ -145,9 +139,7 @@ export const Route = createFileRoute("/api/auth/$")({
                         "<p>This link expires in 1 hour.</p>",
                         "<p>If you did not create this account, please ignore this email.</p>",
                       ].join(""),
-                    }).catch((err) =>
-                      console.error("[auth] sendEmail failed:", err),
-                    );
+                    }).catch((err) => console.error("[auth] sendEmail failed:", err));
                   }
                   await processReferralAfterSignup(request, json);
 

@@ -16,7 +16,7 @@ export const Route = createFileRoute("/api/diag/email")({
           return jsonResponse({ error: "Unauthorized" }, 401);
         }
 
-        const envExists = !!((globalThis as Record<string, unknown>).__env__);
+        const envExists = !!(globalThis as Record<string, unknown>).__env__;
         const env = (globalThis as Record<string, unknown>).__env__ as
           | Record<string, unknown>
           | undefined;
@@ -35,10 +35,7 @@ export const Route = createFileRoute("/api/diag/email")({
               subject: "BatchlyAI Email Diagnostic",
               html: "<p>This is a diagnostic email from BatchlyAI.</p>",
             });
-            return jsonResponse(
-              { ok: true, method: "cf-email", email: session.user.email },
-              200,
-            );
+            return jsonResponse({ ok: true, method: "cf-email", email: session.user.email }, 200);
           } catch (err) {
             cfError = err instanceof Error ? err.message : String(err);
           }

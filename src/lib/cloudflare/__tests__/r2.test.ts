@@ -42,9 +42,9 @@ describe("getR2PublicUrl", () => {
     delete (globalThis as Record<string, unknown>).__env__;
   });
 
-  it("returns key when R2 endpoint not configured", () => {
+  it("returns proxy URL when R2 endpoint not configured", () => {
     const url = getR2PublicUrl("uploads/u1/file.png");
-    expect(url).toBe("uploads/u1/file.png");
+    expect(url).toBe("/api/generation-files/uploads/u1/file.png");
   });
 
   it("returns full URL when R2 endpoint and bucket configured", () => {

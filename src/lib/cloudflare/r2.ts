@@ -38,7 +38,10 @@ export async function uploadToR2(
 export async function mirrorImageToR2(imageUrl: string, r2Key: string): Promise<string> {
   const r2 = getR2Binding();
   if (!r2) {
-    console.warn("[r2] mirrorImageToR2: no R2 binding, keeping original URL:", imageUrl?.slice(0, 80));
+    console.warn(
+      "[r2] mirrorImageToR2: no R2 binding, keeping original URL:",
+      imageUrl?.slice(0, 80),
+    );
     return imageUrl;
   }
 
