@@ -89,7 +89,7 @@ export function CreditPurchasePopover({ onClose }: CreditPurchasePopoverProps) {
   return (
     <div
       ref={popoverRef}
-      className="popover-enter absolute top-full right-0 z-50 mt-1 w-72 overflow-hidden rounded-xl border bg-popover shadow-lg"
+      className="popover-enter fixed inset-x-4 top-1/2 z-50 mx-auto max-w-sm -translate-y-1/2 overflow-hidden rounded-xl border bg-popover shadow-lg sm:absolute sm:inset-auto sm:top-full sm:right-0 sm:mt-1 sm:w-72 sm:translate-y-0"
     >
       <div className="flex items-center justify-between border-b px-4 py-3">
         <span className="text-sm font-semibold text-foreground">{t("buyCredits")}</span>
