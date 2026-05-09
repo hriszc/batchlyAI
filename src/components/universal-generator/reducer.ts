@@ -15,6 +15,7 @@ export const initialState: GeneratorState = {
   error: null,
   creditsRemaining: null,
   attachedFiles: [],
+  progress: null,
 };
 
 export function reducer(state: GeneratorState, action: GeneratorAction): GeneratorState {
@@ -92,6 +93,9 @@ export function reducer(state: GeneratorState, action: GeneratorAction): Generat
 
     case "SET_CREDITS_REMAINING":
       return { ...state, creditsRemaining: action.payload };
+
+    case "SET_PROGRESS":
+      return { ...state, progress: action.payload };
 
     case "ADD_ATTACHMENT":
       return { ...state, attachedFiles: [...state.attachedFiles, action.payload] };

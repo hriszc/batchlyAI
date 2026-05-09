@@ -13,6 +13,7 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { GeneratorToolbar } from "./GeneratorToolbar";
 import { getRandomPrompt } from "./inspire-prompts";
 import { MODELS } from "./models";
+import { ProgressBar } from "./ProgressBar";
 import type { GeneratorState, GroupId, TextLength, VideoDuration } from "./types";
 import { useExpandVariables } from "./useExpandVariables";
 import { computePromptCombinations } from "./utils";
@@ -143,6 +144,17 @@ export function GeneratorCard({ state, actions, onRequireAuth }: GeneratorCardPr
           </div>
         )}
       </div>
+
+      {/* Progress bar — async generation only */}
+      {state.isGenerating && state.progress && (
+        <div className="px-4 pb-1">
+          <ProgressBar
+            elapsed={state.progress.elapsed}
+            estimated={state.progress.estimated}
+            remaining={state.progress.remaining}
+          />
+        </div>
+      )}
 
       {/* Error banner */}
       {state.error && (
