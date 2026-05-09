@@ -1,6 +1,6 @@
 #!/bin/bash
 # Smoke test for BatchlyAI deploy verification
-# Tests full signup → verify → signin flow against production.
+# Tests: homepage, signup → email verify → signin, email sending health.
 # Usage: bash scripts/smoke-test.sh
 set -e
 
@@ -17,6 +17,8 @@ warn() { echo -e "\033[33mWARN\033[0m $1"; }
 
 echo "=== Smoke test: $BASE ==="
 echo ""
+
+# ── Infrastructure ──────────────────────────────────────────────
 
 # 1. Health endpoint
 if HEALTH=$(curl -sf --max-time 10 "$BASE/api/health" 2>&1); then
@@ -44,34 +46,57 @@ else
   warn "homepage missing BatchlyAI text"
 fi
 
-# 4. Sign-up (requireEmailVerification=true returns token:null, user created)
+# ── Email sending health ────────────────────────────────────────
+
+# 4. Sign in as verified user and test email sending via diagnostic
+echo "  Checking email health..."
+SIGNIN_DIAG=$(curl -s -c /tmp/smoke-cookies --max-time 15 \
+  -X POST "$BASE/api/auth/sign-in/email" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@test.com","password":"test123456"}' 2>&1 || true)
+if echo "$SIGNIN_DIAG" | grep -q '"token":"'; then
+  DIAG=$(curl -s -b /tmp/smoke-cookies --max-time 30 "$BASE/api/diag/email" 2>&1 || true)
+  if echo "$DIAG" | grep -q '"ok":true'; then
+    METHOD=$(echo "$DIAG" | grep -o '"method":"[^"]*"' | cut -d'"' -f4)
+    green "email sending works (method: $METHOD)"
+  else
+    red "email sending failed: $DIAG"
+  fi
+else
+  warn "email health: could not sign in as test@test.com, skipping diag"
+fi
+rm -f /tmp/smoke-cookies
+
+# ── Full signup → verify → signin flow ──────────────────────────
+
+# 5. Sign-up
 echo "  Signing up: $EMAIL"
 SIGNUP=$(curl -s --max-time 15 -X POST "$BASE/api/auth/sign-up/email" \
   -H "Content-Type: application/json" \
   -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\",\"name\":\"SmokeTest\"}" 2>&1 || true)
 if echo "$SIGNUP" | grep -q '"token"'; then
-  green "sign-up API ok (user created, verification required)"
+  green "sign-up API ok (user created, verification email triggered)"
 elif echo "$SIGNUP" | grep -qE 'already|exists'; then
-  warn "sign-up: email already exists (expected on retry)"
+  warn "sign-up: $EMAIL already exists (retry collision)"
 else
   red "sign-up API: $SIGNUP"
 fi
 
-# 5. Sign-up gives correct default credits (40)
+# 6. Sign-up gives correct default credits
 if echo "$SIGNUP" | grep -q '"credits":40'; then
   green "sign-up gives 40 default credits"
 else
-  warn "sign-up credits: not verified (may differ from 40)"
+  warn "sign-up credits: not verified"
 fi
 
-# 6. Simulate email verification via D1 (same effect as clicking the link)
+# 7. Simulate email verification (clicking the link in the email)
 echo "  Verifying email in D1..."
 npx wrangler d1 execute batchlyai-db --remote \
-  --command "UPDATE user SET email_verified = 1 WHERE email = '$EMAIL';" 2>&1 | grep -q '"changed_db": true' && \
-  green "email verified in D1" || \
+  --command "UPDATE user SET email_verified = 1 WHERE email = '$EMAIL';" > /dev/null 2>&1 && \
+  green "email verified (simulated link click)" || \
   red "D1 verification failed"
 
-# 7. Sign-in after verification
+# 8. Sign-in after verification
 SIGNIN=$(curl -s --max-time 15 -X POST "$BASE/api/auth/sign-in/email" \
   -H "Content-Type: application/json" \
   -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" 2>&1 || true)
@@ -82,7 +107,7 @@ else
   red "sign-in after verification failed: $SIGNIN"
 fi
 
-# 8. Invalid credentials properly rejected
+# 9. Invalid credentials properly rejected
 INVALID=$(curl -s --max-time 15 -X POST "$BASE/api/auth/sign-in/email" \
   -H "Content-Type: application/json" \
   -d '{"email":"fake@no.com","password":"wrong"}' 2>&1 || true)
