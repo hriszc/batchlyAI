@@ -96,7 +96,7 @@ describe("createGrsaiPredictions", () => {
     expect(body.urls).toEqual([]);
   });
 
-  it("returns urls synchronously when AIGATE returns succeeded with results", async () => {
+  it("returns urls synchronously when progress=100 and status=succeeded", async () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: () =>
@@ -104,6 +104,7 @@ describe("createGrsaiPredictions", () => {
           code: 0,
           data: {
             id: "grs-sync",
+            progress: 100,
             status: "succeeded",
             results: [
               { url: "https://aigate.com/output/img1.png" },
@@ -121,6 +122,28 @@ describe("createGrsaiPredictions", () => {
       "https://aigate.com/output/img1.png",
       "https://aigate.com/output/img2.png",
     ]);
+  });
+
+  it("returns async when progress < 100 even with results present", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          code: 0,
+          data: {
+            id: "grs-not-ready",
+            progress: 50,
+            status: "succeeded",
+            results: [{ url: "https://aigate.com/output/partial.png" }],
+          },
+          msg: "success",
+        }),
+    });
+    const results = await createGrsaiPredictions({ prompt: "test" });
+    expect(results).toHaveLength(1);
+    expect(results[0].id).toBe("grs-not-ready");
+    expect(results[0].status).toBe("processing");
+    expect(results[0].urls).toBeUndefined();
   });
 
   it("returns async status when AIGATE returns only id", async () => {

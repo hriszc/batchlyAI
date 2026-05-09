@@ -91,15 +91,24 @@ export async function createGrsaiPredictions({
         }
         const raw = (await resp.json()) as {
           code: number;
-          data: { id: string; status?: string; results?: { url: string }[] };
+          data: {
+            id: string;
+            status?: string;
+            progress?: number;
+            results?: { url: string }[];
+          };
           msg: string;
         };
         if (raw.code !== 0 || !raw.data?.id) {
           throw new Error(`grsai API unexpected response: ${JSON.stringify(raw)}`);
         }
-        // AIGATE may return results synchronously (status="succeeded" with urls)
-        // or asynchronously (just id, results come via webhook callback)
-        if (raw.data.status === "succeeded" && raw.data.results?.length) {
+        // AIGATE may return results synchronously when progress reaches 100.
+        // If not at 100%, treat as async (results arrive via webhook callback).
+        if (
+          raw.data.progress === 100 &&
+          raw.data.status === "succeeded" &&
+          raw.data.results?.length
+        ) {
           return {
             id: raw.data.id,
             status: "succeeded",
