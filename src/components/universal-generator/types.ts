@@ -60,6 +60,7 @@ export interface GeneratorState {
   error: string | null;
   creditsRemaining: number | null;
   attachedFiles: AttachedFile[];
+  progress?: { elapsed: number; estimated: number; remaining: number } | null;
 }
 
 export type GeneratorAction =
@@ -79,4 +80,8 @@ export type GeneratorAction =
   | { type: "SET_CREDITS_REMAINING"; payload: number | null }
   | { type: "ADD_ATTACHMENT"; payload: AttachedFile }
   | { type: "UPDATE_ATTACHMENT"; payload: { id: string; url: string; key: string } }
-  | { type: "REMOVE_ATTACHMENT"; payload: string };
+  | { type: "REMOVE_ATTACHMENT"; payload: string }
+  | {
+      type: "SET_PROGRESS";
+      payload: { elapsed: number; estimated: number; remaining: number } | null;
+    };

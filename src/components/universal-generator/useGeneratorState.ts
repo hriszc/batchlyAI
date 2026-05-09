@@ -79,6 +79,7 @@ export function useGeneratorState() {
   const startGenerating = useCallback(() => {
     const currentState = stateRef.current;
     dispatch({ type: "START_GENERATING" });
+    dispatch({ type: "SET_PROGRESS", payload: null });
 
     const combinations = computePromptCombinations(
       currentState.promptTemplate,
@@ -204,7 +205,11 @@ export function useGeneratorState() {
 
           // Unified polling: merge all prediction IDs into a single poll loop
           if (asyncPendings.length > 0) {
-            const polled = (await unifiedPoll(asyncPendings)) as typeof results;
+            const isVideo = model?.category === "video";
+            const estimatedMs = isVideo ? 300_000 : 90_000;
+            const polled = (await unifiedPoll(asyncPendings, estimatedMs, (p) => {
+              dispatch({ type: "SET_PROGRESS", payload: p });
+            })) as typeof results;
             results = [...results, ...polled];
           }
 
@@ -212,6 +217,7 @@ export function useGeneratorState() {
             results = results.map((r) => ({ ...r, watermark: true }));
           }
           dispatch({ type: "FINISH_GENERATING", payload: results });
+          dispatch({ type: "SET_PROGRESS", payload: null });
           if (globalError) {
             dispatch({ type: "SET_ERROR", payload: globalError });
           }

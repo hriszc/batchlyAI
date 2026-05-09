@@ -17,7 +17,17 @@ interface AsyncPending {
   combination: PromptCombination;
 }
 
-export async function unifiedPoll(pendings: AsyncPending[]): Promise<GeneratedResult[]> {
+export interface PollProgress {
+  elapsed: number;
+  estimated: number;
+  remaining: number;
+}
+
+export async function unifiedPoll(
+  pendings: AsyncPending[],
+  estimatedMs?: number,
+  onProgress?: (progress: PollProgress) => void,
+): Promise<GeneratedResult[]> {
   const maxAttempts = 60;
   const interval = 2000;
 
@@ -33,6 +43,10 @@ export async function unifiedPoll(pendings: AsyncPending[]): Promise<GeneratedRe
   const modelType = pendings[0]?.modelType ?? "replicate";
   const pendingIds = new Set(allIds);
   const finished: GeneratedResult[] = [];
+
+  // Default estimates: image ~90s, video ~300s
+  const estimated = estimatedMs ?? 90_000;
+  const startTime = Date.now();
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     await new Promise((r) => setTimeout(r, interval));
@@ -82,6 +96,10 @@ export async function unifiedPoll(pendings: AsyncPending[]): Promise<GeneratedRe
     } catch {
       // Keep polling on transient errors
     }
+
+    // Report progress
+    const elapsed = Date.now() - startTime;
+    onProgress?.({ elapsed, estimated, remaining: pendingIds.size });
   }
 
   // Timeout: remaining pending IDs become error results
