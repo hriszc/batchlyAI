@@ -200,6 +200,7 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
           aspectRatio: body.aspectRatio,
           n,
           model: body.model,
+          urls: body.attachedUrls?.length ? body.attachedUrls : undefined,
         });
 
         // Store GRS task info in KV for webhook/poll to access

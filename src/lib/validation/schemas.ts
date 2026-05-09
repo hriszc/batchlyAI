@@ -18,6 +18,7 @@ export const generateRequestSchema = z.object({
   model: z.enum(VALID_MODELS).optional().default("z-image-pro"),
   promptTemplate: z.string().optional(),
   variableGroups: z.array(z.object({ id: z.string(), values: z.array(z.string()) })).optional(),
+  attachedUrls: z.array(z.string()).optional(),
   maxTokens: z.number().int().min(64).max(8192).optional(),
   duration: z.number().int().min(1).max(60).optional(),
 });

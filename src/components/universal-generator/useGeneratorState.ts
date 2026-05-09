@@ -116,6 +116,7 @@ export function useGeneratorState() {
                 aspectRatio: currentState.aspectRatio,
                 n: currentState.quantity,
                 model: currentState.model,
+                attachedUrls: currentState.attachedFiles.filter((f) => f.url).map((f) => f.url!),
                 ...(model?.category === "video"
                   ? { duration: VIDEO_DURATION_SECONDS[currentState.videoDuration] }
                   : {}),
