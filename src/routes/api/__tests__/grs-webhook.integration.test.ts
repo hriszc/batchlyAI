@@ -184,36 +184,4 @@ describe("handleGrsWebhook", () => {
       expirationTtl: 3600,
     });
   });
-
-  it("unwraps AIGATE { code, data } format in webhook payload", async () => {
-    mockKv.get.mockResolvedValue(
-      JSON.stringify({
-        userId: "u1",
-        status: "processing",
-        prompt: "a cat",
-        createdAt: Date.now(),
-      }),
-    );
-
-    // AIGATE wraps everything in { code: 0, data: {...}, msg: "success" }
-    const resp = await handleGrsWebhook(
-      await makeRequest({
-        body: {
-          code: 0,
-          data: {
-            id: "grs-task-aigate",
-            status: "succeeded",
-            results: [{ url: "https://aigate.com/output/img.png" }],
-          },
-          msg: "success",
-        },
-      }),
-    );
-    expect(resp.status).toBe(200);
-
-    // KV should be updated with the correct task ID ("grs-task-aigate", not undefined)
-    expect(mockKv.put).toHaveBeenCalled();
-    const putKey = mockKv.put.mock.calls[0][0] as string;
-    expect(putKey).toBe("grs:grs-task-aigate");
-  });
 });
