@@ -207,13 +207,13 @@ describe("GeneratorCard", () => {
   });
 
   // --- Prompt hint ---
-  it("shows promptHint when prompt has content and no expand blocks", () => {
+  it("does not show promptHint (removed per TDD cleanup)", () => {
     const stateWithPrompt: GeneratorState = {
       ...baseState,
       promptTemplate: "a beautiful landscape",
     };
     renderWithProviders(<GeneratorCard state={stateWithPrompt} actions={mockActions} />);
-    expect(screen.getByText(/{{vars}}/)).toBeInTheDocument();
+    expect(screen.queryByText(/{{vars}}/)).not.toBeInTheDocument();
   });
 
   it("does not show promptHint when prompt is empty", () => {

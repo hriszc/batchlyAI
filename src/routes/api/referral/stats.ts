@@ -64,17 +64,7 @@ export const Route = createFileRoute("/api/referral/stats")({
           );
         } catch (err) {
           console.error("[referral] stats error:", err);
-          return jsonResponse(
-            {
-              tier: "none",
-              totalReferrals: 0,
-              totalCreditsEarned: 0,
-              commissionTotal: 0,
-              referralCode: null,
-              shareUrl: null,
-            },
-            200,
-          );
+          return jsonResponse({ error: "Failed to load referral stats" }, 500);
         }
       },
     },

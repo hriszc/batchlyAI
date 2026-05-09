@@ -42,32 +42,42 @@ export async function generateImageFallback(
     }
   }
 
-  const urls: string[] = [];
-  for (let i = 0; i < n; i++) {
-    const result = (await ai.run(FALLBACK_MODELS.image, {
-      prompt,
-      width,
-      height,
-    })) as { image?: string; url?: string };
-    const url = result.image || result.url;
-    if (url) urls.push(url);
+  try {
+    const urls: string[] = [];
+    for (let i = 0; i < n; i++) {
+      const result = (await ai.run(FALLBACK_MODELS.image, {
+        prompt,
+        width,
+        height,
+      })) as { image?: string; url?: string };
+      const url = result.image || result.url;
+      if (url) urls.push(url);
+    }
+    return { urls };
+  } catch (err) {
+    console.warn("[fallback] Workers AI image model failed:", err);
+    throw err;
   }
-  return { urls };
 }
 
 export async function generateTextFallback(prompt: string): Promise<string> {
   const ai = getAiBinding();
   if (!ai) throw new Error("Workers AI binding not available");
 
-  const result = (await ai.run(FALLBACK_MODELS.text, {
-    messages: [{ role: "user", content: prompt }],
-    max_tokens: 2048,
-  })) as {
-    response?: string;
-    choices?: Array<{ message?: { content?: string } }>;
-  };
+  try {
+    const result = (await ai.run(FALLBACK_MODELS.text, {
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 2048,
+    })) as {
+      response?: string;
+      choices?: Array<{ message?: { content?: string } }>;
+    };
 
-  return result.response ?? result.choices?.[0]?.message?.content ?? "";
+    return result.response ?? result.choices?.[0]?.message?.content ?? "";
+  } catch (err) {
+    console.warn("[fallback] Workers AI text model failed:", err);
+    throw err;
+  }
 }
 
 export async function generateVideoFallback(
