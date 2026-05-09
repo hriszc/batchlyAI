@@ -55,5 +55,6 @@ strategy = "canary"
 [vars]
 VITE_BASE_URL = "https://batchlyai.com"
 VITE_GA4_MEASUREMENT_ID = "G-NXC67QZF3N"
+GA4_MEASUREMENT_ID = "G-NXC67QZF3N"
 
 
