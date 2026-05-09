@@ -25,4 +25,12 @@ describe("CreditPurchasePopover", () => {
     renderWithProviders(<CreditPurchasePopover onClose={() => {}} />);
     expect(screen.getByText("Buy Credits")).toBeInTheDocument();
   });
+
+  it("uses fixed positioning for mobile-friendly centering", () => {
+    const { container } = renderWithProviders(<CreditPurchasePopover onClose={() => {}} />);
+    const popover = container.firstElementChild as HTMLElement;
+    // Fixed on mobile, absolute on sm+
+    expect(popover.className).toContain("fixed");
+    expect(popover.className).toContain("sm:absolute");
+  });
 });

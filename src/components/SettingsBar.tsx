@@ -219,13 +219,13 @@ export function SettingsBar() {
       )}
       <a
         href="/discover"
-        className="inline-flex h-8 items-center rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
+        className="hidden h-8 items-center rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground sm:inline-flex"
       >
         {t("discover")}
       </a>
       <a
         href="/templates"
-        className="inline-flex h-8 items-center rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground"
+        className="hidden h-8 items-center rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground sm:inline-flex"
       >
         {t("templates")}
       </a>
