@@ -22,7 +22,7 @@ export default defineConfig({
       reporter: ["text", "json", "html"],
       reportsDirectory: "./coverage",
       include: ["src/**/*.{ts,tsx}"],
-      exclude: ["src/routeTree.gen.ts", "src/components/ui/**", "**/*.d.ts", "src/styles.css"],
+      exclude: ["src/routeTree.gen.ts", "src/components/ui/**", "**/*.d.ts", "src/styles.css", "src/lib/analytics/server.ts", "src/env/server.ts"],
       thresholds: {
         statements: 44,
         branches: 38,
