@@ -47,7 +47,9 @@ import { Route as ApiStripePortalRouteImport } from './routes/api/stripe/portal'
 import { Route as ApiStripeCheckoutRouteImport } from './routes/api/stripe/checkout'
 import { Route as ApiReferralStatsRouteImport } from './routes/api/referral/stats'
 import { Route as ApiReferralGenerateCodeRouteImport } from './routes/api/referral/generate-code'
+import { Route as ApiGenerationFilesSplatRouteImport } from './routes/api/generation-files/$'
 import { Route as ApiFilesSplatRouteImport } from './routes/api/files/$'
+import { Route as ApiDiagEmailRouteImport } from './routes/api/diag/email'
 import { Route as ApiAuthGoogleOneTapRouteImport } from './routes/api/auth/google-one-tap'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
@@ -240,9 +242,19 @@ const ApiReferralGenerateCodeRoute = ApiReferralGenerateCodeRouteImport.update({
   path: '/api/referral/generate-code',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiGenerationFilesSplatRoute = ApiGenerationFilesSplatRouteImport.update({
+  id: '/api/generation-files/$',
+  path: '/api/generation-files/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiFilesSplatRoute = ApiFilesSplatRouteImport.update({
   id: '/api/files/$',
   path: '/api/files/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiDiagEmailRoute = ApiDiagEmailRouteImport.update({
+  id: '/api/diag/email',
+  path: '/api/diag/email',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthGoogleOneTapRoute = ApiAuthGoogleOneTapRouteImport.update({
@@ -288,7 +300,9 @@ export interface FileRoutesByFullPath {
   '/templates/': typeof TemplatesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/google-one-tap': typeof ApiAuthGoogleOneTapRoute
+  '/api/diag/email': typeof ApiDiagEmailRoute
   '/api/files/$': typeof ApiFilesSplatRoute
+  '/api/generation-files/$': typeof ApiGenerationFilesSplatRoute
   '/api/referral/generate-code': typeof ApiReferralGenerateCodeRoute
   '/api/referral/stats': typeof ApiReferralStatsRoute
   '/api/stripe/checkout': typeof ApiStripeCheckoutRoute
@@ -330,7 +344,9 @@ export interface FileRoutesByTo {
   '/templates': typeof TemplatesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/google-one-tap': typeof ApiAuthGoogleOneTapRoute
+  '/api/diag/email': typeof ApiDiagEmailRoute
   '/api/files/$': typeof ApiFilesSplatRoute
+  '/api/generation-files/$': typeof ApiGenerationFilesSplatRoute
   '/api/referral/generate-code': typeof ApiReferralGenerateCodeRoute
   '/api/referral/stats': typeof ApiReferralStatsRoute
   '/api/stripe/checkout': typeof ApiStripeCheckoutRoute
@@ -374,7 +390,9 @@ export interface FileRoutesById {
   '/templates/': typeof TemplatesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/google-one-tap': typeof ApiAuthGoogleOneTapRoute
+  '/api/diag/email': typeof ApiDiagEmailRoute
   '/api/files/$': typeof ApiFilesSplatRoute
+  '/api/generation-files/$': typeof ApiGenerationFilesSplatRoute
   '/api/referral/generate-code': typeof ApiReferralGenerateCodeRoute
   '/api/referral/stats': typeof ApiReferralStatsRoute
   '/api/stripe/checkout': typeof ApiStripeCheckoutRoute
@@ -418,7 +436,9 @@ export interface FileRouteTypes {
     | '/templates/'
     | '/api/auth/$'
     | '/api/auth/google-one-tap'
+    | '/api/diag/email'
     | '/api/files/$'
+    | '/api/generation-files/$'
     | '/api/referral/generate-code'
     | '/api/referral/stats'
     | '/api/stripe/checkout'
@@ -460,7 +480,9 @@ export interface FileRouteTypes {
     | '/templates'
     | '/api/auth/$'
     | '/api/auth/google-one-tap'
+    | '/api/diag/email'
     | '/api/files/$'
+    | '/api/generation-files/$'
     | '/api/referral/generate-code'
     | '/api/referral/stats'
     | '/api/stripe/checkout'
@@ -503,7 +525,9 @@ export interface FileRouteTypes {
     | '/templates/'
     | '/api/auth/$'
     | '/api/auth/google-one-tap'
+    | '/api/diag/email'
     | '/api/files/$'
+    | '/api/generation-files/$'
     | '/api/referral/generate-code'
     | '/api/referral/stats'
     | '/api/stripe/checkout'
@@ -543,7 +567,9 @@ export interface RootRouteChildren {
   TemplatesIndexRoute: typeof TemplatesIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAuthGoogleOneTapRoute: typeof ApiAuthGoogleOneTapRoute
+  ApiDiagEmailRoute: typeof ApiDiagEmailRoute
   ApiFilesSplatRoute: typeof ApiFilesSplatRoute
+  ApiGenerationFilesSplatRoute: typeof ApiGenerationFilesSplatRoute
   ApiReferralGenerateCodeRoute: typeof ApiReferralGenerateCodeRoute
   ApiReferralStatsRoute: typeof ApiReferralStatsRoute
   ApiStripeCheckoutRoute: typeof ApiStripeCheckoutRoute
@@ -819,11 +845,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiReferralGenerateCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/generation-files/$': {
+      id: '/api/generation-files/$'
+      path: '/api/generation-files/$'
+      fullPath: '/api/generation-files/$'
+      preLoaderRoute: typeof ApiGenerationFilesSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/files/$': {
       id: '/api/files/$'
       path: '/api/files/$'
       fullPath: '/api/files/$'
       preLoaderRoute: typeof ApiFilesSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/diag/email': {
+      id: '/api/diag/email'
+      path: '/api/diag/email'
+      fullPath: '/api/diag/email'
+      preLoaderRoute: typeof ApiDiagEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/google-one-tap': {
@@ -916,7 +956,9 @@ const rootRouteChildren: RootRouteChildren = {
   TemplatesIndexRoute: TemplatesIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAuthGoogleOneTapRoute: ApiAuthGoogleOneTapRoute,
+  ApiDiagEmailRoute: ApiDiagEmailRoute,
   ApiFilesSplatRoute: ApiFilesSplatRoute,
+  ApiGenerationFilesSplatRoute: ApiGenerationFilesSplatRoute,
   ApiReferralGenerateCodeRoute: ApiReferralGenerateCodeRoute,
   ApiReferralStatsRoute: ApiReferralStatsRoute,
   ApiStripeCheckoutRoute: ApiStripeCheckoutRoute,

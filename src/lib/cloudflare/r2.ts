@@ -6,6 +6,7 @@ function getR2Binding(): R2Binding | null {
   const env = (globalThis as Record<string, unknown>).__env__ as
     | Record<string, unknown>
     | undefined;
+  console.log("[r2] __env__ exists:", !!env, "batchlyai_r2 exists:", !!env?.batchlyai_r2);
   return (env?.batchlyai_r2 as R2Binding) ?? null;
 }
 
@@ -16,7 +17,8 @@ export function getR2PublicUrl(key: string): string {
   const endpoint = env?.R2_ENDPOINT as string | undefined;
   const bucket = env?.R2_BUCKET as string | undefined;
   if (endpoint && bucket) return `${endpoint}/${bucket}/${key}`;
-  return key;
+  // Proxy through Worker when no custom R2 domain is configured
+  return `/api/generation-files/${key}`;
 }
 
 export async function uploadToR2(
@@ -35,15 +37,27 @@ export async function uploadToR2(
  */
 export async function mirrorImageToR2(imageUrl: string, r2Key: string): Promise<string> {
   const r2 = getR2Binding();
-  if (!r2) return imageUrl;
+  if (!r2) {
+    console.warn(
+      "[r2] mirrorImageToR2: no R2 binding, keeping original URL:",
+      imageUrl?.slice(0, 80),
+    );
+    return imageUrl;
+  }
 
   try {
+    console.log("[r2] mirroring", imageUrl?.slice(0, 80), "->", r2Key);
     const resp = await fetch(imageUrl);
-    if (!resp.ok) return imageUrl;
+    if (!resp.ok) {
+      console.warn("[r2] fetch failed for", imageUrl?.slice(0, 80), "status:", resp.status);
+      return imageUrl;
+    }
     const blob = await resp.arrayBuffer();
     await r2.put(r2Key, blob);
+    console.log("[r2] mirrored OK:", r2Key);
     return getR2PublicUrl(r2Key);
-  } catch {
+  } catch (err) {
+    console.error("[r2] mirrorImageToR2 error:", err);
     return imageUrl;
   }
 }

@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 
+import { env } from "@/env/server";
 import { jsonResponse, verifyOrigin } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
+import { sendEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { processReferralAfterSignup } from "@/lib/referral/process";
 
@@ -87,14 +89,59 @@ export const Route = createFileRoute("/api/auth/$")({
                 asResponse: true,
               });
 
-              // Post-signup referral processing
+              // Post-signup: send verification email directly
+              // (BA's internal callback is unreliable with direct API calls)
               if (path === "sign-up/email" && response.ok) {
                 try {
                   const cloned = response.clone();
-                  const body = (await cloned.json()) as {
-                    user?: { id: string; email: string };
+                  const json = (await cloned.json()) as {
+                    user?: { id: string; email: string; name?: string };
                   };
-                  await processReferralAfterSignup(request, body);
+                  const user = json.user;
+                  if (user?.email) {
+                    // BA's internal callback doesn't fire with direct API calls.
+                    // Generate verification JWT with Web Crypto and send email ourselves.
+                    const encoder = new TextEncoder();
+                    const secret = encoder.encode(env.BETTER_AUTH_SECRET);
+                    const header = { alg: "HS256", typ: "JWT" };
+                    const now = Math.floor(Date.now() / 1000);
+                    const payload = { email: user.email.toLowerCase(), iat: now, exp: now + 3600 };
+                    const headerB64 = btoa(JSON.stringify(header))
+                      .replace(/=/g, "")
+                      .replace(/\+/g, "-")
+                      .replace(/\//g, "_");
+                    const payloadB64 = btoa(JSON.stringify(payload))
+                      .replace(/=/g, "")
+                      .replace(/\+/g, "-")
+                      .replace(/\//g, "_");
+                    const toSign = `${headerB64}.${payloadB64}`;
+                    const key = await crypto.subtle.importKey(
+                      "raw",
+                      secret,
+                      { name: "HMAC", hash: "SHA-256" },
+                      false,
+                      ["sign"],
+                    );
+                    const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(toSign));
+                    const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sig)))
+                      .replace(/=/g, "")
+                      .replace(/\+/g, "-")
+                      .replace(/\//g, "_");
+                    const token = `${toSign}.${sigB64}`;
+                    const verifyUrl = `${env.VITE_BASE_URL}/verify-email?token=${token}&callbackURL=%2F`;
+                    sendEmail({
+                      to: user.email,
+                      subject: "Verify your email — BatchlyAI",
+                      html: [
+                        `<h1>Welcome to BatchlyAI${user.name ? `, ${user.name}` : ""}!</h1>`,
+                        "<p>Please verify your email address by clicking the link below:</p>",
+                        `<p><a href="${verifyUrl}">Verify Email</a></p>`,
+                        "<p>This link expires in 1 hour.</p>",
+                        "<p>If you did not create this account, please ignore this email.</p>",
+                      ].join(""),
+                    }).catch((err) => console.error("[auth] sendEmail failed:", err));
+                  }
+                  await processReferralAfterSignup(request, json);
 
                   const refCode = (
                     (await request
@@ -103,7 +150,7 @@ export const Route = createFileRoute("/api/auth/$")({
                       .catch(() => ({}))) as Record<string, unknown>
                   )?.ref as string | undefined;
                   const { trackServer } = await import("@/lib/analytics/server");
-                  await trackServer("signup_completed", body.user?.id || "unknown", {
+                  await trackServer("signup_completed", json.user?.id || "unknown", {
                     method: "email",
                     referral_code: refCode || "",
                   });
