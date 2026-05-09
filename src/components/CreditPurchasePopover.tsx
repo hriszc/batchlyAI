@@ -87,117 +87,128 @@ export function CreditPurchasePopover({ onClose }: CreditPurchasePopoverProps) {
   }, [effectiveQuantity, t]);
 
   return (
-    <div
-      ref={popoverRef}
-      className="popover-enter absolute top-full right-0 z-50 mt-1 w-72 overflow-hidden rounded-xl border bg-popover shadow-lg"
-    >
-      <div className="flex items-center justify-between border-b px-4 py-3">
-        <span className="text-sm font-semibold text-foreground">{t("buyCredits")}</span>
-        <button
-          onClick={onClose}
-          className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <XIcon className="size-3.5" />
-        </button>
-      </div>
+    <>
+      {/* Backdrop — mobile only */}
+      <div
+        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm sm:hidden"
+        onClick={onClose}
+      />
 
-      <div className="space-y-3 px-4 py-3">
-        {/* Preset buttons */}
-        <div className="flex flex-wrap gap-1.5">
-          {PRESETS.map((p) => (
+      {/* Centering wrapper — mobile only */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:static">
+        <div
+          ref={popoverRef}
+          className="popover-enter w-full max-w-sm overflow-hidden rounded-xl border bg-popover shadow-lg sm:absolute sm:top-full sm:right-0 sm:mt-1 sm:w-72"
+        >
+          <div className="flex items-center justify-between border-b px-4 py-3">
+            <span className="text-sm font-semibold text-foreground">{t("buyCredits")}</span>
             <button
-              key={p}
-              onClick={() => {
-                setIsCustom(false);
-                setQuantity(p);
-                setCustomValue("");
-              }}
-              className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
-                !isCustom && quantity === p
-                  ? "bg-accent-blue/10 text-accent-blue"
-                  : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-              }`}
+              onClick={onClose}
+              className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
-              {p}x
+              <XIcon className="size-3.5" />
             </button>
-          ))}
-          <button
-            onClick={() => {
-              setIsCustom(true);
-              setCustomValue(customValue || String(quantity));
-            }}
-            className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
-              isCustom
-                ? "bg-accent-blue/10 text-accent-blue"
-                : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-            }`}
-          >
-            {t("custom")}
-          </button>
+          </div>
+
+          <div className="space-y-3 px-4 py-3">
+            {/* Preset buttons */}
+            <div className="flex flex-wrap gap-1.5">
+              {PRESETS.map((p) => (
+                <button
+                  key={p}
+                  onClick={() => {
+                    setIsCustom(false);
+                    setQuantity(p);
+                    setCustomValue("");
+                  }}
+                  className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                    !isCustom && quantity === p
+                      ? "bg-accent-blue/10 text-accent-blue"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                  }`}
+                >
+                  {p}x
+                </button>
+              ))}
+              <button
+                onClick={() => {
+                  setIsCustom(true);
+                  setCustomValue(customValue || String(quantity));
+                }}
+                className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-colors ${
+                  isCustom
+                    ? "bg-accent-blue/10 text-accent-blue"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                }`}
+              >
+                {t("custom")}
+              </button>
+            </div>
+
+            {/* Custom input */}
+            {isCustom && (
+              <div className="flex items-center gap-2">
+                <input
+                  ref={inputRef}
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={customValue}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === "" || /^\d+$/.test(v)) setCustomValue(v);
+                  }}
+                  placeholder={t("enterQuantity")}
+                  className="h-8 w-24 rounded-lg border bg-muted/30 px-2.5 text-sm placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-accent-blue focus:outline-none"
+                />
+                <span className="text-xs text-muted-foreground">
+                  {currencySymbol}
+                  {PRICE_PER_UNIT}/{t("pack")}
+                </span>
+              </div>
+            )}
+
+            {/* Summary */}
+            <div className="rounded-lg bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+              <div className="flex justify-between">
+                <span>
+                  {effectiveQuantity} {t("packs")}
+                </span>
+                <span>
+                  {currencySymbol}
+                  {totalPrice.toLocaleString()}
+                </span>
+              </div>
+              <div className="mt-0.5 flex justify-between font-medium text-foreground">
+                <span>{t("totalCredits")}</span>
+                <span className="text-accent-blue">{totalCredits.toLocaleString()}</span>
+              </div>
+              <div className="mt-1 border-t pt-1 text-[10px] text-muted-foreground/70">
+                <span>
+                  ~{equivalence.images} images · ~{equivalence.texts} texts · ~
+                  {equivalence.videoSeconds}s video
+                </span>
+              </div>
+            </div>
+
+            {/* Buy button */}
+            <button
+              onClick={handleBuy}
+              disabled={loading || effectiveQuantity < 1}
+              className="flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-accent-blue text-sm font-medium text-white transition-all hover:bg-accent-blue-hover active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
+            >
+              {loading ? (
+                <Loader2Icon className="size-4 animate-spin" />
+              ) : (
+                <PlusIcon className="size-4" />
+              )}
+              {loading
+                ? t("processing")
+                : `${t("pay")} ${currencySymbol}${totalPrice.toLocaleString()}`}
+            </button>
+          </div>
         </div>
-
-        {/* Custom input */}
-        {isCustom && (
-          <div className="flex items-center gap-2">
-            <input
-              ref={inputRef}
-              type="number"
-              min={1}
-              max={100}
-              value={customValue}
-              onChange={(e) => {
-                const v = e.target.value;
-                if (v === "" || /^\d+$/.test(v)) setCustomValue(v);
-              }}
-              placeholder={t("enterQuantity")}
-              className="h-8 w-24 rounded-lg border bg-muted/30 px-2.5 text-sm placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-accent-blue focus:outline-none"
-            />
-            <span className="text-xs text-muted-foreground">
-              {currencySymbol}
-              {PRICE_PER_UNIT}/{t("pack")}
-            </span>
-          </div>
-        )}
-
-        {/* Summary */}
-        <div className="rounded-lg bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-          <div className="flex justify-between">
-            <span>
-              {effectiveQuantity} {t("packs")}
-            </span>
-            <span>
-              {currencySymbol}
-              {totalPrice.toLocaleString()}
-            </span>
-          </div>
-          <div className="mt-0.5 flex justify-between font-medium text-foreground">
-            <span>{t("totalCredits")}</span>
-            <span className="text-accent-blue">{totalCredits.toLocaleString()}</span>
-          </div>
-          <div className="mt-1 border-t pt-1 text-[10px] text-muted-foreground/70">
-            <span>
-              ~{equivalence.images} images · ~{equivalence.texts} texts · ~
-              {equivalence.videoSeconds}s video
-            </span>
-          </div>
-        </div>
-
-        {/* Buy button */}
-        <button
-          onClick={handleBuy}
-          disabled={loading || effectiveQuantity < 1}
-          className="flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-accent-blue text-sm font-medium text-white transition-all hover:bg-accent-blue-hover active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
-        >
-          {loading ? (
-            <Loader2Icon className="size-4 animate-spin" />
-          ) : (
-            <PlusIcon className="size-4" />
-          )}
-          {loading
-            ? t("processing")
-            : `${t("pay")} ${currencySymbol}${totalPrice.toLocaleString()}`}
-        </button>
       </div>
-    </div>
+    </>
   );
 }

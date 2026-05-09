@@ -25,4 +25,14 @@ describe("CreditPurchasePopover", () => {
     renderWithProviders(<CreditPurchasePopover onClose={() => {}} />);
     expect(screen.getByText("Buy Credits")).toBeInTheDocument();
   });
+
+  it("renders mobile backdrop and desktop dropdown structure", () => {
+    const { container } = renderWithProviders(<CreditPurchasePopover onClose={() => {}} />);
+    // Mobile: backdrop is visible, centering wrapper is fixed
+    const backdrop = container.querySelector(".sm\\:hidden.fixed.inset-0.bg-black\\/50");
+    expect(backdrop).toBeTruthy();
+    // Desktop: popover has sm:absolute for dropdown positioning
+    const popover = container.querySelector(".sm\\:absolute.sm\\:top-full");
+    expect(popover).toBeTruthy();
+  });
 });
