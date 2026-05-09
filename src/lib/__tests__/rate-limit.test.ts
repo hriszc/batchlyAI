@@ -107,4 +107,17 @@ describe("checkRateLimit edge cases", () => {
     expect(checkRateLimit("short", 2, 1).allowed).toBe(true); // reset
     expect(checkRateLimit("long", 2, 100).allowed).toBe(true); // not yet hit limit
   });
+
+  it("lazyCleanup evicts expired keys after 30s", () => {
+    const now = Date.now();
+    vi.useFakeTimers({ now });
+    // Create an entry that expires in 1s
+    checkRateLimit("expire-key", 5, 1);
+    // Advance past the 30s cleanup threshold
+    vi.advanceTimersByTime(31_000);
+    // A new request triggers lazyCleanup which evicts expired entries
+    const r = checkRateLimit("other-key", 5, 60);
+    expect(r.allowed).toBe(true);
+    expect(r.remaining).toBe(4);
+  });
 });
