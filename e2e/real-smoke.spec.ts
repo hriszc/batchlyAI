@@ -108,7 +108,11 @@ test.describe("Real Environment Smoke Tests (no mocking)", () => {
   test("text generation API consumes 5 credits (z-text-fast)", async ({ request }) => {
     test.skip(!!process.env.CI, "Requires D1");
     const signup = await request.post("/api/auth/sign-up/email", {
-      data: { email: `e2e-text-${Date.now()}@batchlyai.com`, password: "e2e-test-123456", name: "TextE2E" },
+      data: {
+        email: `e2e-text-${Date.now()}@batchlyai.com`,
+        password: "e2e-test-123456",
+        name: "TextE2E",
+      },
     });
     const { token } = (await signup.json()) as { token: string };
 
@@ -117,7 +121,11 @@ test.describe("Real Environment Smoke Tests (no mocking)", () => {
       data: { prompt: "Say hello in one word", n: 1, model: "z-text-fast" },
     });
     expect(resp.status()).toBe(200);
-    const body = (await resp.json()) as { texts?: string[]; creditsRemaining?: number; isText?: boolean };
+    const body = (await resp.json()) as {
+      texts?: string[];
+      creditsRemaining?: number;
+      isText?: boolean;
+    };
     expect(body.isText).toBe(true);
     expect(body.texts).toBeTruthy();
     expect(body.texts!.length).toBeGreaterThan(0);
