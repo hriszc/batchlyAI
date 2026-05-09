@@ -1,70 +1,12 @@
 import { test, expect } from "@playwright/test";
 
-async function setupApiMocks(page: import("@playwright/test").Page) {
-  await page.route("**/api/auth/get-session", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        user: { id: "e2e-user-001", name: "E2E Tester", email: "e2e@test.com", credits: 100 },
-      }),
-    });
-  });
+import { mockAuth, mockGenerate, mockUpload } from "./helpers/mocks";
 
-  await page.route("**/api/generate", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        predictionIds: ["pred-e2e-001", "pred-e2e-002"],
-        status: "processing",
-        async: true,
-        creditsRemaining: 80,
-        modelType: "replicate",
-        isVideo: false,
-        watermark: false,
-      }),
-    });
-  });
-
-  await page.route("**/api/generate-status**", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        results: [
-          {
-            id: "pred-e2e-001",
-            status: "succeeded",
-            urls: ["https://picsum.photos/1024/1024?random=1"],
-            error: null,
-          },
-          {
-            id: "pred-e2e-002",
-            status: "succeeded",
-            urls: ["https://picsum.photos/1024/1024?random=2"],
-            error: null,
-          },
-        ],
-      }),
-    });
-  });
-
-  await page.route("**/api/upload-url", async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        publicUrl: "/api/files/uploads/user_e2e/test.png",
-        key: "uploads/user_e2e/test.png",
-      }),
-    });
-  });
-}
-
-test.describe("Generator E2E (with API mocks)", () => {
+test.describe("Generator E2E", () => {
   test.beforeEach(async ({ page }) => {
-    await setupApiMocks(page);
+    await mockAuth(page, { authenticated: true });
+    await mockGenerate(page);
+    await mockUpload(page);
   });
 
   test("page loads with logo visible", async ({ page }) => {
@@ -72,7 +14,7 @@ test.describe("Generator E2E (with API mocks)", () => {
     await expect(page.locator('img[alt="BatchlyAI"]').first()).toBeVisible({ timeout: 10000 });
   });
 
-  test("prompt textarea is visible and accepts input", async ({ page }) => {
+  test("prompt textarea visible and accepts input", async ({ page }) => {
     await page.goto("/");
     const textarea = page.locator("textarea").first();
     await expect(textarea).toBeVisible();
@@ -84,33 +26,30 @@ test.describe("Generator E2E (with API mocks)", () => {
     await page.goto("/");
     const textarea = page.locator("textarea").first();
     await textarea.fill("A {{cat, dog}} in {{forest, beach}}");
-    // Wait for debounce (500ms) + render
     await page.waitForTimeout(1000);
     const value = await textarea.inputValue();
     expect(value).toContain("cat");
   });
 
   test("language toggle switches to Chinese", async ({ page }) => {
-    await page.goto("/");
     await page.goto("/cn");
     await expect(page.locator('img[alt="BatchlyAI"]').first()).toBeVisible({ timeout: 10000 });
     const description = page.locator("p").first();
     await expect(description).toContainText(/[一-鿿]/);
   });
 
-  test("theme toggle exists", async ({ page }) => {
+  test("theme toggle button exists", async ({ page }) => {
     await page.goto("/");
-    const buttons = page.locator("button");
-    const count = await buttons.count();
-    expect(count).toBeGreaterThanOrEqual(2);
+    const svgButtons = page.locator("button").filter({ has: page.locator("svg") });
+    expect(await svgButtons.count()).toBeGreaterThanOrEqual(1);
   });
 
-  test("login page loads from nav", async ({ page }) => {
+  test("login page loads", async ({ page }) => {
     await page.goto("/login");
     await expect(page.locator('input[type="email"]')).toBeVisible();
   });
 
-  test("signup page loads from nav", async ({ page }) => {
+  test("signup page loads", async ({ page }) => {
     await page.goto("/signup");
     await expect(page.locator('input[type="email"]')).toBeVisible();
   });
@@ -126,12 +65,11 @@ test.describe("Generator E2E (with API mocks)", () => {
     await page.goto("/");
     const fileInput = page.locator('input[type="file"]');
     await fileInput.setInputFiles({
-      name: "test-image.png",
+      name: "test.png",
       mimeType: "image/png",
-      buffer: Buffer.from("fake-png-content"),
+      buffer: Buffer.from("fake"),
     });
     await page.waitForTimeout(500);
-    // Should not crash
     await expect(page.locator('img[alt="BatchlyAI"]').first()).toBeVisible();
   });
 
