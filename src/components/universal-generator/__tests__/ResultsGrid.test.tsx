@@ -134,4 +134,28 @@ describe("ResultsGrid", () => {
     renderWithProviders(<ResultsGrid results={[]} isGenerating={true} />);
     expect(screen.queryByTitle("Download All")).not.toBeInTheDocument();
   });
+
+  // --- Publish button ---
+  it("renders publish button when onPublish provided", () => {
+    const onPublish = vi.fn();
+    renderWithProviders(
+      <ResultsGrid results={[imageResult]} isGenerating={false} onPublish={onPublish} />,
+    );
+    const btn = screen.getByTitle("Publish as Work");
+    expect(btn).toBeInTheDocument();
+  });
+
+  it("clicking publish button calls onPublish", async () => {
+    const onPublish = vi.fn();
+    renderWithProviders(
+      <ResultsGrid results={[imageResult]} isGenerating={false} onPublish={onPublish} />,
+    );
+    await userEvent.click(screen.getByTitle("Publish as Work"));
+    expect(onPublish).toHaveBeenCalledOnce();
+  });
+
+  it("hides publish button during generation", () => {
+    renderWithProviders(<ResultsGrid results={[]} isGenerating={true} onPublish={() => {}} />);
+    expect(screen.queryByTitle("Publish as Work")).not.toBeInTheDocument();
+  });
 });

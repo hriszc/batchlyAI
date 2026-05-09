@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { LoginCard } from "@/components/LoginCard";
@@ -32,6 +32,47 @@ export function HomePage({ forceLanguage }: HomePageProps) {
   const resultsRef = useRef<HTMLDivElement>(null);
   const { setLanguage, t } = useLanguage();
   const [shareMode, setShareMode] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+
+  const handlePublish = useCallback(async () => {
+    if (publishing || state.results.length === 0) return;
+    setPublishing(true);
+    try {
+      const coverUrl = state.results.find((r) => r.imageUrl)?.imageUrl || "";
+      const resultUrls = state.results.filter((r) => r.imageUrl).map((r) => r.imageUrl!);
+      const body = {
+        title: state.promptTemplate.slice(0, 80) || "Untitled",
+        coverUrl,
+        resultUrls,
+        promptTemplate: state.promptTemplate,
+        variableGroups: JSON.stringify(state.variableGroups),
+        model: state.model,
+      };
+      const resp = await fetch("/api/works", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (resp.ok) {
+        // Auto-save as template
+        void fetch("/api/templates", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: body.title,
+            promptTemplate: state.promptTemplate,
+            variableGroups: JSON.stringify(state.variableGroups),
+            coverUrl,
+          }),
+        }).catch(() => {});
+        toast.success(t("savedSuccessfully"));
+      }
+    } catch {
+      // non-fatal
+    } finally {
+      setPublishing(false);
+    }
+  }, [publishing, state.promptTemplate, state.results, state.variableGroups, state.model, t]);
   const { data: session } = authClient.useSession();
   const userCredits = ((session?.user as Record<string, unknown>)?.credits as number) ?? 0;
   const showWatermark = userCredits <= 10;
@@ -201,6 +242,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
             if (state.results.length === 0) return;
             setShareMode(true);
           }}
+          onPublish={session?.user ? handlePublish : undefined}
         />
       </div>
 

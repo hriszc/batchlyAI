@@ -161,14 +161,22 @@ export function SettingsBar() {
               )}
             </>
           ) : (
-            <button
-              onClick={handleGenerateReferralCode}
-              disabled={referralLoading}
-              className="hidden h-8 items-center justify-center gap-1 rounded-full bg-purple-500/15 px-2.5 text-xs font-medium text-purple-600 backdrop-blur-sm transition-colors hover:bg-purple-500/25 disabled:opacity-50 sm:inline-flex"
-            >
-              <GiftIcon className="size-3" />
-              {referralLoading ? "..." : t("getReferralLink")}
-            </button>
+            <>
+              <button
+                onClick={handleGenerateReferralCode}
+                disabled={referralLoading}
+                className="hidden h-8 items-center justify-center gap-1 rounded-full bg-purple-500/15 px-2.5 text-xs font-medium text-purple-600 backdrop-blur-sm transition-colors hover:bg-purple-500/25 disabled:opacity-50 sm:inline-flex"
+              >
+                <GiftIcon className="size-3" />
+                {referralLoading ? "..." : t("getReferralLink")}
+              </button>
+              {/* Viral hint: when user has credits but no referral code */}
+              {session?.user && (
+                <span className="hidden h-8 items-center gap-1 rounded-full bg-amber-500/15 px-2 text-[10px] font-medium text-amber-600 backdrop-blur-sm sm:inline-flex">
+                  Refer & earn 50cr
+                </span>
+              )}
+            </>
           )}
 
           <span className="inline-flex h-8 items-center justify-center gap-1 rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground backdrop-blur-sm">
