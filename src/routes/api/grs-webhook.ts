@@ -51,9 +51,7 @@ export async function handleGrsWebhook(request: Request): Promise<Response> {
   }
 
   try {
-    const raw = JSON.parse(rawBody);
-    // AIGATE/GRS wraps all responses in { code, data, msg }
-    const body = (raw.data && raw.code !== undefined ? raw.data : raw) as GrsWebhookPayload;
+    const body = JSON.parse(rawBody) as GrsWebhookPayload;
     const taskId = body.id;
 
     if (!taskId) {

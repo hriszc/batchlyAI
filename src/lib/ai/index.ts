@@ -50,6 +50,7 @@ async function fetchWithFallback(
 export interface GrsaiCreateResult {
   id: string;
   status: string;
+  urls?: string[];
 }
 
 export async function createGrsaiPredictions({
@@ -88,15 +89,33 @@ export async function createGrsaiPredictions({
           }
           throw new Error(`grsai API error ${resp.status}: ${errText}`);
         }
-        const data = (await resp.json()) as {
+        const raw = (await resp.json()) as {
           code: number;
-          data: { id: string };
+          data: {
+            id: string;
+            status?: string;
+            progress?: number;
+            results?: { url: string }[];
+          };
           msg: string;
         };
-        if (data.code !== 0 || !data.data?.id) {
-          throw new Error(`grsai API unexpected response: ${JSON.stringify(data)}`);
+        if (raw.code !== 0 || !raw.data?.id) {
+          throw new Error(`grsai API unexpected response: ${JSON.stringify(raw)}`);
         }
-        return { id: data.data.id, status: "processing" };
+        // AIGATE may return results synchronously when progress reaches 100.
+        // If not at 100%, treat as async (results arrive via webhook callback).
+        if (
+          raw.data.progress === 100 &&
+          raw.data.status === "succeeded" &&
+          raw.data.results?.length
+        ) {
+          return {
+            id: raw.data.id,
+            status: "succeeded",
+            urls: raw.data.results.map((r) => r.url),
+          };
+        }
+        return { id: raw.data.id, status: "processing" };
       }),
     ),
   );

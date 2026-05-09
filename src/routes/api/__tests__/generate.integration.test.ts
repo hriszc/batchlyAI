@@ -460,4 +460,25 @@ describe("generate → poll status pipeline (simulated AI image return)", () => 
     // 2 × 20 credits = 40 deducted
     expect(getCreditsForUser(db, checkUserId)).toBe(60);
   });
+
+  // --- GRS sync response ---
+  it("returns URLs synchronously when GRS returns results directly", async () => {
+    const mockGrsai = vi.fn().mockResolvedValue([
+      {
+        id: "grs-sync-test",
+        status: "succeeded" as const,
+        urls: ["https://aigate.com/output/img.png"],
+      },
+    ]);
+
+    const resp = await handleGenerate({
+      request: makeRequest({ prompt: "test", n: 1, model: "z-image-pro" }),
+      db,
+      userId,
+      grsaiFn: mockGrsai,
+    } as any);
+    expect(resp.status).toBe(200);
+    const body = (await resp.json()) as { urls: string[]; sync: boolean };
+    expect(body.urls).toEqual(["https://aigate.com/output/img.png"]);
+  });
 });

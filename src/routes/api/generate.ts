@@ -194,14 +194,25 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
         });
         isVideo = model.startsWith("z-video");
       } else {
-        // GRS AI async via webhook
-        predictions = await grsaiFn({
+        // GRS AI — may return sync results or async task IDs
+        const grsaiResults = await grsaiFn({
           prompt: body.prompt,
           aspectRatio: body.aspectRatio,
           n,
           model: body.model,
           urls: body.attachedUrls?.length ? body.attachedUrls : undefined,
         });
+
+        // Check for synchronous results (AIGATE returned images directly)
+        const syncUrls = grsaiResults.flatMap((p) => p.urls ?? []);
+        if (syncUrls.length > 0) {
+          return jsonResponse(
+            { urls: syncUrls, creditsRemaining: deducted.credits, sync: true, watermark },
+            200,
+          );
+        }
+
+        predictions = grsaiResults;
 
         // Store GRS task info in KV for webhook/poll to access
         const kv = getKvBinding();
