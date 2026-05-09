@@ -1,5 +1,7 @@
 import { useReducer, useCallback, useRef, useEffect } from "react";
 
+import { authClient } from "@/lib/auth/auth-client";
+
 import { DEFAULT_MODEL, MODELS } from "./models";
 import { unifiedPoll } from "./poll";
 import { reducer, initialState } from "./reducer";
@@ -215,6 +217,8 @@ export function useGeneratorState() {
           }
           if (creditsRemaining != null) {
             dispatch({ type: "SET_CREDITS_REMAINING", payload: creditsRemaining });
+            // Refresh the session so SettingsBar shows updated credits
+            authClient.$fetch("/get-session").catch(() => {});
           }
         })
         .catch((err) => {
@@ -260,6 +264,7 @@ export function useGeneratorState() {
 
             if (json.creditsRemaining != null) {
               dispatch({ type: "SET_CREDITS_REMAINING", payload: json.creditsRemaining });
+              authClient.$fetch("/get-session").catch(() => {});
             }
 
             return (json.texts || json.urls || []).map((text) => ({

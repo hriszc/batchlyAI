@@ -26,11 +26,13 @@ describe("CreditPurchasePopover", () => {
     expect(screen.getByText("Buy Credits")).toBeInTheDocument();
   });
 
-  it("uses fixed positioning for mobile-friendly centering", () => {
+  it("renders mobile backdrop and desktop dropdown structure", () => {
     const { container } = renderWithProviders(<CreditPurchasePopover onClose={() => {}} />);
-    const popover = container.firstElementChild as HTMLElement;
-    // Fixed on mobile, absolute on sm+
-    expect(popover.className).toContain("fixed");
-    expect(popover.className).toContain("sm:absolute");
+    // Mobile: backdrop is visible, centering wrapper is fixed
+    const backdrop = container.querySelector(".sm\\:hidden.fixed.inset-0.bg-black\\/50");
+    expect(backdrop).toBeTruthy();
+    // Desktop: popover has sm:absolute for dropdown positioning
+    const popover = container.querySelector(".sm\\:absolute.sm\\:top-full");
+    expect(popover).toBeTruthy();
   });
 });
