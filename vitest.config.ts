@@ -27,7 +27,6 @@ export default defineConfig({
         "src/components/ui/**",
         "**/*.d.ts",
         "src/styles.css",
-        "src/lib/analytics/server.ts",
         "src/env/server.ts",
       ],
       thresholds: {
