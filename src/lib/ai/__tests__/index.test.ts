@@ -72,6 +72,29 @@ describe("createGrsaiPredictions", () => {
     expect(body.webHook).toBe("https://batchlyai.com/api/grs-webhook");
     expect(body.model).toBe("gpt-image-2");
   });
+
+  it("passes reference image URLs when provided", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ code: 0, data: { id: "grs-ref" }, msg: "ok" }),
+    });
+    await createGrsaiPredictions({
+      prompt: "enhance this image",
+      urls: ["https://r2.example.com/uploads/ref.png"],
+    });
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.urls).toEqual(["https://r2.example.com/uploads/ref.png"]);
+  });
+
+  it("sends empty urls array when not provided", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ code: 0, data: { id: "grs-def" }, msg: "ok" }),
+    });
+    await createGrsaiPredictions({ prompt: "test" });
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.urls).toEqual([]);
+  });
 });
 
 describe("createReplicatePredictions", () => {

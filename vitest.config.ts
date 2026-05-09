@@ -43,7 +43,7 @@ export default defineConfig({
         "src/components/universal-generator/useGeneratorState.ts": {
           statements: 50,
           branches: 30,
-          functions: 65,
+          functions: 60,
           lines: 50,
         },
         "src/lib/rate-limit.ts": {

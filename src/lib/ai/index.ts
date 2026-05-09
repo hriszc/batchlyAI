@@ -56,7 +56,8 @@ export async function createGrsaiPredictions({
   prompt,
   aspectRatio = "1:1",
   n = 1,
-}: ImageGenerationParams): Promise<GrsaiCreateResult[]> {
+  urls,
+}: ImageGenerationParams & { urls?: string[] }): Promise<GrsaiCreateResult[]> {
   const predictions = await Promise.all(
     Array.from({ length: n }, () =>
       fetchWithFallback(
@@ -72,7 +73,7 @@ export async function createGrsaiPredictions({
             model: "gpt-image-2",
             prompt,
             aspectRatio,
-            urls: [],
+            urls: urls ?? [],
             webHook: `${env.VITE_BASE_URL}/api/grs-webhook`,
           }),
         },
