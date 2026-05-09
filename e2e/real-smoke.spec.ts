@@ -79,4 +79,53 @@ test.describe("Real Environment Smoke Tests (no mocking)", () => {
     await page.goto("/templates");
     await expect(page.locator("main")).toBeVisible({ timeout: 15000 });
   });
+
+  // --- API-level tests (no browser, direct HTTP) ---
+  test("sign-up API returns token with 10 credits", async ({ request }) => {
+    const resp = await request.post("/api/auth/sign-up/email", {
+      data: { email: TEST_EMAIL, password: "e2e-test-123456", name: "E2E API" },
+    });
+    expect(resp.status()).toBe(200);
+    const body = (await resp.json()) as { token?: string; user?: { credits: number } };
+    expect(body.token).toBeTruthy();
+    expect(body.user?.credits).toBe(10);
+  });
+
+  test("sign-in API returns token", async ({ request }) => {
+    const resp = await request.post("/api/auth/sign-in/email", {
+      data: { email: TEST_EMAIL, password: "e2e-test-123456" },
+    });
+    expect(resp.status()).toBe(200);
+    const body = (await resp.json()) as { token?: string };
+    expect(body.token).toBeTruthy();
+  });
+
+  test("text generation API consumes 5 credits (z-text-fast)", async ({ request }) => {
+    // Sign up first to get a fresh token
+    const signup = await request.post("/api/auth/sign-up/email", {
+      data: {
+        email: `e2e-text-${Date.now()}@batchlyai.com`,
+        password: "e2e-test-123456",
+        name: "TextE2E",
+      },
+    });
+    const { token } = (await signup.json()) as { token: string };
+
+    // Call generate with text model
+    const resp = await request.post("/api/generate", {
+      headers: { Cookie: `better-auth.session_token=${token}` },
+      data: { prompt: "Say hello in one word", n: 1, model: "z-text-fast" },
+    });
+    expect(resp.status()).toBe(200);
+    const body = (await resp.json()) as {
+      texts?: string[];
+      creditsRemaining?: number;
+      isText?: boolean;
+    };
+    expect(body.isText).toBe(true);
+    expect(body.texts).toBeTruthy();
+    expect(body.texts!.length).toBeGreaterThan(0);
+    // 10 initial - 5 for text-fast = 5 remaining
+    expect(body.creditsRemaining).toBe(5);
+  });
 });
