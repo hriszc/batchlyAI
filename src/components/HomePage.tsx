@@ -83,6 +83,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
   const authGate = useAuthGate();
   const isLoggedIn = !!visibleUser;
   const canGuestGenerate = !isLoggedIn;
+  const { setPromptTemplate, updateValue, setAspectRatio, setModel } = actions;
 
   useEffect(() => {
     // Keep the first client render aligned with SSR to avoid hydration remounts
@@ -96,11 +97,11 @@ export function HomePage({ forceLanguage }: HomePageProps) {
     try {
       const pending = sessionStorage.getItem("pendingPrompt");
       if (pending) {
-        actions.setPromptTemplate(pending);
+        setPromptTemplate(pending);
         sessionStorage.removeItem("pendingPrompt");
       }
     } catch {}
-  }, [actions]);
+  }, [setPromptTemplate]);
 
   // Save prompt to sessionStorage so it survives login redirect
   useEffect(() => {
@@ -129,9 +130,9 @@ export function HomePage({ forceLanguage }: HomePageProps) {
   useEffect(() => {
     if (!sessionReady) return;
     if (!isLoggedIn && state.model !== "z-image-fast") {
-      actions.setModel("z-image-fast");
+      setModel("z-image-fast");
     }
-  }, [actions, isLoggedIn, sessionReady, state.model]);
+  }, [isLoggedIn, sessionReady, setModel, state.model]);
 
   // Handle ?template=<slug> for "Use this template" flow
   useEffect(() => {
@@ -152,17 +153,17 @@ export function HomePage({ forceLanguage }: HomePageProps) {
         };
         if (data.error || !data.promptTemplate) return;
 
-        actions.setPromptTemplate(data.promptTemplate);
+        setPromptTemplate(data.promptTemplate);
         setTimeout(() => {
           const groups = data.variableGroups;
           if (!groups) return;
           groups.forEach((group, i) => {
             group.values.forEach((value, j) => {
-              actions.updateValue(`var_${i}`, j, value);
+              updateValue(`var_${i}`, j, value);
             });
           });
-          if (data.model) actions.setModel(data.model);
-          if (data.aspectRatio) actions.setAspectRatio(data.aspectRatio);
+          if (data.model) setModel(data.model);
+          if (data.aspectRatio) setAspectRatio(data.aspectRatio);
         }, 600);
 
         const url = new URL(window.location.href);
@@ -172,7 +173,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
         // Non-critical
       }
     })();
-  }, [actions]);
+  }, [setPromptTemplate, setAspectRatio, setModel, updateValue]);
 
   // Handle ?remix=<workId> for remix flow
   useEffect(() => {
@@ -191,17 +192,17 @@ export function HomePage({ forceLanguage }: HomePageProps) {
         };
         if (!data.promptTemplate) return;
 
-        actions.setPromptTemplate(data.promptTemplate);
+        setPromptTemplate(data.promptTemplate);
         setTimeout(() => {
           try {
             const groups = JSON.parse(data.variableGroups || "[]") as Array<{ values: string[] }>;
             groups.forEach((group, i) => {
               group.values.forEach((value, j) => {
-                actions.updateValue(`var_${i}`, j, value);
+                updateValue(`var_${i}`, j, value);
               });
             });
           } catch {}
-          if (data.model) actions.setModel(data.model);
+          if (data.model) setModel(data.model);
         }, 600);
 
         const url = new URL(window.location.href);
@@ -211,7 +212,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
         /* Non-critical */
       }
     })();
-  }, [actions]);
+  }, [setPromptTemplate, setModel, updateValue]);
 
   const prevGeneratingRef = useRef(state.isGenerating);
   useEffect(() => {
@@ -257,6 +258,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
         canExpandVars={isLoggedIn}
         isGuest={canGuestGenerate}
         availableCredits={userCredits}
+        isSessionReady={sessionReady}
       />
 
       <div ref={resultsRef}>

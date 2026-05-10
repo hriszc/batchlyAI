@@ -77,6 +77,19 @@ describe("GeneratorCard", () => {
     expect(btn).not.toBeDisabled();
   });
 
+  it("keeps generate disabled until session state is ready", () => {
+    const stateWithVars: GeneratorState = {
+      ...baseState,
+      promptTemplate: "{{cat, dog}}",
+      variableGroups: [{ id: "var_0", values: ["cat", "dog"] }],
+    };
+    renderWithProviders(
+      <GeneratorCard state={stateWithVars} actions={mockActions} isSessionReady={false} />,
+    );
+    const btn = screen.getByText("Generate");
+    expect(btn).toBeDisabled();
+  });
+
   it("calls startGenerating when generate button clicked", async () => {
     const startGen = vi.fn();
     const stateWithVars: GeneratorState = {

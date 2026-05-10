@@ -1,10 +1,18 @@
-import { screen } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { screen, waitFor } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 import { renderWithProviders } from "#test/test-utils";
 
 vi.mock("../universal-generator/ShareScreenshot", () => ({
   ShareScreenshot: () => null,
+}));
+
+const mockUseSession = vi.fn();
+
+vi.mock("@/lib/auth/auth-client", () => ({
+  authClient: {
+    useSession: () => mockUseSession(),
+  },
 }));
 
 import { HomePage, shouldRedirectToCn } from "../HomePage";
@@ -51,7 +59,13 @@ describe("shouldRedirectToCn", () => {
 describe("HomePage", () => {
   beforeEach(() => {
     localStorage.clear();
+    mockUseSession.mockReturnValue({ data: null, isPending: false });
     vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    window.history.replaceState({}, "", "/");
   });
 
   it("renders site title", () => {
@@ -90,5 +104,31 @@ describe("HomePage", () => {
     renderWithProviders(<HomePage />);
     const textarea = screen.getByPlaceholderText(/Describe your image/) as HTMLTextAreaElement;
     expect(textarea.value).toBe("{{cat, dog}} in a forest");
+  });
+
+  it("loads template query only once", async () => {
+    const templateFetch = vi.fn().mockResolvedValue({
+      json: () =>
+        Promise.resolve({
+          promptTemplate: "A {{cat, dog}} in {{forest, beach}}",
+          variableGroups: [{ values: ["cat", "dog"] }],
+          model: "z-image-pro",
+          aspectRatio: "9:16",
+        }),
+    });
+    vi.stubGlobal("fetch", templateFetch);
+    window.history.pushState({}, "", "/?template=demo");
+
+    renderWithProviders(<HomePage />);
+
+    await waitFor(() => {
+      expect(templateFetch).toHaveBeenCalledTimes(1);
+    });
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Describe your image/)).toHaveValue(
+        "A {{cat, dog}} in {{forest, beach}}",
+      );
+    });
+    expect(templateFetch).toHaveBeenCalledTimes(1);
   });
 });

@@ -41,6 +41,7 @@ interface GeneratorCardProps {
   canExpandVars?: boolean;
   isGuest?: boolean;
   availableCredits?: number | null;
+  isSessionReady?: boolean;
 }
 
 export function GeneratorCard({
@@ -51,6 +52,7 @@ export function GeneratorCard({
   canExpandVars = false,
   isGuest = false,
   availableCredits = null,
+  isSessionReady = true,
 }: GeneratorCardProps) {
   const [showVariables, setShowVariables] = useState(false);
   const [buyLoading, setBuyLoading] = useState(false);
@@ -143,7 +145,11 @@ export function GeneratorCard({
         : undefined;
 
   const generateDisabled =
-    comboCount === 0 || state.isGenerating || showLowCreditWarning || creditEstimate === 0;
+    !isSessionReady ||
+    comboCount === 0 ||
+    state.isGenerating ||
+    showLowCreditWarning ||
+    creditEstimate === 0;
 
   return (
     <div className="rounded-2xl bg-card shadow-[rgba(0,0,0,0.22)_3px_5px_30px_0px]">
