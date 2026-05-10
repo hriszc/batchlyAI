@@ -54,6 +54,34 @@ describe("handleGenerateStatus", () => {
     expect(resp.status).toBe(401);
   });
 
+  it("allows guest polling with guest token", async () => {
+    mocks.mockGetSession.mockResolvedValue(null);
+    const mockKv = {
+      get: vi.fn((key: string) => {
+        if (key === "guest:pred-1") {
+          return Promise.resolve(JSON.stringify({ guestToken: "guest-123" }));
+        }
+        return Promise.resolve(null);
+      }),
+    };
+    (globalThis as Record<string, unknown>).__env__ = { batchlyai_kv: mockKv };
+
+    const req = {
+      url: "https://batchlyai.com/api/generate-status?ids=pred-1&type=replicate",
+      headers: new Headers({ "x-guest-token": "guest-123" }),
+    } as unknown as Request;
+    mocks.mockPollReplicate.mockResolvedValue({
+      id: "pred-1",
+      status: "processing",
+      urls: null,
+      error: null,
+    });
+    const resp = await handleGenerateStatus(req);
+    expect(resp.status).toBe(200);
+    const body = (await resp.json()) as { results: { status: string }[] };
+    expect(body.results[0].status).toBe("processing");
+  });
+
   it("returns 400 when ids parameter is missing", async () => {
     const resp = await handleGenerateStatus(makeRequest("other=1"));
     expect(resp.status).toBe(400);
@@ -212,6 +240,29 @@ describe("handleGenerateStatus", () => {
     };
     expect(body.results[0].status).toBe("error");
     expect(body.results[0].error).toBe("KV not available");
+  });
+
+  it("rejects replicate polling for mismatched guest token", async () => {
+    const mockKv = {
+      get: vi.fn((key: string) => {
+        if (key === "guest:pred-1") {
+          return Promise.resolve(JSON.stringify({ guestToken: "guest-abc" }));
+        }
+        return Promise.resolve(null);
+      }),
+    };
+    (globalThis as Record<string, unknown>).__env__ = { batchlyai_kv: mockKv };
+    mocks.mockGetSession.mockResolvedValue(null);
+
+    const req = {
+      url: "https://batchlyai.com/api/generate-status?ids=pred-1&type=replicate",
+      headers: new Headers({ "x-guest-token": "guest-wrong" }),
+    } as unknown as Request;
+    const resp = await handleGenerateStatus(req);
+    expect(resp.status).toBe(200);
+    const body = (await resp.json()) as { results: { status: string; error: string }[] };
+    expect(body.results[0].status).toBe("error");
+    expect(body.results[0].error).toBe("Not found");
   });
 
   // --- Generation record update via poll results ---

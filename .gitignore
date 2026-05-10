@@ -25,5 +25,6 @@ dist
 /public/build
 
 .tanstack.claude/worktrees/
+.claude/
 coverage/
 .claude/settings.local.json

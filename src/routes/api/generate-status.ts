@@ -17,6 +17,26 @@ interface GrsTaskData {
   error?: string;
 }
 
+function parseOwnerId(raw: string | null): string | null {
+  if (!raw) return null;
+  try {
+    const data = JSON.parse(raw) as { userId?: string };
+    return typeof data.userId === "string" ? data.userId : null;
+  } catch {
+    return null;
+  }
+}
+
+function parseGuestToken(raw: string | null): string | null {
+  if (!raw) return null;
+  try {
+    const data = JSON.parse(raw) as { guestToken?: string };
+    return typeof data.guestToken === "string" ? data.guestToken : null;
+  } catch {
+    return null;
+  }
+}
+
 async function tryUpdateGeneration(kv: KVNamespace, predictionId: string, urls: string[]) {
   try {
     const kvKey = `gen:${predictionId}`;
@@ -63,11 +83,16 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
   }
 
   const session = await auth.api.getSession({ headers: request.headers });
-  if (!session?.user?.id) {
+  const guestToken = request.headers.get("x-guest-token");
+  const userId = session?.user?.id || null;
+  if (!userId && !guestToken) {
     return jsonResponse({ error: "Unauthorized" }, 401);
   }
 
-  const limit = checkRateLimit(`generate-status:${session.user.id}`, 30, 10);
+  const limitKey = userId
+    ? `generate-status:${userId}`
+    : `generate-status:guest:${guestToken}`;
+  const limit = checkRateLimit(limitKey, 30, 10);
   if (!limit.allowed) {
     return jsonResponse({ error: "Too many status checks. Please slow down." }, 429);
   }
@@ -88,8 +113,8 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
   const ids = idsParam.split(",").filter(Boolean);
 
   try {
+    const kv = getKvBinding();
     if (type === "grs") {
-      const kv = getKvBinding();
       const results = await Promise.all(
         ids.map(async (id) => {
           try {
@@ -97,6 +122,10 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
             const raw = await kv.get(`grs:${id}`);
             if (!raw) return { id, status: "processing", urls: null, error: null };
             const data: GrsTaskData = JSON.parse(raw);
+            const ownerId = data.userId;
+            if (ownerId !== userId) {
+              return { id, status: "error", urls: null, error: "Not found" };
+            }
             if (data.status === "succeeded" && data.urls) {
               mirrorTasks.push(tryUpdateGeneration(kv, id, data.urls));
               return { id, status: "succeeded", urls: data.urls, error: null };
@@ -126,6 +155,20 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
     const results = await Promise.all(
       ids.map(async (id) => {
         try {
+          if (kv) {
+            const guestRaw = await kv.get(`guest:${id}`);
+            if (guestRaw) {
+              const guestOwner = parseGuestToken(guestRaw);
+              if (!guestToken || guestOwner !== guestToken) {
+                return { id, status: "error", urls: null, error: "Not found" };
+              }
+            } else {
+              const ownerId = parseOwnerId(await kv.get(`gen:${id}`));
+              if (ownerId && ownerId !== userId) {
+                return { id, status: "error", urls: null, error: "Not found" };
+              }
+            }
+          }
           return await pollReplicatePrediction(id);
         } catch (err) {
           const message = err instanceof Error ? err.message : "Poll failed";
@@ -135,7 +178,6 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
     );
 
     // Update generation records for succeeded Replicate results
-    const kv = getKvBinding();
     if (kv) {
       for (const [i, r] of results.entries()) {
         if (r.status === "succeeded" && r.urls?.length) {

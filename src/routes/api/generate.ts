@@ -54,7 +54,7 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
     const raw = await request.json();
     const parsed = generateRequestSchema.safeParse(raw);
     if (!parsed.success) {
-      return jsonResponse({ error: "Invalid request", details: parsed.error.flatten() }, 400);
+      return jsonResponse({ error: "Invalid request", details: parsed.error.message }, 400);
     }
     const body = parsed.data;
 
@@ -414,6 +414,13 @@ export const Route = createFileRoute("/api/generate")({
 
           const raw = await request.json();
           if (!raw.prompt) return jsonResponse({ error: "Missing prompt" }, 400);
+          const guestToken =
+            typeof raw.guestToken === "string" && raw.guestToken.trim()
+              ? raw.guestToken.trim()
+              : null;
+          if (!guestToken) {
+            return jsonResponse({ error: "Missing guest token" }, 400);
+          }
           if (raw.model && raw.model !== "z-image-fast") {
             return jsonResponse(
               { error: "Guest users can only use Image Turbo. Sign up for full access." },
@@ -430,6 +437,15 @@ export const Route = createFileRoute("/api/generate")({
 
           if (kv) {
             await kv.put(kvKey, String(count + 1), { expirationTtl: 86400 });
+            await Promise.all(
+              guestPredictions.map((p) =>
+                kv.put(
+                  `guest:${p.id}`,
+                  JSON.stringify({ guestToken, status: "processing" }),
+                  { expirationTtl: 3600 },
+                ),
+              ),
+            );
           }
 
           return jsonResponse(

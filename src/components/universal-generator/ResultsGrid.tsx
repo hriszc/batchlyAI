@@ -38,6 +38,22 @@ function filterBest(results: GeneratedResult[]): GeneratedResult[] {
   });
 }
 
+function getResultStatusText(results: GeneratedResult[], isGenerating: boolean, totalExpected?: number) {
+  if (isGenerating) {
+    return totalExpected
+      ? `Generating ${totalExpected} outputs...`
+      : "Generating outputs...";
+  }
+  const complete = results.filter((r) => r.status === "complete").length;
+  const pending = results.filter((r) => r.status === "pending" || r.status === "generating").length;
+  const failed = results.filter((r) => r.status === "error").length;
+  const parts = [];
+  if (complete > 0) parts.push(`${complete} ready`);
+  if (pending > 0) parts.push(`${pending} working`);
+  if (failed > 0) parts.push(`${failed} failed`);
+  return parts.length > 0 ? parts.join(" · ") : "No results yet";
+}
+
 export function ResultsGrid({
   results,
   isGenerating,
@@ -143,11 +159,9 @@ export function ResultsGrid({
         )}
       </div>
 
-      {isGenerating && (
-        <p className="mb-4 text-center text-sm text-muted-foreground">
-          {totalExpected ? `Generating ${totalExpected} images...` : "Generating..."}
-        </p>
-      )}
+      <p className="mb-4 text-center text-sm text-muted-foreground">
+        {getResultStatusText(results, isGenerating, totalExpected)}
+      </p>
 
       {showActions && (
         <div className="mb-4 flex justify-center">

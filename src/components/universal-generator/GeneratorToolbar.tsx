@@ -24,6 +24,7 @@ const VIDEO_DURATIONS: { value: VideoDuration; label: string; labelZh: string }[
 ];
 
 interface GeneratorToolbarProps {
+  isGuest?: boolean;
   showVariables: boolean;
   onToggleVariables: () => void;
   currentModel: string;
@@ -44,6 +45,7 @@ interface GeneratorToolbarProps {
 }
 
 export function GeneratorToolbar({
+  isGuest = false,
   showVariables,
   onToggleVariables,
   currentModel,
@@ -120,7 +122,19 @@ export function GeneratorToolbar({
 
       <span className="text-muted-foreground/40">|</span>
 
-      <ModelPicker currentModel={currentModel} onSelect={onSelectModel} />
+      {isGuest ? (
+        <div
+          className="inline-flex items-center gap-1.5 rounded-lg border bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground"
+          title="Guest mode: Image Turbo only"
+        >
+          <span className="font-medium text-foreground">Image Turbo</span>
+          <span className="rounded-full bg-accent-blue/10 px-1.5 py-0.5 text-[10px] font-medium text-accent-blue">
+            Guest
+          </span>
+        </div>
+      ) : (
+        <ModelPicker currentModel={currentModel} onSelect={onSelectModel} />
+      )}
 
       {/* Aspect ratio: shown for image and video, hidden for text */}
       {!isText && (

@@ -2,17 +2,10 @@ import { useReducer, useCallback, useRef, useEffect } from "react";
 
 import { authClient } from "@/lib/auth/auth-client";
 
-import { DEFAULT_MODEL, MODELS } from "./models";
+import { MODELS } from "./models";
 import { unifiedPoll } from "./poll";
 import { reducer, initialState } from "./reducer";
-import type {
-  GeneratorState,
-  GeneratorAction,
-  GroupId,
-  PromptCombination,
-  TextLength,
-  VideoDuration,
-} from "./types";
+import type { GroupId, PromptCombination, TextLength, VideoDuration } from "./types";
 import { TEXT_LENGTH_TOKENS, VIDEO_DURATION_SECONDS } from "./types";
 import { computePromptCombinations } from "./utils";
 
@@ -24,15 +17,43 @@ interface AsyncPending {
   predictionIds: string[];
   modelType: string;
   combination: PromptCombination;
+  guestToken?: string;
 }
 
 export function useGeneratorState() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stateRef = useRef(state);
+  const guestTokenRef = useRef<string | null>(null);
+  const { data: session } = authClient.useSession();
+  const isLoggedIn = !!session?.user?.id;
   useEffect(() => {
     stateRef.current = state;
   });
+
+  const getGuestToken = useCallback(() => {
+    if (isLoggedIn) return null;
+    if (guestTokenRef.current) return guestTokenRef.current;
+    try {
+      const existing = localStorage.getItem("batchlyai_guest_token");
+      if (existing) {
+        guestTokenRef.current = existing;
+        return existing;
+      }
+      const token =
+        globalThis.crypto?.randomUUID?.() ||
+        `guest_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      localStorage.setItem("batchlyai_guest_token", token);
+      guestTokenRef.current = token;
+      return token;
+    } catch {
+      const token =
+        globalThis.crypto?.randomUUID?.() ||
+        `guest_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      guestTokenRef.current = token;
+      return token;
+    }
+  }, [isLoggedIn]);
 
   const setPromptTemplate = useCallback((value: string) => {
     dispatch({ type: "SET_PROMPT_TEMPLATE", payload: value });
@@ -95,9 +116,10 @@ export function useGeneratorState() {
     }
 
     const model = MODELS.find((m) => m.id === currentState.model);
-    const isImageModel = model?.category === "image";
+    const isTextModel = model?.category === "text";
+    const guestToken = isLoggedIn ? null : getGuestToken();
 
-    if (isImageModel) {
+    if (!isTextModel) {
       let globalError: string | null = null;
       let creditsRemaining: number | null = null;
       let isWatermarked = false;
@@ -116,6 +138,7 @@ export function useGeneratorState() {
                 aspectRatio: currentState.aspectRatio,
                 n: currentState.quantity,
                 model: currentState.model,
+                ...(guestToken ? { guestToken } : {}),
                 attachedUrls: currentState.attachedFiles.filter((f) => f.url).map((f) => f.url!),
                 ...(model?.category === "video"
                   ? { duration: VIDEO_DURATION_SECONDS[currentState.videoDuration] }
@@ -182,6 +205,7 @@ export function useGeneratorState() {
                 predictionIds: json.predictionIds,
                 modelType,
                 combination,
+                guestToken: guestToken ?? undefined,
               });
               return [];
             }
@@ -246,6 +270,7 @@ export function useGeneratorState() {
                 n: 1,
                 model: currentState.model,
                 maxTokens: TEXT_LENGTH_TOKENS[currentState.textLength],
+                ...(guestToken ? { guestToken } : {}),
               }),
             });
             const json = (await resp.json()) as {
@@ -306,7 +331,7 @@ export function useGeneratorState() {
           dispatch({ type: "SET_ERROR", payload: String(err) });
         });
     }
-  }, []);
+  }, [getGuestToken, isLoggedIn]);
 
   const setError = useCallback((value: string | null) => {
     dispatch({ type: "SET_ERROR", payload: value });

@@ -77,6 +77,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
   const userCredits = ((session?.user as Record<string, unknown>)?.credits as number) ?? 0;
   const showWatermark = userCredits <= 10;
   const authGate = useAuthGate();
+  const canGuestGenerate = !session?.user;
 
   // Restore pending prompt from sessionStorage (preserved across login redirect)
   useEffect(() => {
@@ -87,7 +88,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
         sessionStorage.removeItem("pendingPrompt");
       }
     } catch {}
-  }, []);
+  }, [actions]);
 
   // Save prompt to sessionStorage so it survives login redirect
   useEffect(() => {
@@ -111,6 +112,12 @@ export function HomePage({ forceLanguage }: HomePageProps) {
     }
   }, [forceLanguage, setLanguage]);
 
+  useEffect(() => {
+    if (!session?.user && state.model !== "z-image-fast") {
+      actions.setModel("z-image-fast");
+    }
+  }, [actions, session?.user, state.model]);
+
   // Handle ?template=<slug> for "Use this template" flow
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -118,7 +125,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
     const templateSlug = params.get("template");
     if (!templateSlug) return;
 
-    (async () => {
+    void (async () => {
       try {
         const resp = await fetch(`/api/templates/${templateSlug}`);
         const data = (await resp.json()) as {
@@ -150,7 +157,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
         // Non-critical
       }
     })();
-  }, []);
+  }, [actions]);
 
   // Handle ?remix=<workId> for remix flow
   useEffect(() => {
@@ -159,7 +166,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
     const remixId = params.get("remix");
     if (!remixId) return;
 
-    (async () => {
+    void (async () => {
       try {
         const resp = await fetch(`/api/works?remix=${remixId}`);
         const data = (await resp.json()) as {
@@ -189,7 +196,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
         /* Non-critical */
       }
     })();
-  }, []);
+  }, [actions]);
 
   const prevGeneratingRef = useRef(state.isGenerating);
   useEffect(() => {
@@ -227,7 +234,14 @@ export function HomePage({ forceLanguage }: HomePageProps) {
         {t("siteDescription")}
       </p>
 
-      <GeneratorCard state={state} actions={actions} onRequireAuth={authGate.checkAuth} />
+      <GeneratorCard
+        state={state}
+        actions={actions}
+        onRequireAuth={authGate.checkAuth}
+        canGuestGenerate={canGuestGenerate}
+        canExpandVars={!!session?.user}
+        isGuest={canGuestGenerate}
+      />
 
       <div ref={resultsRef}>
         <ResultsGrid

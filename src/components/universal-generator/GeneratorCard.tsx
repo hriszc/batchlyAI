@@ -37,9 +37,19 @@ interface GeneratorCardProps {
     removeAttachment: (id: string) => void;
   };
   onRequireAuth?: (action: () => void) => void;
+  canGuestGenerate?: boolean;
+  canExpandVars?: boolean;
+  isGuest?: boolean;
 }
 
-export function GeneratorCard({ state, actions, onRequireAuth }: GeneratorCardProps) {
+export function GeneratorCard({
+  state,
+  actions,
+  onRequireAuth,
+  canGuestGenerate = false,
+  canExpandVars = false,
+  isGuest = false,
+}: GeneratorCardProps) {
   const [showVariables, setShowVariables] = useState(false);
   const [buyLoading, setBuyLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -80,12 +90,12 @@ export function GeneratorCard({ state, actions, onRequireAuth }: GeneratorCardPr
     if (hasGroups && !showVariables) {
       try {
         if (!localStorage.getItem(VARIABLE_EDITOR_SHOWN_KEY)) {
-          setShowVariables(true);
+          queueMicrotask(() => setShowVariables(true));
           localStorage.setItem(VARIABLE_EDITOR_SHOWN_KEY, "1");
         }
       } catch {}
     }
-  }, [hasGroups]);
+  }, [hasGroups, showVariables]);
 
   const disabledReason = state.isGenerating
     ? undefined
@@ -104,7 +114,7 @@ export function GeneratorCard({ state, actions, onRequireAuth }: GeneratorCardPr
           className="min-h-[80px] w-full resize-none border-0 bg-transparent text-base placeholder:text-muted-foreground/60 focus:ring-0 focus:outline-none"
           rows={3}
         />
-        {expand.expandBlocks.length > 0 && (
+        {canExpandVars && expand.expandBlocks.length > 0 && (
           <div className="mt-1 flex items-center justify-between">
             <span className="text-xs text-muted-foreground/50">
               {expand.expandBlocks.length} {t("groups")} detected — AI can expand
@@ -215,14 +225,16 @@ export function GeneratorCard({ state, actions, onRequireAuth }: GeneratorCardPr
       {/* Action buttons row */}
       <div className="flex items-center justify-between gap-2 px-4 pb-3">
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => actions.setPromptTemplate(getRandomPrompt())}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border bg-muted/30 transition-colors hover:bg-muted"
-            title={t("inspire")}
-          >
-            <WandSparklesIcon className="h-4 w-4 text-muted-foreground" />
-          </button>
+          {canExpandVars && (
+            <button
+              type="button"
+              onClick={() => actions.setPromptTemplate(getRandomPrompt())}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border bg-muted/30 transition-colors hover:bg-muted"
+              title={t("inspire")}
+            >
+              <WandSparklesIcon className="h-4 w-4 text-muted-foreground" />
+            </button>
+          )}
           <input
             ref={fileInputRef}
             type="file"
@@ -245,7 +257,9 @@ export function GeneratorCard({ state, actions, onRequireAuth }: GeneratorCardPr
 
         <button
           onClick={() =>
-            onRequireAuth ? onRequireAuth(actions.startGenerating) : actions.startGenerating()
+            canGuestGenerate || !onRequireAuth
+              ? actions.startGenerating()
+              : onRequireAuth(actions.startGenerating)
           }
           disabled={comboCount === 0 || state.isGenerating}
           title={disabledReason}
@@ -257,6 +271,7 @@ export function GeneratorCard({ state, actions, onRequireAuth }: GeneratorCardPr
 
       {/* Bottom toolbar */}
       <GeneratorToolbar
+        isGuest={isGuest}
         showVariables={showVariables}
         onToggleVariables={() => setShowVariables(!showVariables)}
         currentModel={state.model}

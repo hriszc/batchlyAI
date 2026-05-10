@@ -65,6 +65,7 @@
     ".netlify",
     ".output",
     "build/",
+    ".claude/",
     "worker-configuration.d.ts",
     "scripts/"
   ]

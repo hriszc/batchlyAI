@@ -5,17 +5,20 @@ import { createTestDb, applyMigrations, seedUser } from "#test/db-setup";
 import { user as userTable } from "@/lib/db/schema";
 
 const mockConstructEventAsync = vi.fn();
+const mockListLineItems = vi.fn();
 let testDb: ReturnType<typeof createTestDb>;
 
 vi.mock("@/lib/stripe", () => ({
   getStripe: () => ({
     webhooks: { constructEventAsync: mockConstructEventAsync },
+    checkout: { sessions: { listLineItems: mockListLineItems } },
   }),
 }));
 
 vi.mock("@/env/server", () => ({
   env: {
     STRIPE_WEBHOOK_SECRET: "whsec_test_123",
+    STRIPE_PRICE_ID_USD: "price_usd_test_001",
   },
 }));
 
@@ -42,6 +45,8 @@ function makeSessionEvent(overrides?: {
   userId?: string;
   amountTotal?: number;
   customerId?: string | null;
+  status?: string;
+  paymentStatus?: string;
 }): Record<string, unknown> {
   return {
     type: "checkout.session.completed",
@@ -49,6 +54,8 @@ function makeSessionEvent(overrides?: {
       object: {
         id: overrides?.id ?? "cs_test_001",
         amount_total: overrides?.amountTotal ?? 1000,
+        status: overrides?.status ?? "complete",
+        payment_status: overrides?.paymentStatus ?? "paid",
         metadata: { userId: overrides?.userId ?? "test-user-001" },
         customer: overrides?.customerId === null ? null : (overrides?.customerId ?? "cus_001"),
       },
@@ -61,6 +68,7 @@ describe("handleWebhook", () => {
     testDb = createTestDb();
     applyMigrations(testDb);
     mockConstructEventAsync.mockClear();
+    mockListLineItems.mockClear();
     // Mock the D1 binding via globalThis.__env__ so getD1Binding() finds it
     (globalThis as Record<string, unknown>).__env__ = {
       batchlyai_db: {} as D1Database,
@@ -102,6 +110,9 @@ describe("handleWebhook", () => {
     mockConstructEventAsync.mockResolvedValue(
       makeSessionEvent({ amountTotal: 1000, customerId: null }),
     );
+    mockListLineItems.mockResolvedValue({
+      data: [{ price: { id: "price_usd_test_001" }, quantity: 1 }],
+    });
 
     const resp = await handleWebhook(makeRequest({ signature: "sig" }));
     expect(resp.status).toBe(200);
@@ -111,50 +122,47 @@ describe("handleWebhook", () => {
       .from(userTable)
       .where(eq(userTable.id, "test-user-001"))
       .get();
-    // $10 = 1000 amount_total; 1000/100 * 100 = 1000 credits
     expect(row?.credits).toBe(1100);
   });
 
-  it("handles different amount_total correctly", async () => {
+  it("ignores unsupported line items", async () => {
     seedUser(testDb, { id: "test-user-001", credits: 0 });
     mockConstructEventAsync.mockResolvedValue(
       makeSessionEvent({ amountTotal: 500, customerId: null }),
     );
+    mockListLineItems.mockResolvedValue({
+      data: [{ price: { id: "price_unknown" }, quantity: 1 }],
+    });
 
-    await handleWebhook(makeRequest({ signature: "sig" }));
-    const row = testDb
-      .select({ credits: userTable.credits })
-      .from(userTable)
-      .where(eq(userTable.id, "test-user-001"))
-      .get();
-    expect(row?.credits).toBe(500);
+    const resp = await handleWebhook(makeRequest({ signature: "sig" }));
+    expect(resp.status).toBe(400);
   });
 
-  it("defaults amount_total to 1000 when missing", async () => {
+  it("rejects incomplete sessions", async () => {
     seedUser(testDb, { id: "test-user-001", credits: 0 });
-    const event = {
-      type: "checkout.session.completed",
-      data: {
-        object: {
-          id: "cs_002",
-          metadata: { userId: "test-user-001" },
-          customer: null,
-        },
-      },
-    };
-    mockConstructEventAsync.mockResolvedValue(event);
-    await handleWebhook(makeRequest({ signature: "sig" }));
+    mockConstructEventAsync.mockResolvedValue(
+      makeSessionEvent({ status: "open", paymentStatus: "unpaid", customerId: null }),
+    );
+    mockListLineItems.mockResolvedValue({
+      data: [{ price: { id: "price_usd_test_001" }, quantity: 1 }],
+    });
+
+    const resp = await handleWebhook(makeRequest({ signature: "sig" }));
+    expect(resp.status).toBe(200);
     const row = testDb
       .select({ credits: userTable.credits })
       .from(userTable)
       .where(eq(userTable.id, "test-user-001"))
       .get();
-    expect(row?.credits).toBe(1000);
+    expect(row?.credits).toBe(0);
   });
 
   it("sets stripeCustomerId on first purchase", async () => {
     seedUser(testDb, { id: "test-user-001", stripeCustomerId: null });
     mockConstructEventAsync.mockResolvedValue(makeSessionEvent({ customerId: "cus_live_123" }));
+    mockListLineItems.mockResolvedValue({
+      data: [{ price: { id: "price_usd_test_001" }, quantity: 1 }],
+    });
 
     await handleWebhook(makeRequest({ signature: "sig" }));
     const row = testDb
@@ -170,6 +178,9 @@ describe("handleWebhook", () => {
     mockConstructEventAsync.mockResolvedValue(
       makeSessionEvent({ id: "cs_dup_001", amountTotal: 1000, customerId: null }),
     );
+    mockListLineItems.mockResolvedValue({
+      data: [{ price: { id: "price_usd_test_001" }, quantity: 1 }],
+    });
 
     await handleWebhook(makeRequest({ signature: "sig" }));
     const credits1 = testDb
@@ -210,8 +221,17 @@ describe("handleWebhook", () => {
     mockConstructEventAsync.mockResolvedValue({
       type: "checkout.session.completed",
       data: {
-        object: { id: "cs_null_amt", metadata: { userId: "test-user-001" }, customer: null },
+        object: {
+          id: "cs_null_amt",
+          status: "complete",
+          payment_status: "paid",
+          metadata: { userId: "test-user-001" },
+          customer: null,
+        },
       },
+    });
+    mockListLineItems.mockResolvedValue({
+      data: [{ price: { id: "price_usd_test_001" }, quantity: 1 }],
     });
     const resp = await handleWebhook(makeRequest({ signature: "sig" }));
     expect(resp.status).toBe(200);

@@ -15,6 +15,7 @@ interface AsyncPending {
   predictionIds: string[];
   modelType: string;
   combination: PromptCombination;
+  guestToken?: string;
 }
 
 export interface PollProgress {
@@ -54,6 +55,12 @@ export async function unifiedPoll(
     try {
       const resp = await fetch(
         `/api/generate-status?ids=${[...pendingIds].join(",")}&type=${modelType}`,
+        {
+          headers: (() => {
+            const guestToken = pendings.find((p) => p.guestToken)?.guestToken;
+            return guestToken ? { "x-guest-token": guestToken } : undefined;
+          })(),
+        },
       );
       const json = (await resp.json()) as { results?: PollResult[]; error?: string };
 

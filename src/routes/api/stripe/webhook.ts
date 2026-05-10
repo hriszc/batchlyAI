@@ -7,6 +7,19 @@ import { getDb } from "@/lib/db";
 import { user as userTable, creditPurchase, referral } from "@/lib/db/schema";
 import { getStripe } from "@/lib/stripe";
 
+function getCreditsPerPrice(priceId: string): number | null {
+  const catalog = [
+    [env.STRIPE_PRICE_ID_USD, 1000],
+    [env.STRIPE_PRICE_ID_CNY, 1000],
+  ] as const;
+  for (const [configuredPrice, creditsPerPack] of catalog) {
+    if (configuredPrice && configuredPrice === priceId) {
+      return creditsPerPack;
+    }
+  }
+  return null;
+}
+
 function getD1Binding(): D1Database | undefined {
   const platformEnv = (globalThis as Record<string, unknown>).__env__ as
     | Record<string, unknown>
@@ -43,9 +56,29 @@ export async function handleWebhook(request: Request): Promise<Response> {
       return jsonResponse({ error: "Missing userId" }, 400);
     }
 
-    const amountTotal = session.amount_total ?? 1000;
-    const creditsPerDollar = 100;
-    const creditsGranted = Math.round((amountTotal / 100) * creditsPerDollar);
+    if (session.payment_status !== "paid") {
+      return jsonResponse({ received: true }, 200);
+    }
+
+    if (session.status !== "complete") {
+      return jsonResponse({ received: true }, 200);
+    }
+
+    const stripe = getStripe();
+    const lineItems = await stripe.checkout.sessions.listLineItems(session.id, { limit: 100 });
+    const totalCredits = lineItems.data.reduce((sum, item) => {
+      const priceId = item.price?.id;
+      const creditsPerUnit = priceId ? getCreditsPerPrice(priceId) : null;
+      if (!creditsPerUnit) return sum;
+      return sum + creditsPerUnit * (item.quantity ?? 1);
+    }, 0);
+
+    if (totalCredits <= 0) {
+      console.error("[stripe] webhook: no recognized line items");
+      return jsonResponse({ error: "Unsupported purchase" }, 400);
+    }
+
+    const amountTotal = session.amount_total ?? 0;
     const now = Math.floor(Date.now() / 1000);
     const db = getDb(binding);
 
@@ -54,7 +87,7 @@ export async function handleWebhook(request: Request): Promise<Response> {
         id: session.id,
         userId,
         amount: amountTotal,
-        credits: creditsGranted,
+        credits: totalCredits,
         status: "completed",
         createdAt: now,
         completedAt: now,
@@ -62,7 +95,7 @@ export async function handleWebhook(request: Request): Promise<Response> {
 
       await db
         .update(userTable)
-        .set({ credits: sql`${userTable.credits} + ${creditsGranted}` })
+        .set({ credits: sql`${userTable.credits} + ${totalCredits}` })
         .where(eq(userTable.id, userId));
 
       if (session.customer) {
@@ -72,7 +105,7 @@ export async function handleWebhook(request: Request): Promise<Response> {
           .where(eq(userTable.id, userId));
       }
 
-      console.log(`[stripe] Credited ${creditsGranted} credits`);
+      console.log(`[stripe] Credited ${totalCredits} credits`);
 
       // Analytics (non-blocking)
       void (async () => {
@@ -84,7 +117,7 @@ export async function handleWebhook(request: Request): Promise<Response> {
         const { trackServer } = await import("@/lib/analytics/server");
         await trackServer("purchase_completed", userId, {
           amount_cents: amountTotal,
-          credits_granted: creditsGranted,
+          credits_granted: totalCredits,
           is_first_purchase: !userRecord?.stripeCustomerId,
         });
       })();
@@ -98,7 +131,7 @@ export async function handleWebhook(request: Request): Promise<Response> {
 
         if (refRecord) {
           const commissionRate = 0.2;
-          const commission = Math.round(creditsGranted * commissionRate);
+          const commission = Math.round(totalCredits * commissionRate);
 
           if (commission > 0) {
             await db
