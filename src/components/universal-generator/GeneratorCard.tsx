@@ -5,7 +5,7 @@ import {
   Undo2Icon,
   ShoppingCartIcon,
 } from "lucide-react";
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useLayoutEffect } from "react";
 import { toast } from "sonner";
 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -55,9 +55,39 @@ export function GeneratorCard({
   const [showVariables, setShowVariables] = useState(false);
   const [buyLoading, setBuyLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const promptTextareaRef = useRef<HTMLTextAreaElement>(null);
   const { t } = useLanguage();
 
   const expand = useExpandVariables(state.promptTemplate, actions.setPromptTemplate);
+
+  const handlePromptInput = useCallback(
+    (value: string) => {
+      try {
+        if (value) {
+          sessionStorage.setItem("pendingPrompt", value);
+        } else {
+          sessionStorage.removeItem("pendingPrompt");
+        }
+      } catch {}
+      actions.setPromptTemplate(value);
+    },
+    [actions],
+  );
+
+  useLayoutEffect(() => {
+    const promptValue = promptTextareaRef.current?.value;
+    if (promptValue && promptValue !== state.promptTemplate) {
+      handlePromptInput(promptValue);
+    }
+  }, [handlePromptInput, state.promptTemplate]);
+
+  useEffect(() => {
+    const promptValue = promptTextareaRef.current;
+    if (!promptValue) return;
+    if (state.promptTemplate && promptValue.value !== state.promptTemplate) {
+      promptValue.value = state.promptTemplate;
+    }
+  }, [state.promptTemplate]);
 
   const handleBuyCredits = useCallback(async () => {
     setBuyLoading(true);
@@ -120,8 +150,10 @@ export function GeneratorCard({
       {/* Prompt textarea */}
       <div className="overflow-hidden rounded-t-2xl p-4 pb-2">
         <textarea
-          value={state.promptTemplate}
-          onChange={(e) => actions.setPromptTemplate(e.target.value)}
+          ref={promptTextareaRef}
+          defaultValue={state.promptTemplate}
+          onInput={(e) => handlePromptInput(e.currentTarget.value)}
+          onChange={(e) => handlePromptInput(e.target.value)}
           placeholder={t("promptPlaceholder")}
           className="min-h-[80px] w-full resize-none border-0 bg-transparent text-base placeholder:text-muted-foreground/60 focus:ring-0 focus:outline-none"
           rows={3}

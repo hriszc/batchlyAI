@@ -31,6 +31,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
   const { state, actions } = useGeneratorState();
   const resultsRef = useRef<HTMLDivElement>(null);
   const { setLanguage, t } = useLanguage();
+  const [hydrated, setHydrated] = useState(false);
   const [shareMode, setShareMode] = useState(false);
   const [publishing, setPublishing] = useState(false);
 
@@ -73,11 +74,22 @@ export function HomePage({ forceLanguage }: HomePageProps) {
       setPublishing(false);
     }
   }, [publishing, state.promptTemplate, state.results, state.variableGroups, state.model, t]);
-  const { data: session } = authClient.useSession();
-  const userCredits = ((session?.user as Record<string, unknown>)?.credits as number) ?? 0;
+  const { data: session, isPending: sessionLoading } = authClient.useSession();
+  const sessionReady = hydrated && !sessionLoading;
+  const visibleSession = sessionReady ? session : null;
+  const visibleUser = visibleSession?.user;
+  const userCredits = ((visibleUser as Record<string, unknown>)?.credits as number) ?? 0;
   const showWatermark = userCredits <= 10;
   const authGate = useAuthGate();
-  const canGuestGenerate = !session?.user;
+  const isLoggedIn = !!visibleUser;
+  const canGuestGenerate = !isLoggedIn;
+
+  useEffect(() => {
+    // Keep the first client render aligned with SSR to avoid hydration remounts
+    // when auth state resolves before the page finishes hydrating.
+    // oxlint-disable-next-line react-hooks-js/set-state-in-effect
+    setHydrated(true);
+  }, []);
 
   // Restore pending prompt from sessionStorage (preserved across login redirect)
   useEffect(() => {
@@ -98,12 +110,14 @@ export function HomePage({ forceLanguage }: HomePageProps) {
     } catch {}
   }, [state.promptTemplate]);
 
-  // Auto-redirect Chinese browsers from / to /cn
+  // Switch Chinese browsers to Chinese in-place. A client-side redirect can race
+  // with first input and wipe the generator prompt by remounting the page.
   useEffect(() => {
     if (!forceLanguage && shouldRedirectToCn()) {
-      window.location.replace("/cn");
+      setLanguage("zh");
+      document.documentElement.lang = "zh-CN";
     }
-  }, [forceLanguage]);
+  }, [forceLanguage, setLanguage]);
 
   useEffect(() => {
     if (forceLanguage) {
@@ -113,10 +127,11 @@ export function HomePage({ forceLanguage }: HomePageProps) {
   }, [forceLanguage, setLanguage]);
 
   useEffect(() => {
-    if (!session?.user && state.model !== "z-image-fast") {
+    if (!sessionReady) return;
+    if (!isLoggedIn && state.model !== "z-image-fast") {
       actions.setModel("z-image-fast");
     }
-  }, [actions, session?.user, state.model]);
+  }, [actions, isLoggedIn, sessionReady, state.model]);
 
   // Handle ?template=<slug> for "Use this template" flow
   useEffect(() => {
@@ -239,7 +254,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
         actions={actions}
         onRequireAuth={authGate.checkAuth}
         canGuestGenerate={canGuestGenerate}
-        canExpandVars={!!session?.user}
+        canExpandVars={isLoggedIn}
         isGuest={canGuestGenerate}
         availableCredits={userCredits}
       />
@@ -257,7 +272,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
             if (state.results.length === 0) return;
             setShareMode(true);
           }}
-          onPublish={session?.user ? handlePublish : undefined}
+          onPublish={isLoggedIn ? handlePublish : undefined}
         />
       </div>
 

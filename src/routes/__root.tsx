@@ -95,7 +95,7 @@ function SupportEmail() {
 
 function RootDocument({ children }: { readonly children: React.ReactNode }) {
   return (
-    <html lang="en" data-lang="en">
+    <html lang="en" data-lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
