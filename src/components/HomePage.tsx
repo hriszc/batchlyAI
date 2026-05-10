@@ -241,6 +241,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
         canGuestGenerate={canGuestGenerate}
         canExpandVars={!!session?.user}
         isGuest={canGuestGenerate}
+        availableCredits={userCredits}
       />
 
       <div ref={resultsRef}>

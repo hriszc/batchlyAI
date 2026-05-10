@@ -27,6 +27,7 @@ interface GeneratorToolbarProps {
   isGuest?: boolean;
   showVariables: boolean;
   onToggleVariables: () => void;
+  canEditGroups: boolean;
   currentModel: string;
   onSelectModel: (modelId: string) => void;
   aspectRatio: string;
@@ -48,6 +49,7 @@ export function GeneratorToolbar({
   isGuest = false,
   showVariables,
   onToggleVariables,
+  canEditGroups,
   currentModel,
   onSelectModel,
   aspectRatio,
@@ -121,6 +123,23 @@ export function GeneratorToolbar({
       </div>
 
       <span className="text-muted-foreground/40">|</span>
+
+      {canEditGroups && (
+        <>
+          <button
+            type="button"
+            onClick={onToggleVariables}
+            className={`inline-flex items-center rounded-lg px-2.5 py-1 text-xs transition-colors ${
+              showVariables
+                ? "bg-accent-blue/10 font-medium text-accent-blue"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            {showVariables ? t("hideGroups") : t("editGroups")}
+          </button>
+          <span className="text-muted-foreground/40">|</span>
+        </>
+      )}
 
       {isGuest ? (
         <div

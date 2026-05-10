@@ -1,4 +1,10 @@
 import "@testing-library/jest-dom/vitest";
+
+vi.mock("html2canvas", () => ({
+  default: vi.fn(async () => ({
+    toBlob: (cb: (blob: Blob | null) => void) => cb(new Blob(["mock"], { type: "image/png" })),
+  })),
+}));
 import { cleanup } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
 

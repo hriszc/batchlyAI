@@ -56,6 +56,16 @@ describe("GeneratorCard", () => {
     expect(btn).toBeDisabled();
   });
 
+  it("shows edit groups button when prompt has variables", () => {
+    const stateWithVars: GeneratorState = {
+      ...baseState,
+      promptTemplate: "{{cat, dog}}",
+      variableGroups: [{ id: "var_0", values: ["cat", "dog"] }],
+    };
+    renderWithProviders(<GeneratorCard state={stateWithVars} actions={mockActions} />);
+    expect(screen.getByRole("button", { name: /edit groups/i })).toBeInTheDocument();
+  });
+
   it("generate button enabled when prompt has variables", () => {
     const stateWithVars: GeneratorState = {
       ...baseState,
@@ -246,6 +256,21 @@ describe("GeneratorCard", () => {
     const btn = screen.getByText("Generate");
     expect(btn).toBeDisabled();
     expect(btn.getAttribute("title")).toContain("{{variables}}");
+  });
+
+  it("disables generate when credits are insufficient", () => {
+    const stateWithVars: GeneratorState = {
+      ...baseState,
+      promptTemplate: "{{cat, dog}}",
+      variableGroups: [{ id: "var_0", values: ["cat", "dog"] }],
+      creditsRemaining: 5,
+    };
+    renderWithProviders(
+      <GeneratorCard state={stateWithVars} actions={mockActions} availableCredits={5} />,
+    );
+    const btn = screen.getByText("Generate");
+    expect(btn).toBeDisabled();
+    expect(btn.getAttribute("title")).toContain("Need");
   });
 
   it("shows generating state with no title tooltip", () => {

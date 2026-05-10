@@ -3,6 +3,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { renderWithProviders } from "#test/test-utils";
 
+vi.mock("../universal-generator/ShareScreenshot", () => ({
+  ShareScreenshot: () => null,
+}));
+
 import { HomePage, shouldRedirectToCn } from "../HomePage";
 
 describe("shouldRedirectToCn", () => {
@@ -63,6 +67,11 @@ describe("HomePage", () => {
   it("renders GeneratorCard", () => {
     renderWithProviders(<HomePage />);
     expect(screen.getByPlaceholderText(/Describe your image/)).toBeInTheDocument();
+  });
+
+  it("renders generator with credits context available", () => {
+    renderWithProviders(<HomePage />);
+    expect(screen.getByText(/Est\. credits/i)).toBeInTheDocument();
   });
 
   it("renders title in Chinese when forceLanguage is zh", () => {

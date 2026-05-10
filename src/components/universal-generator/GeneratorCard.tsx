@@ -12,12 +12,12 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 import { GeneratorToolbar } from "./GeneratorToolbar";
 import { getRandomPrompt } from "./inspire-prompts";
-import { MODELS } from "./models";
 import { ProgressBar } from "./ProgressBar";
 import type { GeneratorState, GroupId, TextLength, VideoDuration } from "./types";
 import { useExpandVariables } from "./useExpandVariables";
 import { computePromptCombinations } from "./utils";
 import { VariableGroupCard } from "./VariableGroupCard";
+import { MODELS } from "./models";
 
 interface GeneratorCardProps {
   state: GeneratorState;
@@ -40,6 +40,7 @@ interface GeneratorCardProps {
   canGuestGenerate?: boolean;
   canExpandVars?: boolean;
   isGuest?: boolean;
+  availableCredits?: number | null;
 }
 
 export function GeneratorCard({
@@ -49,6 +50,7 @@ export function GeneratorCard({
   canGuestGenerate = false,
   canExpandVars = false,
   isGuest = false,
+  availableCredits = null,
 }: GeneratorCardProps) {
   const [showVariables, setShowVariables] = useState(false);
   const [buyLoading, setBuyLoading] = useState(false);
@@ -83,6 +85,8 @@ export function GeneratorCard({
   const currentModel = MODELS.find((m) => m.id === state.model);
   const creditEstimate = comboCount * state.quantity * (currentModel?.creditCost ?? 0);
   const hasGroups = state.variableGroups.length > 0;
+  const creditBalance = canGuestGenerate ? null : state.creditsRemaining ?? availableCredits;
+  const showLowCreditWarning = creditBalance != null && creditBalance < creditEstimate;
 
   // Auto-expand variable editor on first use
   const VARIABLE_EDITOR_SHOWN_KEY = "batchlyai_variable_editor_shown";
@@ -101,7 +105,15 @@ export function GeneratorCard({
     ? undefined
     : comboCount === 0
       ? t("disabledNoCombinations")
+      : showLowCreditWarning
+        ? t("insufficientCredits", {
+            required: creditEstimate,
+            available: creditBalance ?? 0,
+          })
       : undefined;
+
+  const generateDisabled =
+    comboCount === 0 || state.isGenerating || showLowCreditWarning || creditEstimate === 0;
 
   return (
     <div className="rounded-2xl bg-card shadow-[rgba(0,0,0,0.22)_3px_5px_30px_0px]">
@@ -196,6 +208,32 @@ export function GeneratorCard({
         </div>
       )}
 
+      {!state.isGenerating && showLowCreditWarning && (
+        <div className="px-4 pb-2">
+          <div className="flex flex-wrap items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            <span className="flex-1">
+              {t("insufficientCredits", {
+                required: creditEstimate,
+                available: creditBalance ?? 0,
+              })}
+            </span>
+            <button
+              type="button"
+              onClick={handleBuyCredits}
+              disabled={buyLoading}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-accent-blue px-3 py-1.5 text-xs font-medium text-white transition-all hover:bg-accent-blue-hover disabled:opacity-50"
+            >
+              {buyLoading ? (
+                <Loader2Icon className="size-3 animate-spin" />
+              ) : (
+                <ShoppingCartIcon className="size-3" />
+              )}
+              {t("buyCreditsCTA")}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Attached files */}
       {state.attachedFiles.length > 0 && (
         <div className="flex flex-wrap gap-2 px-4 pb-2">
@@ -261,7 +299,7 @@ export function GeneratorCard({
               ? actions.startGenerating()
               : onRequireAuth(actions.startGenerating)
           }
-          disabled={comboCount === 0 || state.isGenerating}
+          disabled={generateDisabled}
           title={disabledReason}
           className="inline-flex h-9 items-center justify-center gap-2 rounded-[980px] bg-accent-blue px-5 py-2 text-[17px] leading-[1.0] font-normal whitespace-nowrap text-white transition-all hover:bg-accent-blue-hover focus-visible:ring-2 focus-visible:ring-accent-blue focus-visible:ring-offset-2 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-40"
         >
@@ -274,6 +312,7 @@ export function GeneratorCard({
         isGuest={isGuest}
         showVariables={showVariables}
         onToggleVariables={() => setShowVariables(!showVariables)}
+        canEditGroups={hasGroups}
         currentModel={state.model}
         onSelectModel={actions.setModel}
         aspectRatio={state.aspectRatio}
@@ -288,7 +327,7 @@ export function GeneratorCard({
         groupCount={state.variableGroups.length}
         hasGroups={hasGroups}
         creditEstimate={creditEstimate}
-        creditsRemaining={state.creditsRemaining}
+        creditsRemaining={creditBalance}
       />
 
       {/* Collapsible variable groups editor */}
