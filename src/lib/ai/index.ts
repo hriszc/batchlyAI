@@ -41,7 +41,7 @@ async function fetchWithFallback(
     // Request body is always a JSON string, safe to reuse
     return fetch(directUrl, init);
   } catch (err) {
-    console.warn(`[ai] Gateway ${provider} unreachable (${err}), falling back to direct.`);
+    console.warn(`[ai] Gateway ${provider} unreachable (${String(err)}), falling back to direct.`);
   }
   // Fall back to direct
   return fetch(directUrl, init);

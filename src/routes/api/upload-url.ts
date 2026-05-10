@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
+import { createSignedFileUrl } from "@/lib/cloudflare/file-url-signing";
 import { uploadToR2 } from "@/lib/cloudflare/r2";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { sanitizeFilename } from "@/lib/upload/sanitize";
@@ -75,7 +76,7 @@ export async function handleUpload(request: Request): Promise<Response> {
       return jsonResponse({ error: "R2 not configured" }, 501);
     }
 
-    const proxyUrl = `${new URL(request.url).origin}/api/files/${key}`;
+    const proxyUrl = await createSignedFileUrl(`/api/files/${key}`);
 
     return jsonResponse({ publicUrl: proxyUrl, key }, 200);
   } catch (err) {

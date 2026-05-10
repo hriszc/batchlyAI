@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { createAuth } from "@/lib/auth/auth";
+import { hasValidSignedFileAccess } from "@/lib/cloudflare/file-url-signing";
 
 interface R2Binding {
   get(
@@ -18,19 +19,22 @@ export async function handleFile(request: Request, params: { _splat: string }): 
   const key = params._splat;
   if (!key) return new Response("Not found", { status: 404 });
 
-  // Require authentication for all file access
-  const auth = createAuth();
-  if (!auth) return new Response("Auth unavailable", { status: 501 });
+  const signedAccess = await hasValidSignedFileAccess(request, `/api/files/${key}`);
+  if (!signedAccess) {
+    // Require authentication for all file access unless the URL is signed
+    const auth = createAuth();
+    if (!auth) return new Response("Auth unavailable", { status: 501 });
 
-  const session = await auth.api.getSession({ headers: request.headers });
-  if (!session?.user?.id) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user?.id) {
+      return new Response("Unauthorized", { status: 401 });
+    }
 
-  // Verify the file belongs to this user
-  const userIdPrefix = `uploads/${session.user.id.replace(/[^a-zA-Z0-9_-]/g, "_")}/`;
-  if (!key.startsWith(userIdPrefix)) {
-    return new Response("Not found", { status: 404 });
+    // Verify the file belongs to this user
+    const userIdPrefix = `uploads/${session.user.id.replace(/[^a-zA-Z0-9_-]/g, "_")}/`;
+    if (!key.startsWith(userIdPrefix)) {
+      return new Response("Not found", { status: 404 });
+    }
   }
 
   try {

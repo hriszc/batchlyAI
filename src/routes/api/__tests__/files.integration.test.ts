@@ -13,6 +13,7 @@ vi.mock("@/lib/auth/auth", () => ({
   }),
 }));
 
+import { createSignedFileUrl } from "@/lib/cloudflare/file-url-signing";
 import { handleFile } from "@/routes/api/files/$";
 
 function makeRequest(overrides?: { origin?: string }): Request {
@@ -54,6 +55,19 @@ describe("handleFile", () => {
     mocks.mockGetSession.mockResolvedValue(null);
     const resp = await handleFile(makeRequest(), { _splat: "uploads/user/file.png" });
     expect(resp.status).toBe(401);
+  });
+
+  it("allows signed URLs without authentication", async () => {
+    mocks.mockGetSession.mockResolvedValue(null);
+    const signed = await createSignedFileUrl("/api/files/uploads/user-abc/file.png");
+    const resp = await handleFile(
+      {
+        headers: new Headers(),
+        url: `https://batchlyai.com${signed}`,
+      } as unknown as Request,
+      { _splat: "uploads/user-abc/file.png" },
+    );
+    expect(resp.status).toBe(200);
   });
 
   it("returns 404 when file does not belong to user", async () => {

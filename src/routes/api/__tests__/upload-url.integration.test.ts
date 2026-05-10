@@ -20,6 +20,7 @@ vi.mock("@/lib/rate-limit", () => ({
   checkRateLimit: () => ({ allowed: true, remaining: 19, resetAt: Date.now() + 60000 }),
 }));
 
+import { createSignedFileUrl } from "@/lib/cloudflare/file-url-signing";
 import { handleUpload } from "@/routes/api/upload-url";
 
 function makeRequest(overrides?: {
@@ -133,8 +134,17 @@ describe("handleUpload", () => {
     expect(resp.status).toBe(200);
     const body = (await resp.json()) as { publicUrl: string; key: string };
     expect(body.publicUrl).toContain("/api/files/uploads/");
+    expect(body.publicUrl).toContain("expires=");
+    expect(body.publicUrl).toContain("sig=");
     expect(body.key).toContain("uploads/");
     expect(body.key).toContain(".png");
+  });
+
+  it("generates signed file URLs compatible with GRS uploads", async () => {
+    const url = await createSignedFileUrl("/api/files/uploads/u1/photo.png");
+    expect(url).toContain("/api/files/uploads/u1/photo.png");
+    expect(url).toContain("expires=");
+    expect(url).toContain("sig=");
   });
 
   it("returns 501 when R2 is not configured", async () => {
