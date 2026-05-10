@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SearchIcon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -48,10 +48,29 @@ function TemplatesPage() {
     if (!data.error) setTemplates(data.templates);
   };
 
-  // Fetch on mount
-  useState(() => {
-    fetchTemplates("", "");
-  });
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      const resp = await fetch("/api/templates");
+      const data = (await resp.json()) as {
+        error?: string;
+        templates?: Array<{
+          slug: string;
+          name: string;
+          description: string;
+          category: string;
+          previewImageUrl: string | null;
+          usageCount: number;
+        }>;
+      };
+      if (!cancelled && !data.error) setTemplates(data.templates ?? []);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <main className="mx-auto max-w-[980px] px-4 py-8">
@@ -64,7 +83,7 @@ function TemplatesPage() {
             key={c.id}
             onClick={() => {
               setCategory(c.id);
-              fetchTemplates(c.id, search);
+              void fetchTemplates(c.id, search);
             }}
             className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
               category === c.id
@@ -86,7 +105,7 @@ function TemplatesPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") fetchTemplates(category, search);
+              if (e.key === "Enter") void fetchTemplates(category, search);
             }}
             className="w-full rounded-lg border bg-background py-2 pr-4 pl-9 text-sm placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-accent-blue focus:outline-none"
           />
