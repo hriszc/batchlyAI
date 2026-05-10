@@ -89,9 +89,7 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
     return jsonResponse({ error: "Unauthorized" }, 401);
   }
 
-  const limitKey = userId
-    ? `generate-status:${userId}`
-    : `generate-status:guest:${guestToken}`;
+  const limitKey = userId ? `generate-status:${userId}` : `generate-status:guest:${guestToken}`;
   const limit = checkRateLimit(limitKey, 30, 10);
   if (!limit.allowed) {
     return jsonResponse({ error: "Too many status checks. Please slow down." }, 429);

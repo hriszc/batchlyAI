@@ -38,11 +38,13 @@ function filterBest(results: GeneratedResult[]): GeneratedResult[] {
   });
 }
 
-function getResultStatusText(results: GeneratedResult[], isGenerating: boolean, totalExpected?: number) {
+function getResultStatusText(
+  results: GeneratedResult[],
+  isGenerating: boolean,
+  totalExpected?: number,
+) {
   if (isGenerating) {
-    return totalExpected
-      ? `Generating ${totalExpected} outputs...`
-      : "Generating outputs...";
+    return totalExpected ? `Generating ${totalExpected} outputs...` : "Generating outputs...";
   }
   const complete = results.filter((r) => r.status === "complete").length;
   const pending = results.filter((r) => r.status === "pending" || r.status === "generating").length;

@@ -12,12 +12,12 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 import { GeneratorToolbar } from "./GeneratorToolbar";
 import { getRandomPrompt } from "./inspire-prompts";
+import { MODELS } from "./models";
 import { ProgressBar } from "./ProgressBar";
 import type { GeneratorState, GroupId, TextLength, VideoDuration } from "./types";
 import { useExpandVariables } from "./useExpandVariables";
 import { computePromptCombinations } from "./utils";
 import { VariableGroupCard } from "./VariableGroupCard";
-import { MODELS } from "./models";
 
 interface GeneratorCardProps {
   state: GeneratorState;
@@ -85,7 +85,7 @@ export function GeneratorCard({
   const currentModel = MODELS.find((m) => m.id === state.model);
   const creditEstimate = comboCount * state.quantity * (currentModel?.creditCost ?? 0);
   const hasGroups = state.variableGroups.length > 0;
-  const creditBalance = canGuestGenerate ? null : state.creditsRemaining ?? availableCredits;
+  const creditBalance = canGuestGenerate ? null : (state.creditsRemaining ?? availableCredits);
   const showLowCreditWarning = creditBalance != null && creditBalance < creditEstimate;
 
   // Auto-expand variable editor on first use
@@ -110,7 +110,7 @@ export function GeneratorCard({
             required: creditEstimate,
             available: creditBalance ?? 0,
           })
-      : undefined;
+        : undefined;
 
   const generateDisabled =
     comboCount === 0 || state.isGenerating || showLowCreditWarning || creditEstimate === 0;

@@ -439,11 +439,9 @@ export const Route = createFileRoute("/api/generate")({
             await kv.put(kvKey, String(count + 1), { expirationTtl: 86400 });
             await Promise.all(
               guestPredictions.map((p) =>
-                kv.put(
-                  `guest:${p.id}`,
-                  JSON.stringify({ guestToken, status: "processing" }),
-                  { expirationTtl: 3600 },
-                ),
+                kv.put(`guest:${p.id}`, JSON.stringify({ guestToken, status: "processing" }), {
+                  expirationTtl: 3600,
+                }),
               ),
             );
           }
