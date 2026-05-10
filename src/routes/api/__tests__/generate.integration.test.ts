@@ -187,7 +187,7 @@ describe("handleGenerate", () => {
     const mockReplicate = vi.fn().mockResolvedValue([makePrediction("vid-001")]);
 
     const resp = await handleGenerate({
-      request: makeRequest({ prompt: "a sunset", n: 1, model: "z-video-fast" }),
+      request: makeRequest({ prompt: "a sunset", n: 1, model: "z-video-fast", duration: 1 }),
       db,
       userId,
       replicateFn: mockReplicate,
@@ -202,7 +202,7 @@ describe("handleGenerate", () => {
     const mockReplicate = vi.fn().mockRejectedValue(new Error("Replicate down"));
 
     const resp = await handleGenerate({
-      request: makeRequest({ prompt: "a sunset", n: 1, model: "z-video-fast" }),
+      request: makeRequest({ prompt: "a sunset", n: 1, model: "z-video-fast", duration: 1 }),
       db,
       userId,
       replicateFn: mockReplicate,
@@ -230,6 +230,20 @@ describe("handleGenerate", () => {
 
     // 3 prompts × 20 credits each = 60 credits deducted
     expect(getCredits()).toBe(40);
+  });
+
+  it("deducts video credits by duration", async () => {
+    const videoUserId = seedUser(db, { id: "video-user", credits: 1000, email: "video@test.com" });
+    const mockReplicate = vi.fn().mockResolvedValue([makePrediction("vid-cost-001")]);
+
+    await handleGenerate({
+      request: makeRequest({ prompt: "test", n: 2, model: "z-video-fast", duration: 10 }),
+      db,
+      userId: videoUserId,
+      replicateFn: mockReplicate,
+    } as any);
+
+    expect(getCreditsForUser(db, videoUserId)).toBe(200);
   });
 
   it("preserves credits when n=1 with pro model", async () => {

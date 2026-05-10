@@ -1,6 +1,6 @@
 import { DEFAULT_MODEL } from "./models";
-import type { GeneratorState, GeneratorAction, GroupId } from "./types";
-import { extractVariableGroups } from "./utils";
+import type { GeneratorState, GeneratorAction } from "./types";
+import { serializeVariableGroupsIntoTemplate, syncVariableGroupsFromTemplate } from "./utils";
 
 export const initialState: GeneratorState = {
   promptTemplate: "",
@@ -21,17 +21,17 @@ export const initialState: GeneratorState = {
 export function reducer(state: GeneratorState, action: GeneratorAction): GeneratorState {
   switch (action.type) {
     case "SET_PROMPT_TEMPLATE":
-      return { ...state, promptTemplate: action.payload };
+      return {
+        ...state,
+        promptTemplate: action.payload,
+        variableGroups: syncVariableGroupsFromTemplate(action.payload, state.variableGroups),
+      };
 
     case "SYNC_GROUPS_FROM_TEMPLATE": {
-      const newGroups = extractVariableGroups(state.promptTemplate);
-      if (newGroups.length === state.variableGroups.length) return state;
-      const merged = newGroups.map((newGroup, idx) => {
-        const existing = state.variableGroups[idx];
-        if (existing) return existing;
-        return newGroup;
-      });
-      return { ...state, variableGroups: merged };
+      return {
+        ...state,
+        variableGroups: syncVariableGroupsFromTemplate(state.promptTemplate, state.variableGroups),
+      };
     }
 
     case "SET_QUANTITY":
@@ -49,38 +49,47 @@ export function reducer(state: GeneratorState, action: GeneratorAction): Generat
     case "SET_VIDEO_DURATION":
       return { ...state, videoDuration: action.payload };
 
-    case "ADD_VALUE":
+    case "ADD_VALUE": {
+      const variableGroups = state.variableGroups.map((g) =>
+        g.id === action.payload.groupId ? { ...g, values: [...g.values, ""] } : g,
+      );
       return {
         ...state,
-        variableGroups: state.variableGroups.map((g) =>
-          g.id === action.payload.groupId ? { ...g, values: [...g.values, ""] } : g,
-        ),
+        variableGroups,
+        promptTemplate: serializeVariableGroupsIntoTemplate(state.promptTemplate, variableGroups),
       };
+    }
 
-    case "UPDATE_VALUE":
+    case "UPDATE_VALUE": {
+      const variableGroups = state.variableGroups.map((g) =>
+        g.id === action.payload.groupId
+          ? {
+              ...g,
+              values: g.values.map((v, i) =>
+                i === action.payload.index ? action.payload.value : v,
+              ),
+            }
+          : g,
+      );
       return {
         ...state,
-        variableGroups: state.variableGroups.map((g) =>
-          g.id === action.payload.groupId
-            ? {
-                ...g,
-                values: g.values.map((v, i) =>
-                  i === action.payload.index ? action.payload.value : v,
-                ),
-              }
-            : g,
-        ),
+        variableGroups,
+        promptTemplate: serializeVariableGroupsIntoTemplate(state.promptTemplate, variableGroups),
       };
+    }
 
-    case "REMOVE_VALUE":
+    case "REMOVE_VALUE": {
+      const variableGroups = state.variableGroups.map((g) =>
+        g.id === action.payload.groupId
+          ? { ...g, values: g.values.filter((_, i) => i !== action.payload.index) }
+          : g,
+      );
       return {
         ...state,
-        variableGroups: state.variableGroups.map((g) =>
-          g.id === action.payload.groupId
-            ? { ...g, values: g.values.filter((_, i) => i !== action.payload.index) }
-            : g,
-        ),
+        variableGroups,
+        promptTemplate: serializeVariableGroupsIntoTemplate(state.promptTemplate, variableGroups),
       };
+    }
 
     case "START_GENERATING":
       return { ...state, isGenerating: true, results: [], error: null };

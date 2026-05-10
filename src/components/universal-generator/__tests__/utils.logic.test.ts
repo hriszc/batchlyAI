@@ -5,6 +5,8 @@ import {
   extractAiBlocks,
   replaceAiBlock,
   extractVariableGroups,
+  syncVariableGroupsFromTemplate,
+  serializeVariableGroupsIntoTemplate,
   computeCombinations,
   interpolatePrompt,
   computePromptCombinations,
@@ -46,9 +48,9 @@ describe("extractVariableGroups", () => {
     ]);
   });
 
-  it("skips empty groups", () => {
+  it("keeps empty groups so the editor can round-trip them", () => {
     const result = extractVariableGroups("before {{}} after");
-    expect(result).toEqual([]);
+    expect(result).toEqual([{ id: "var_0", values: [] }]);
   });
 
   it("handles whitespace-only group", () => {
@@ -99,6 +101,29 @@ describe("extractVariableGroups", () => {
 
   it("handles template with only variables and no surrounding text", () => {
     expect(extractVariableGroups("{{a, b}}")).toEqual([{ id: "var_0", values: ["a", "b"] }]);
+  });
+});
+
+describe("variable group template sync", () => {
+  it("preserves group ids but refreshes values from prompt edits", () => {
+    const result = syncVariableGroupsFromTemplate("A {{lion, tiger}} in {{city}}", [
+      { id: "custom-a", values: ["cat", "dog"] },
+      { id: "custom-b", values: ["forest", "beach"] },
+    ]);
+
+    expect(result).toEqual([
+      { id: "custom-a", values: ["lion", "tiger"] },
+      { id: "custom-b", values: ["city"] },
+    ]);
+  });
+
+  it("serializes edited variable values back into the prompt", () => {
+    const result = serializeVariableGroupsIntoTemplate("A {{cat, dog}} in {{forest, beach}}", [
+      { id: "var_0", values: ["lion", "tiger"] },
+      { id: "var_1", values: ["city"] },
+    ]);
+
+    expect(result).toBe("A {{lion, tiger}} in {{city}}");
   });
 });
 
@@ -154,13 +179,21 @@ describe("computeCombinations", () => {
     expect(result).toHaveLength(2 * 2 * 2); // 8
   });
 
-  it("skips groups with empty values", () => {
+  it("returns empty array when any group has no filled values", () => {
     const groups: VariableGroup[] = [
       { id: "var_0", values: ["a"] },
       { id: "var_1", values: [] },
       { id: "var_2", values: ["b"] },
     ];
-    expect(computeCombinations(groups)).toEqual([{ var_0: "a", var_1: "b" }]);
+    expect(computeCombinations(groups)).toEqual([]);
+  });
+
+  it("ignores blank values inside otherwise filled groups", () => {
+    const groups: VariableGroup[] = [
+      { id: "var_0", values: ["a", ""] },
+      { id: "var_1", values: ["x"] },
+    ];
+    expect(computeCombinations(groups)).toEqual([{ var_0: "a", var_1: "x" }]);
   });
 });
 
@@ -202,6 +235,10 @@ describe("interpolatePrompt", () => {
 describe("computePromptCombinations", () => {
   it("returns empty array for empty template", () => {
     expect(computePromptCombinations("", [])).toEqual([]);
+  });
+
+  it("returns no combinations when the template has an empty variable group", () => {
+    expect(computePromptCombinations("A {{}} portrait", [{ id: "var_0", values: [] }])).toEqual([]);
   });
 
   it("returns combinations with interpolated prompts", () => {
@@ -249,12 +286,12 @@ describe("getCombinationCount", () => {
     expect(getCombinationCount(groups)).toBe(6);
   });
 
-  it("skips empty-valued groups in calculation", () => {
+  it("returns 0 when any group has no filled values", () => {
     const groups: VariableGroup[] = [
       { id: "var_0", values: ["a", "b"] },
       { id: "var_1", values: [] },
     ];
-    expect(getCombinationCount(groups)).toBe(2);
+    expect(getCombinationCount(groups)).toBe(0);
   });
 });
 

@@ -83,8 +83,7 @@ describe("useGeneratorState", () => {
     expect(result.current.state.model).toBe("z-image-fast");
   });
 
-  it("syncs variable groups from template after debounce", () => {
-    vi.useFakeTimers();
+  it("syncs variable groups from template immediately", () => {
     const { result } = renderHook(() => useGeneratorState(), {
       wrapper: createWrapper(),
     });
@@ -92,41 +91,25 @@ describe("useGeneratorState", () => {
     act(() => {
       result.current.actions.setPromptTemplate("{{cat, dog}}");
     });
-    // Before debounce, groups should not be synced yet
-    expect(result.current.state.variableGroups).toEqual([]);
-
-    // Advance past the 500ms debounce
-    act(() => {
-      vi.advanceTimersByTime(500);
-    });
     expect(result.current.state.variableGroups).toEqual([{ id: "var_0", values: ["cat", "dog"] }]);
-
-    vi.useRealTimers();
   });
 
   it("addValue adds empty string to synced variable group", () => {
-    vi.useFakeTimers();
     const { result } = renderHook(() => useGeneratorState(), {
       wrapper: createWrapper(),
     });
 
     act(() => {
       result.current.actions.setPromptTemplate("{{cat, dog}}");
-    });
-    act(() => {
-      vi.advanceTimersByTime(500);
     });
     act(() => {
       result.current.actions.addValue("var_0");
     });
     const group = result.current.state.variableGroups[0];
     expect(group.values).toContain("");
-
-    vi.useRealTimers();
   });
 
   it("updateValue modifies value at index", () => {
-    vi.useFakeTimers();
     const { result } = renderHook(() => useGeneratorState(), {
       wrapper: createWrapper(),
     });
@@ -135,18 +118,13 @@ describe("useGeneratorState", () => {
       result.current.actions.setPromptTemplate("{{cat, dog}}");
     });
     act(() => {
-      vi.advanceTimersByTime(500);
-    });
-    act(() => {
       result.current.actions.updateValue("var_0", 0, "bird");
     });
     expect(result.current.state.variableGroups[0].values[0]).toBe("bird");
-
-    vi.useRealTimers();
+    expect(result.current.state.promptTemplate).toBe("{{bird, dog}}");
   });
 
   it("removeValue removes value at index", () => {
-    vi.useFakeTimers();
     const { result } = renderHook(() => useGeneratorState(), {
       wrapper: createWrapper(),
     });
@@ -154,17 +132,30 @@ describe("useGeneratorState", () => {
     act(() => {
       result.current.actions.setPromptTemplate("{{cat, dog, bird}}");
     });
-    act(() => {
-      vi.advanceTimersByTime(500);
-    });
     expect(result.current.state.variableGroups[0].values).toHaveLength(3);
 
     act(() => {
       result.current.actions.removeValue("var_0", 1);
     });
     expect(result.current.state.variableGroups[0].values).toHaveLength(2);
+    expect(result.current.state.promptTemplate).toBe("{{cat, bird}}");
+  });
 
-    vi.useRealTimers();
+  it("keeps promptTemplate in sync when variable values change", () => {
+    const { result } = renderHook(() => useGeneratorState(), {
+      wrapper: createWrapper(),
+    });
+
+    act(() => {
+      result.current.actions.setPromptTemplate("A {{cat, dog}} in {{forest, beach}}");
+    });
+
+    act(() => {
+      result.current.actions.updateValue("var_0", 0, "lion");
+      result.current.actions.updateValue("var_1", 0, "city");
+    });
+
+    expect(result.current.state.promptTemplate).toBe("A {{lion, dog}} in {{city, beach}}");
   });
 
   it("startGenerating sets isGenerating to true", () => {

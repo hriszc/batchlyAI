@@ -14,17 +14,14 @@ import { getD1Binding, getKvBinding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
 import { user as userTable } from "@/lib/db/schema/auth.schema";
 import { generation, savedPrompt } from "@/lib/db/schema/data-flywheel.schema";
+import {
+  calculateGenerationCredits,
+  CREDIT_COST,
+  DEFAULT_VIDEO_DURATION_SECONDS,
+} from "@/lib/generator-credits";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { generateRequestSchema } from "@/lib/validation/schemas";
-
-export const CREDIT_COST: Record<string, number> = {
-  "z-image-fast": 10,
-  "z-image-pro": 20,
-  "z-text-fast": 5,
-  "z-text-pro": 10,
-  "z-video-fast": 40,
-  "z-video-pro": 80,
-};
+export { CREDIT_COST };
 
 export interface GenerateContext {
   request: Request;
@@ -60,14 +57,26 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
 
     const model = body.model;
     const n = body.n;
-    const costPerUnit = CREDIT_COST[model] ?? 20;
-    const maxCost = costPerUnit * n;
+    const durationSeconds = model.startsWith("z-video")
+      ? (body.duration ?? DEFAULT_VIDEO_DURATION_SECONDS)
+      : body.duration;
+    const maxCost = calculateGenerationCredits({
+      model,
+      quantity: n,
+      durationSeconds,
+    });
     const watermark = !ctx.stripeCustomerId;
     const template = body.promptTemplate || body.prompt;
     const variableGroups = body.variableGroups || [];
 
     // Check prompt cache first
-    const cachedUrls = await getCachedFn(body.prompt, model, body.aspectRatio || "1:1", n);
+    const cachedUrls = await getCachedFn(
+      body.prompt,
+      model,
+      body.aspectRatio || "1:1",
+      n,
+      durationSeconds,
+    );
     if (cachedUrls) {
       return jsonResponse(
         { urls: cachedUrls, creditsRemaining: null, cached: true, watermark },
@@ -98,7 +107,14 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
         const newBalance = deducted.credits;
 
         if (texts.length > 0) {
-          await setCachedFn(body.prompt, model, body.aspectRatio || "1:1", texts.length, texts);
+          await setCachedFn(
+            body.prompt,
+            model,
+            body.aspectRatio || "1:1",
+            texts.length,
+            texts,
+            durationSeconds,
+          );
         }
 
         try {

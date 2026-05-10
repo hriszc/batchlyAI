@@ -15,8 +15,12 @@ async function hashKey(
   model: string,
   aspectRatio: string,
   n: number,
+  durationSeconds?: number,
 ): Promise<string> {
-  const input = `${prompt}|${model}|${aspectRatio}|${n}`;
+  const input =
+    durationSeconds == null
+      ? `${prompt}|${model}|${aspectRatio}|${n}`
+      : `${prompt}|${model}|${aspectRatio}|${n}|${durationSeconds}`;
   const data = new TextEncoder().encode(input);
   const hashBuffer = await crypto.subtle.digest("SHA-256", data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -30,12 +34,13 @@ export async function getCachedResult(
   model: string,
   aspectRatio: string,
   n: number,
+  durationSeconds?: number,
 ): Promise<string[] | null> {
   const kv = getKV();
   if (!kv) return null;
 
   try {
-    const key = await hashKey(prompt, model, aspectRatio, n);
+    const key = await hashKey(prompt, model, aspectRatio, n, durationSeconds);
     const raw = await kv.get(key);
     if (!raw) return null;
 
@@ -58,12 +63,13 @@ export async function setCachedResult(
   aspectRatio: string,
   n: number,
   urls: string[],
+  durationSeconds?: number,
 ): Promise<void> {
   const kv = getKV();
   if (!kv) return;
 
   try {
-    const key = await hashKey(prompt, model, aspectRatio, n);
+    const key = await hashKey(prompt, model, aspectRatio, n, durationSeconds);
     const entry: CacheEntry = { urls, createdAt: Date.now() };
     await kv.put(key, JSON.stringify(entry), { expirationTtl: TTL_SECONDS });
   } catch {

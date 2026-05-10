@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
+import { describe, expect, it, afterEach, vi } from "vitest";
 
 import {
   getCachedResult,
@@ -31,6 +31,16 @@ describe("getCachedResult", () => {
     };
     const result = await getCachedResult("prompt", "model", "1:1", 2);
     expect(result).toEqual(["https://a.png", "https://b.png"]);
+  });
+
+  it("includes video duration in the cache key", async () => {
+    const get = vi.fn().mockResolvedValue(null);
+    (globalThis as any).__env__ = { batchlyai_kv: { get } };
+
+    await getCachedResult("prompt", "z-video-fast", "1:1", 1, 5);
+    await getCachedResult("prompt", "z-video-fast", "1:1", 1, 10);
+
+    expect(get.mock.calls[0]?.[0]).not.toBe(get.mock.calls[1]?.[0]);
   });
 
   it("respects n parameter to limit results", async () => {

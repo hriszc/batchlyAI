@@ -19,13 +19,12 @@ export function replaceAiBlock(template: string, raw: string, values: string[]):
 }
 
 export function extractVariableGroups(template: string): VariableGroup[] {
-  const regex = /\{\{(.+?)\}\}/g;
+  const regex = /\{\{(.*?)\}\}/g;
   const groups: VariableGroup[] = [];
   let idx = 0;
   let match: RegExpExecArray | null;
   while ((match = regex.exec(template)) !== null) {
     const raw = match[1].trim();
-    if (!raw) continue;
     const values = raw
       .split(",")
       .map((v) => v.trim())
@@ -35,18 +34,43 @@ export function extractVariableGroups(template: string): VariableGroup[] {
   return groups;
 }
 
-export function computeCombinations(groups: VariableGroup[]): Record<string, string>[] {
-  const validGroups = groups.filter((g) => g.values.length > 0);
-  if (validGroups.length === 0) return [];
+export function syncVariableGroupsFromTemplate(
+  template: string,
+  previousGroups: VariableGroup[],
+): VariableGroup[] {
+  const extracted = extractVariableGroups(template);
+  return extracted.map((group, idx) => ({
+    id: previousGroups[idx]?.id ?? `var_${idx}`,
+    values: group.values,
+  }));
+}
 
-  let combinations: Record<string, string>[] = validGroups[0].values.map((v) => ({
+export function serializeVariableGroupsIntoTemplate(
+  template: string,
+  groups: VariableGroup[],
+): string {
+  let groupIdx = 0;
+  return template.replace(/\{\{.*?\}\}/g, (placeholder) => {
+    const group = groups[groupIdx++];
+    if (!group) return placeholder;
+
+    const values = group.values.map((value) => value.trim()).filter(Boolean);
+    return `{{${values.join(", ")}}}`;
+  });
+}
+
+export function computeCombinations(groups: VariableGroup[]): Record<string, string>[] {
+  const valueGroups = groups.map((g) => g.values.map((v) => v.trim()).filter(Boolean));
+  if (valueGroups.length === 0 || valueGroups.some((values) => values.length === 0)) return [];
+
+  let combinations: Record<string, string>[] = valueGroups[0].map((v) => ({
     [`var_0`]: v,
   }));
 
-  for (let i = 1; i < validGroups.length; i++) {
+  for (let i = 1; i < valueGroups.length; i++) {
     const newCombos: Record<string, string>[] = [];
     for (const combo of combinations) {
-      for (const value of validGroups[i].values) {
+      for (const value of valueGroups[i]) {
         newCombos.push({ ...combo, [`var_${i}`]: value });
       }
     }
@@ -62,7 +86,7 @@ export function interpolatePrompt(template: string, variables: Record<string, st
   groups.forEach((group, idx) => {
     const value = variables[`var_${idx}`];
     if (value) {
-      result = result.replace(/\{\{(.+?)\}\}/, value);
+      result = result.replace(/\{\{.*?\}\}/, value);
     }
   });
   return result;
@@ -73,8 +97,11 @@ export function computePromptCombinations(
   groups: VariableGroup[],
 ): PromptCombination[] {
   const combinations = computeCombinations(groups);
-  if (combinations.length === 0 && template.trim()) {
-    return [{ variables: {}, prompt: template.trim() }];
+  if (combinations.length === 0) {
+    if (groups.length === 0 && template.trim()) {
+      return [{ variables: {}, prompt: template.trim() }];
+    }
+    return [];
   }
   return combinations.map((vars) => ({
     variables: vars,
@@ -83,7 +110,10 @@ export function computePromptCombinations(
 }
 
 export function getCombinationCount(groups: VariableGroup[]): number {
-  const valid = groups.filter((g) => g.values.length > 0);
-  if (valid.length === 0) return 0;
-  return valid.reduce((acc, g) => acc * g.values.length, 1);
+  if (groups.length === 0) return 0;
+  return groups.reduce((acc, g) => {
+    if (acc === 0) return 0;
+    const filledCount = g.values.filter((value) => value.trim()).length;
+    return filledCount === 0 ? 0 : acc * filledCount;
+  }, 1);
 }

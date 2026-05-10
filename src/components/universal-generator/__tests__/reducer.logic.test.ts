@@ -19,6 +19,19 @@ describe("reducer", () => {
       expect(next.promptTemplate).toBe("hello");
     });
 
+    it("synchronizes variable groups from the prompt", () => {
+      const next = reducer(
+        state({
+          variableGroups: [{ id: "keep-me", values: ["old"] }],
+        }),
+        {
+          type: "SET_PROMPT_TEMPLATE",
+          payload: "A {{cat, dog}} scene",
+        },
+      );
+      expect(next.variableGroups).toEqual([{ id: "keep-me", values: ["cat", "dog"] }]);
+    });
+
     it("does not mutate other fields", () => {
       const next = reducer(initialState, {
         type: "SET_PROMPT_TEMPLATE",
@@ -41,24 +54,18 @@ describe("reducer", () => {
       ]);
     });
 
-    it("is no-op when group count matches", () => {
-      const s = state({
-        promptTemplate: "{{a, b}}",
-        variableGroups: [{ id: "var_0", values: ["x", "y"] }],
-      });
-      const next = reducer(s, { type: "SYNC_GROUPS_FROM_TEMPLATE" });
-      expect(next.variableGroups).toBe(s.variableGroups); // same reference
-    });
-
-    it("preserves existing values when merging", () => {
+    it("preserves existing ids while refreshing values", () => {
       const s = state({
         promptTemplate: "{{a, b}} in {{c, d}}",
-        variableGroups: [{ id: "var_0", values: ["custom1", "custom2"] }],
+        variableGroups: [
+          { id: "custom-1", values: ["custom1", "custom2"] },
+          { id: "custom-2", values: ["custom3", "custom4"] },
+        ],
       });
       const next = reducer(s, { type: "SYNC_GROUPS_FROM_TEMPLATE" });
       expect(next.variableGroups).toEqual([
-        { id: "var_0", values: ["custom1", "custom2"] },
-        { id: "var_1", values: ["c", "d"] },
+        { id: "custom-1", values: ["a", "b"] },
+        { id: "custom-2", values: ["c", "d"] },
       ]);
     });
 
@@ -104,12 +111,14 @@ describe("reducer", () => {
     it("adds empty string to specified group", () => {
       const s = state({
         variableGroups: [{ id: "var_0", values: ["cat"] }],
+        promptTemplate: "A {{cat}} scene",
       });
       const next = reducer(s, {
         type: "ADD_VALUE",
         payload: { groupId: "var_0" },
       });
       expect(next.variableGroups[0].values).toEqual(["cat", ""]);
+      expect(next.promptTemplate).toBe("A {{cat}} scene");
     });
   });
 
@@ -118,12 +127,14 @@ describe("reducer", () => {
     it("updates value at specified index", () => {
       const s = state({
         variableGroups: [{ id: "var_0", values: ["cat", "dog"] }],
+        promptTemplate: "A {{cat, dog}} scene",
       });
       const next = reducer(s, {
         type: "UPDATE_VALUE",
         payload: { groupId: "var_0", index: 1, value: "bird" },
       });
       expect(next.variableGroups[0].values).toEqual(["cat", "bird"]);
+      expect(next.promptTemplate).toBe("A {{cat, bird}} scene");
     });
 
     it("returns same values for out-of-bounds index", () => {
@@ -143,23 +154,27 @@ describe("reducer", () => {
     it("removes value at specified index", () => {
       const s = state({
         variableGroups: [{ id: "var_0", values: ["cat", "dog", "bird"] }],
+        promptTemplate: "A {{cat, dog, bird}} scene",
       });
       const next = reducer(s, {
         type: "REMOVE_VALUE",
         payload: { groupId: "var_0", index: 1 },
       });
       expect(next.variableGroups[0].values).toEqual(["cat", "bird"]);
+      expect(next.promptTemplate).toBe("A {{cat, bird}} scene");
     });
 
     it("handles removing last value", () => {
       const s = state({
         variableGroups: [{ id: "var_0", values: ["cat"] }],
+        promptTemplate: "A {{cat}} scene",
       });
       const next = reducer(s, {
         type: "REMOVE_VALUE",
         payload: { groupId: "var_0", index: 0 },
       });
       expect(next.variableGroups[0].values).toEqual([]);
+      expect(next.promptTemplate).toBe("A {{}} scene");
     });
   });
 

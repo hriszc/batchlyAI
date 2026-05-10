@@ -5,16 +5,17 @@ import {
   Undo2Icon,
   ShoppingCartIcon,
 } from "lucide-react";
-import { useState, useRef, useCallback, useEffect, useLayoutEffect } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 
+import { calculateGenerationCredits } from "@/lib/generator-credits";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 import { GeneratorToolbar } from "./GeneratorToolbar";
 import { getRandomPrompt } from "./inspire-prompts";
-import { MODELS } from "./models";
 import { ProgressBar } from "./ProgressBar";
 import type { GeneratorState, GroupId, TextLength, VideoDuration } from "./types";
+import { VIDEO_DURATION_SECONDS } from "./types";
 import { useExpandVariables } from "./useExpandVariables";
 import { computePromptCombinations } from "./utils";
 import { VariableGroupCard } from "./VariableGroupCard";
@@ -57,38 +58,25 @@ export function GeneratorCard({
   const [showVariables, setShowVariables] = useState(false);
   const [buyLoading, setBuyLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const promptTextareaRef = useRef<HTMLTextAreaElement>(null);
   const { t } = useLanguage();
 
   const expand = useExpandVariables(state.promptTemplate, actions.setPromptTemplate);
 
   const handlePromptInput = useCallback(
     (value: string) => {
-      try {
-        if (value) {
-          sessionStorage.setItem("pendingPrompt", value);
-        } else {
-          sessionStorage.removeItem("pendingPrompt");
-        }
-      } catch {}
       actions.setPromptTemplate(value);
     },
     [actions],
   );
 
-  useLayoutEffect(() => {
-    const promptValue = promptTextareaRef.current?.value;
-    if (promptValue && promptValue !== state.promptTemplate) {
-      handlePromptInput(promptValue);
-    }
-  }, [handlePromptInput, state.promptTemplate]);
-
   useEffect(() => {
-    const promptValue = promptTextareaRef.current;
-    if (!promptValue) return;
-    if (state.promptTemplate && promptValue.value !== state.promptTemplate) {
-      promptValue.value = state.promptTemplate;
-    }
+    try {
+      if (state.promptTemplate) {
+        sessionStorage.setItem("pendingPrompt", state.promptTemplate);
+      } else {
+        sessionStorage.removeItem("pendingPrompt");
+      }
+    } catch {}
   }, [state.promptTemplate]);
 
   const handleBuyCredits = useCallback(async () => {
@@ -114,8 +102,11 @@ export function GeneratorCard({
 
   const combinations = computePromptCombinations(state.promptTemplate, state.variableGroups);
   const comboCount = combinations.length;
-  const currentModel = MODELS.find((m) => m.id === state.model);
-  const creditEstimate = comboCount * state.quantity * (currentModel?.creditCost ?? 0);
+  const creditEstimate = calculateGenerationCredits({
+    model: state.model,
+    quantity: comboCount * state.quantity,
+    durationSeconds: VIDEO_DURATION_SECONDS[state.videoDuration],
+  });
   const hasGroups = state.variableGroups.length > 0;
   const creditBalance = canGuestGenerate ? null : (state.creditsRemaining ?? availableCredits);
   const showLowCreditWarning = creditBalance != null && creditBalance < creditEstimate;
@@ -156,9 +147,7 @@ export function GeneratorCard({
       {/* Prompt textarea */}
       <div className="overflow-hidden rounded-t-2xl p-4 pb-2">
         <textarea
-          ref={promptTextareaRef}
-          defaultValue={state.promptTemplate}
-          onInput={(e) => handlePromptInput(e.currentTarget.value)}
+          value={state.promptTemplate}
           onChange={(e) => handlePromptInput(e.target.value)}
           placeholder={t("promptPlaceholder")}
           className="min-h-[80px] w-full resize-none border-0 bg-transparent text-base placeholder:text-muted-foreground/60 focus:ring-0 focus:outline-none"

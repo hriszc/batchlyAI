@@ -194,6 +194,25 @@ describe("GeneratorCard", () => {
     expect(screen.getByText(/qty/i)).toBeInTheDocument();
   });
 
+  it("updates estimated credits when video duration changes", () => {
+    const videoState: GeneratorState = {
+      ...baseState,
+      model: "z-video-fast",
+      promptTemplate: "{{cat, dog}}",
+      variableGroups: [{ id: "var_0", values: ["cat", "dog"] }],
+    };
+    const { rerender } = renderWithProviders(
+      <GeneratorCard state={videoState} actions={mockActions} />,
+    );
+
+    expect(screen.getByText(/800\s+credits/i)).toBeInTheDocument();
+
+    rerender(
+      <GeneratorCard state={{ ...videoState, videoDuration: "10s" }} actions={mockActions} />,
+    );
+    expect(screen.getByText(/1600\s+credits/i)).toBeInTheDocument();
+  });
+
   it("shows variable groups when prompt has variables", async () => {
     const stateWithVars: GeneratorState = {
       ...baseState,

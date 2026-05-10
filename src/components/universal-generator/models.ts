@@ -1,3 +1,5 @@
+import { CREDIT_COST } from "@/lib/generator-credits";
+
 export interface ModelInfo {
   id: string;
   label: string;
@@ -17,7 +19,7 @@ export const MODELS: ModelInfo[] = [
     tier: "fast",
     provider: "replicate",
     providerModel: "cba7f388939b0db49dbea3341f8d732577aa0a964d9eefea5d186ab47e60deba",
-    creditCost: 10,
+    creditCost: CREDIT_COST["z-image-fast"],
   },
   {
     id: "z-image-pro",
@@ -26,7 +28,7 @@ export const MODELS: ModelInfo[] = [
     tier: "pro",
     provider: "grsai",
     providerModel: "gpt-image-2",
-    creditCost: 20,
+    creditCost: CREDIT_COST["z-image-pro"],
   },
   {
     id: "z-video-fast",
@@ -35,7 +37,7 @@ export const MODELS: ModelInfo[] = [
     tier: "fast",
     provider: "replicate",
     providerModel: "prunaai/p-video",
-    creditCost: 40,
+    creditCost: CREDIT_COST["z-video-fast"],
   },
   {
     id: "z-video-pro",
@@ -44,7 +46,7 @@ export const MODELS: ModelInfo[] = [
     tier: "pro",
     provider: "replicate",
     providerModel: "alibaba/happyhorse-1.0",
-    creditCost: 80,
+    creditCost: CREDIT_COST["z-video-pro"],
   },
   {
     id: "z-text-fast",
@@ -53,7 +55,7 @@ export const MODELS: ModelInfo[] = [
     tier: "fast",
     provider: "deepseek",
     providerModel: "deepseek-v4-flash",
-    creditCost: 5,
+    creditCost: CREDIT_COST["z-text-fast"],
   },
   {
     id: "z-text-pro",
@@ -62,7 +64,7 @@ export const MODELS: ModelInfo[] = [
     tier: "pro",
     provider: "deepseek",
     providerModel: "deepseek-v4-pro",
-    creditCost: 10,
+    creditCost: CREDIT_COST["z-text-pro"],
   },
 ];
 

@@ -22,7 +22,6 @@ interface AsyncPending {
 
 export function useGeneratorState() {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stateRef = useRef(state);
   const guestTokenRef = useRef<string | null>(null);
   const { data: session } = authClient.useSession();
@@ -58,11 +57,6 @@ export function useGeneratorState() {
   const setPromptTemplate = useCallback((value: string) => {
     dispatch({ type: "SET_PROMPT_TEMPLATE", payload: value });
     dispatch({ type: "SET_ERROR", payload: null });
-
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      dispatch({ type: "SYNC_GROUPS_FROM_TEMPLATE" });
-    }, 500);
   }, []);
 
   const setQuantity = useCallback((value: number) => {
