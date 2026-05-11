@@ -5,7 +5,8 @@ const mocks = vi.hoisted(() => {
   const mockMirrorImageToR2 = vi.fn((url: string, key: string) =>
     Promise.resolve(`/api/generation-files/${key}`),
   );
-  return { mockGetSession, mockMirrorImageToR2 };
+  const mockGenerateExploreMetadata = vi.fn();
+  return { mockGetSession, mockMirrorImageToR2, mockGenerateExploreMetadata };
 });
 
 vi.mock("@/lib/auth/auth", () => ({
@@ -16,6 +17,10 @@ vi.mock("@/lib/auth/auth", () => ({
 
 vi.mock("@/lib/cloudflare/r2", () => ({
   mirrorImageToR2: mocks.mockMirrorImageToR2,
+}));
+
+vi.mock("@/lib/explore-metadata", () => ({
+  generateExploreMetadata: mocks.mockGenerateExploreMetadata,
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -70,6 +75,12 @@ describe("handlePostWork", () => {
     db = makeMockDb();
     vi.clearAllMocks();
     mocks.mockGetSession.mockResolvedValue({ user: { id: "u1" } });
+    mocks.mockGenerateExploreMetadata.mockResolvedValue({
+      name: "Studio Product Shot",
+      description: "Use this studio product shot for product pages and campaigns.",
+      category: "ecommerce",
+      previewImageUrl: "/api/generation-files/works/test-work/0.png",
+    });
     (globalThis as Record<string, unknown>).__env__ = { batchlyai_db: db };
   });
 
@@ -81,19 +92,39 @@ describe("handlePostWork", () => {
   it("mirrors work images to public R2 paths before saving", async () => {
     const resp = await handlePostWork(
       makeJsonRequest("https://batchlyai.com/api/works", {
-        title: "Test Work",
         coverUrl: "https://temp.example.com/cover.png",
         resultUrls: ["https://temp.example.com/cover.png", "https://temp.example.com/extra.png"],
         promptTemplate: "A {{cat}}",
         variableGroups: "[]",
         model: "z-image-fast",
+        aspectRatio: "9:16",
       }),
     );
 
     expect(resp.status).toBe(201);
     expect(mocks.mockMirrorImageToR2).toHaveBeenCalledTimes(2);
+    expect(mocks.mockGenerateExploreMetadata).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: "A {{cat}}",
+        model: "z-image-fast",
+        aspectRatio: "9:16",
+      }),
+    );
+    expect(db.__state.insertedWork?.title).toBe("Studio Product Shot");
+    expect(db.__state.insertedWork?.description).toContain("studio product shot");
+    expect(db.__state.insertedWork?.category).toBe("ecommerce");
     expect(db.__state.insertedWork?.coverUrl).toContain("/api/generation-files/works/");
     expect(String(db.__state.insertedWork?.resultUrls)).toContain("/api/generation-files/works/");
+    const body = (await resp.json()) as {
+      coverUrl: string;
+      resultUrls: string[];
+      title: string;
+      description: string;
+      category: string;
+    };
+    expect(body.title).toBe("Studio Product Shot");
+    expect(body.coverUrl).toContain("/api/generation-files/works/");
+    expect(body.resultUrls).toHaveLength(2);
   });
 });
 

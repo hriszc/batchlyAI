@@ -44,8 +44,9 @@ function normalizeDiscoverTab(tab: unknown): DiscoverTab {
 }
 
 const meta = createPageMeta({
-  title: "Discover — BatchlyAI",
-  description: "Discover AI-generated works and remix them",
+  title: "Discover AI Works and Templates — BatchlyAI",
+  description:
+    "Explore AI-generated works, real preview images, and prompt templates to remix ideas or start from proven scenes.",
   path: "/discover",
   locale: "en",
 });

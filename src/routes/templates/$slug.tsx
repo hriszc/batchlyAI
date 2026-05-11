@@ -5,6 +5,7 @@ import { ArrowRightIcon } from "lucide-react";
 
 import { getD1Binding } from "@/lib/cloudflare/bindings";
 import * as schema from "@/lib/db/schema";
+import { createPageMeta } from "@/lib/seo/meta";
 
 export const Route = createFileRoute("/templates/$slug")({
   loader: async ({ params }) => {
@@ -23,36 +24,32 @@ export const Route = createFileRoute("/templates/$slug")({
     };
   },
   head: ({ loaderData }) => ({
-    meta: [
-      { title: loaderData ? `${loaderData.name} — BatchlyAI Templates` : "Template — BatchlyAI" },
-      {
-        name: "description",
-        content: loaderData?.description || "AI prompt template",
-      },
-      { property: "og:title", content: loaderData?.name || "Template" },
-      { property: "og:description", content: loaderData?.description || "" },
-      { property: "og:image", content: loaderData?.previewImageUrl || "" },
-    ],
-    scripts: loaderData
-      ? [
-          {
-            type: "application/ld+json",
-            children: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "HowTo",
-              name: loaderData.name,
-              description: loaderData.description,
-              step: [
-                { "@type": "HowToStep", text: "Open the template in BatchlyAI" },
-                {
-                  "@type": "HowToStep",
-                  text: `Generate images using the prompt: ${loaderData.promptTemplate}`,
-                },
-              ],
-            }),
-          },
-        ]
-      : [],
+    ...createPageMeta({
+      title: loaderData ? `${loaderData.name} — BatchlyAI Templates` : "Template — BatchlyAI",
+      description: loaderData?.description || "AI prompt template",
+      path: loaderData ? `/templates/${loaderData.slug}` : "/templates",
+      locale: "en",
+      ogImage: loaderData?.previewImageUrl || undefined,
+      ogType: "article",
+      jsonLd: loaderData
+        ? {
+            "@context": "https://schema.org",
+            "@type": "HowTo",
+            name: loaderData.name,
+            description: loaderData.description,
+            step: [
+              { "@type": "HowToStep", text: "Open the template in BatchlyAI" },
+              {
+                "@type": "HowToStep",
+                text: `Generate images using the prompt: ${loaderData.promptTemplate}`,
+              },
+            ],
+          }
+        : undefined,
+    }),
+    links: loaderData
+      ? [{ rel: "canonical", href: `https://batchlyai.com/templates/${loaderData.slug}` }]
+      : [{ rel: "canonical", href: "https://batchlyai.com/templates" }],
   }),
   component: TemplateDetailPage,
 });

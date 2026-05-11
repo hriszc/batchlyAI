@@ -7,6 +7,7 @@ import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { mirrorImageToR2 } from "@/lib/cloudflare/r2";
 import { getDb } from "@/lib/db";
 import { work } from "@/lib/db/schema/data-flywheel.schema";
+import { generateExploreMetadata } from "@/lib/explore-metadata";
 
 export async function handleGetWorks(request: Request): Promise<Response> {
   const binding = getD1Binding();
@@ -79,38 +80,50 @@ export async function handlePostWork(request: Request): Promise<Response> {
 
   try {
     const body = (await request.json()) as {
-      title: string;
+      title?: string;
       description?: string;
       category?: string;
       coverUrl: string;
-      resultUrls: string[];
+      resultUrls?: string[];
       promptTemplate: string;
       variableGroups: string;
       model: string;
+      aspectRatio?: string;
       generationId?: string;
     };
-    if (!body.title?.trim() || !body.coverUrl) {
-      return jsonResponse({ error: "Title and cover image are required" }, 400);
+    if (!body.coverUrl) {
+      return jsonResponse({ error: "Cover image is required" }, 400);
     }
 
     const now = Math.floor(Date.now() / 1000);
     const id = crypto.randomUUID();
-    const resultUrls = body.resultUrls.length
+    const coverIndex = body.resultUrls?.indexOf(body.coverUrl) ?? -1;
+    const resultUrls = body.resultUrls?.length
       ? await Promise.all(
           body.resultUrls.map((url, i) => mirrorImageToR2(url, `works/${id}/${i}.png`)),
         )
       : [];
     const coverUrl =
-      resultUrls[body.resultUrls.indexOf(body.coverUrl)] ||
+      resultUrls[coverIndex] ||
       resultUrls[0] ||
       (await mirrorImageToR2(body.coverUrl, `works/${id}/cover.png`));
+    const metadata = await generateExploreMetadata({
+      prompt: body.promptTemplate,
+      model: body.model,
+      aspectRatio: body.aspectRatio,
+      title: body.title,
+      description: body.description,
+      category: body.category,
+      resultUrls: resultUrls.length ? resultUrls : [coverUrl],
+      coverUrl,
+    });
 
     await db.insert(work).values({
       id,
       userId: session.user.id,
-      title: body.title.trim(),
-      description: body.description || null,
-      category: body.category || null,
+      title: metadata.name,
+      description: metadata.description,
+      category: metadata.category,
       coverUrl,
       resultUrls: JSON.stringify(resultUrls.length ? resultUrls : [coverUrl]),
       promptTemplate: body.promptTemplate,
@@ -122,7 +135,17 @@ export async function handlePostWork(request: Request): Promise<Response> {
       createdAt: now,
     });
 
-    return jsonResponse({ id }, 201);
+    return jsonResponse(
+      {
+        id,
+        title: metadata.name,
+        description: metadata.description,
+        category: metadata.category,
+        coverUrl,
+        resultUrls: resultUrls.length ? resultUrls : [coverUrl],
+      },
+      201,
+    );
   } catch {
     return jsonResponse({ error: "Failed to publish work" }, 500);
   }

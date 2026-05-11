@@ -2,15 +2,25 @@ import { createFileRoute } from "@tanstack/react-router";
 import { ArrowRightIcon } from "lucide-react";
 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { hreflangLinks } from "@/lib/seo/hreflang";
+import { createPageMeta } from "@/lib/seo/meta";
+
+const meta = createPageMeta({
+  title: "Templates in Discover — BatchlyAI",
+  description:
+    "Browse AI prompt templates alongside real community results, so the same page can be used to compare ideas and launch from proven examples.",
+  path: "/discover?tab=templates",
+  locale: "en",
+  noIndex: true,
+});
 
 export const Route = createFileRoute("/templates/")({
   head: () => ({
-    meta: [
-      { title: "Templates in Discover — BatchlyAI" },
-      {
-        name: "description",
-        content: "Browse prompt templates alongside community works in BatchlyAI Discover",
-      },
+    htmlAttrs: { lang: "en" },
+    meta: meta.meta,
+    links: [
+      ...hreflangLinks("/discover?tab=templates"),
+      { rel: "canonical", href: "https://batchlyai.com/discover?tab=templates" },
     ],
   }),
   component: TemplatesPage,
