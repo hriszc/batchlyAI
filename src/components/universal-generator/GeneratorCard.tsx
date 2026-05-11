@@ -139,6 +139,7 @@ export function GeneratorCard({
         <textarea
           value={state.promptTemplate}
           onChange={(e) => handlePromptInput(e.target.value)}
+          readOnly={!isSessionReady}
           placeholder={t("promptPlaceholder")}
           className="min-h-[80px] w-full resize-none border-0 bg-transparent text-base placeholder:text-muted-foreground/60 focus:ring-0 focus:outline-none"
           rows={3}
