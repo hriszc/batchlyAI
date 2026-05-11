@@ -3,7 +3,6 @@ import {
   SunIcon,
   MoonIcon,
   LogInIcon,
-  LogOutIcon,
   UserIcon,
   PlusIcon,
   Share2Icon,
@@ -39,7 +38,7 @@ export function SettingsBar() {
       url.searchParams.delete("purchase");
       window.history.replaceState({}, "", url.toString());
     }
-  }, []);
+  }, [t]);
 
   const resolved =
     theme === "system"
@@ -106,14 +105,14 @@ export function SettingsBar() {
     } finally {
       setReferralLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const handleCopyReferralLink = useCallback(async () => {
     if (referralStats?.shareUrl) {
       await navigator.clipboard.writeText(referralStats.shareUrl);
       toast.success(t("referralCopied"));
     }
-  }, [referralStats]);
+  }, [referralStats, t]);
 
   return (
     <div className="fixed top-0 right-0 z-50 flex items-center gap-1 p-3">
@@ -230,12 +229,6 @@ export function SettingsBar() {
         className="hidden h-8 items-center rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground sm:inline-flex"
       >
         {t("discover")}
-      </a>
-      <a
-        href="/templates"
-        className="hidden h-8 items-center rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground sm:inline-flex"
-      >
-        {t("templates")}
       </a>
       <button
         onClick={() => setLanguage(language === "en" ? "zh" : "en")}

@@ -65,15 +65,18 @@ function TemplateDetailPage() {
     return (
       <main className="mx-auto max-w-[980px] px-4 py-16 text-center">
         <h1 className="text-2xl font-semibold">Template not found</h1>
-        <a href="/templates" className="mt-4 inline-block text-accent-blue hover:underline">
-          Browse all templates
+        <a
+          href="/discover?tab=templates"
+          className="mt-4 inline-block text-accent-blue hover:underline"
+        >
+          Browse templates in Discover
         </a>
       </main>
     );
   }
 
   const handleUseTemplate = () => {
-    navigate({
+    void navigate({
       to: "/",
       search: { template: data.slug } as Record<string, string>,
     });
@@ -118,7 +121,7 @@ function TemplateDetailPage() {
             onClick={handleUseTemplate}
             className="mt-6 inline-flex h-10 items-center justify-center gap-2 rounded-full bg-accent-blue px-6 text-sm font-medium text-white transition-colors hover:bg-accent-blue-hover"
           >
-            Use this template
+            Use in Generator
             <ArrowRightIcon className="size-4" />
           </button>
         </div>

@@ -78,9 +78,6 @@ function FooterLinks() {
       <a href="/blog" className="transition-colors hover:text-foreground">
         {t("blog")}
       </a>
-      <a href="/templates" className="transition-colors hover:text-foreground">
-        {t("templates")}
-      </a>
       <a href="/discover" className="transition-colors hover:text-foreground">
         {t("discover")}
       </a>

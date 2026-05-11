@@ -15,7 +15,27 @@ interface WorkCard {
   category: string | null;
 }
 
-const TABS = ["hot", "new", "ecommerce", "art", "social-media", "marketing"] as const;
+interface TemplateCard {
+  slug: string;
+  name: string;
+  description: string;
+  category: string;
+  previewImageUrl: string | null;
+  usageCount: number;
+}
+
+const TABS = ["hot", "new", "ecommerce", "art", "social-media", "marketing", "templates"] as const;
+type DiscoverTab = (typeof TABS)[number];
+
+const TAB_LABELS: Record<DiscoverTab, string> = {
+  hot: "Hot",
+  new: "New",
+  ecommerce: "Ecommerce",
+  art: "Art",
+  "social-media": "Social media",
+  marketing: "Marketing",
+  templates: "Templates",
+};
 
 const meta = createPageMeta({
   title: "Discover — BatchlyAI",
@@ -38,12 +58,37 @@ export const Route = createFileRoute("/discover")({
 
 function DiscoverPage() {
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState<string>("hot");
+  const [activeTab, setActiveTab] = useState<DiscoverTab>(() => {
+    if (typeof window === "undefined") return "hot";
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    return TABS.includes(tab as DiscoverTab) ? (tab as DiscoverTab) : "hot";
+  });
   const [works, setWorks] = useState<WorkCard[]>([]);
+  const [templates, setTemplates] = useState<TemplateCard[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // oxlint-disable-next-line react-hooks-js/set-state-in-effect
     setLoading(true);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (activeTab === "hot") {
+        url.searchParams.delete("tab");
+      } else {
+        url.searchParams.set("tab", activeTab);
+      }
+      window.history.replaceState({}, "", url.toString());
+    }
+
+    if (activeTab === "templates") {
+      fetch("/api/templates?limit=20")
+        .then((r) => r.json() as Promise<{ templates: TemplateCard[] }>)
+        .then((d) => setTemplates(d.templates || []))
+        .catch(() => setTemplates([]))
+        .finally(() => setLoading(false));
+      return;
+    }
+
     const type = activeTab === "hot" || activeTab === "new" ? activeTab : "";
     const category = ["ecommerce", "art", "social-media", "marketing"].includes(activeTab)
       ? activeTab
@@ -52,7 +97,7 @@ function DiscoverPage() {
     fetch(`/api/works?${params}`)
       .then((r) => r.json() as Promise<{ works: WorkCard[] }>)
       .then((d) => setWorks(d.works || []))
-      .catch(() => {})
+      .catch(() => setWorks([]))
       .finally(() => setLoading(false));
   }, [activeTab]);
 
@@ -66,12 +111,51 @@ function DiscoverPage() {
             onClick={() => setActiveTab(tab)}
             className={`rounded-lg px-3 py-1.5 text-sm whitespace-nowrap ${activeTab === tab ? "bg-accent-blue text-white" : "bg-muted/30 text-muted-foreground hover:bg-muted"}`}
           >
-            {t(tab as keyof typeof t extends infer K ? K : never) || tab}
+            {tab === "hot" || tab === "new" || tab === "templates" ? t(tab) : TAB_LABELS[tab]}
           </button>
         ))}
       </div>
       {loading ? (
         <p className="text-muted-foreground">{t("loading")}</p>
+      ) : activeTab === "templates" ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {templates.map((template) => (
+            <Link
+              key={template.slug}
+              to="/templates/$slug"
+              params={{ slug: template.slug }}
+              className="group overflow-hidden rounded-lg border bg-card shadow-sm transition-shadow hover:shadow-md"
+            >
+              <div className="aspect-[16/10] bg-muted">
+                {template.previewImageUrl ? (
+                  <img
+                    src={template.previewImageUrl}
+                    alt={template.name}
+                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-sm text-muted-foreground/40">
+                    {t("promptTemplates")}
+                  </div>
+                )}
+              </div>
+              <div className="p-4">
+                <h3 className="font-medium group-hover:text-accent-blue">{template.name}</h3>
+                <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                  {template.description}
+                </p>
+                <div className="mt-3 flex items-center gap-2">
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                    {template.category}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {template.usageCount} uses
+                  </span>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {works.map((w) => (

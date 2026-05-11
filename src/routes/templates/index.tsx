@@ -1,151 +1,39 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { SearchIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { ArrowRightIcon } from "lucide-react";
 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export const Route = createFileRoute("/templates/")({
   head: () => ({
     meta: [
-      { title: "Prompt Templates — BatchlyAI" },
+      { title: "Templates in Discover — BatchlyAI" },
       {
         name: "description",
-        content: "Browse and use community prompt templates for AI image and video generation",
+        content: "Browse prompt templates alongside community works in BatchlyAI Discover",
       },
     ],
   }),
   component: TemplatesPage,
 });
 
-const CATEGORIES = [
-  { id: "", label: "All" },
-  { id: "general", label: "General" },
-  { id: "product", label: "Product Photos" },
-  { id: "art", label: "Art & Design" },
-  { id: "marketing", label: "Marketing" },
-  { id: "photography", label: "Photography" },
-];
-
 function TemplatesPage() {
   const { t } = useLanguage();
-  const [templates, setTemplates] = useState<Array<{
-    slug: string;
-    name: string;
-    description: string;
-    category: string;
-    previewImageUrl: string | null;
-    usageCount: number;
-  }> | null>(null);
-  const [category, setCategory] = useState("");
-  const [search, setSearch] = useState("");
-
-  const fetchTemplates = async (cat: string, q: string) => {
-    const params = new URLSearchParams();
-    if (cat) params.set("category", cat);
-    if (q) params.set("search", q);
-    const resp = await fetch(`/api/templates?${params.toString()}`);
-    const data = await resp.json();
-    if (!data.error) setTemplates(data.templates);
-  };
-
-  useEffect(() => {
-    let cancelled = false;
-
-    void (async () => {
-      const resp = await fetch("/api/templates");
-      const data = (await resp.json()) as {
-        error?: string;
-        templates?: Array<{
-          slug: string;
-          name: string;
-          description: string;
-          category: string;
-          previewImageUrl: string | null;
-          usageCount: number;
-        }>;
-      };
-      if (!cancelled && !data.error) setTemplates(data.templates ?? []);
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   return (
-    <main className="mx-auto max-w-[980px] px-4 py-8">
-      <h1 className="text-2xl font-semibold">Prompt Templates</h1>
-      <p className="mt-1 text-muted-foreground">Browse community templates or create your own</p>
-
-      <div className="mt-6 flex flex-wrap gap-2">
-        {CATEGORIES.map((c) => (
-          <button
-            key={c.id}
-            onClick={() => {
-              setCategory(c.id);
-              void fetchTemplates(c.id, search);
-            }}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-              category === c.id
-                ? "bg-accent-blue text-white"
-                : "bg-muted text-muted-foreground hover:bg-muted/80"
-            }`}
-          >
-            {c.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-4">
-        <div className="relative">
-          <SearchIcon className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground/50" />
-          <input
-            type="text"
-            placeholder={t("searchTemplatesPlaceholder")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") void fetchTemplates(category, search);
-            }}
-            className="w-full rounded-lg border bg-background py-2 pr-4 pl-9 text-sm placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-accent-blue focus:outline-none"
-          />
-        </div>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {templates?.map((t) => (
-          <Link
-            key={t.slug}
-            to="/templates/$slug"
-            params={{ slug: t.slug }}
-            className="group overflow-hidden rounded-lg border bg-card shadow-sm transition-shadow hover:shadow-md"
-          >
-            <div className="aspect-[16/10] bg-muted">
-              {t.previewImageUrl ? (
-                <img src={t.previewImageUrl} alt={t.name} className="h-full w-full object-cover" />
-              ) : (
-                <div className="flex h-full items-center justify-center text-muted-foreground/30">
-                  No preview
-                </div>
-              )}
-            </div>
-            <div className="p-4">
-              <h3 className="font-medium group-hover:text-accent-blue">{t.name}</h3>
-              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{t.description}</p>
-              <div className="mt-2 flex items-center gap-2">
-                <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                  {t.category}
-                </span>
-                <span className="text-[10px] text-muted-foreground">{t.usageCount} uses</span>
-              </div>
-            </div>
-          </Link>
-        )) ?? (
-          <div className="col-span-full py-12 text-center text-muted-foreground">
-            Loading templates...
-          </div>
-        )}
-      </div>
+    <main className="mx-auto max-w-[720px] px-4 py-16">
+      <p className="text-sm font-medium text-accent-blue">{t("templates")}</p>
+      <h1 className="mt-2 text-3xl font-semibold text-foreground">{t("discover")}</h1>
+      <p className="mt-3 text-muted-foreground">
+        Prompt templates now live with community works, so you can compare real outputs and starter
+        prompts in one place.
+      </p>
+      <a
+        href="/discover?tab=templates"
+        className="mt-6 inline-flex h-10 items-center justify-center gap-2 rounded-full bg-accent-blue px-5 text-sm font-medium text-white transition-colors hover:bg-accent-blue-hover"
+      >
+        {t("discover")} {t("templates")}
+        <ArrowRightIcon className="size-4" />
+      </a>
     </main>
   );
 }

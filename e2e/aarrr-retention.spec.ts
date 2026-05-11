@@ -95,7 +95,7 @@ test.describe("AARRR Retention — history and saved prompts", () => {
     await expect(buyBtn.first()).toBeVisible({ timeout: 3000 });
   });
 
-  test("template market loads with mock data", async ({ page }) => {
+  test("templates are discoverable from Explore", async ({ page }) => {
     await page.route("**/api/templates**", async (route) => {
       await route.fulfill({
         status: 200,
@@ -114,9 +114,8 @@ test.describe("AARRR Retention — history and saved prompts", () => {
         }),
       });
     });
-    await page.goto("/templates");
-    await page.waitForTimeout(1000);
-    await expect(page.locator("main")).toBeVisible({ timeout: 15000 });
+    await page.goto("/discover?tab=templates");
+    await expect(page.getByText("Test Template")).toBeVisible({ timeout: 15000 });
   });
 
   test("blog index page loads", async ({ page }) => {

@@ -27,6 +27,21 @@ interface HomePageProps {
   forceLanguage?: "en" | "zh";
 }
 
+const STARTER_TEMPLATES = [
+  {
+    label: "Product hero",
+    prompt: "A studio product photo of {{sneakers, headphones}} on {{marble, glass}}",
+  },
+  {
+    label: "Social ad",
+    prompt: "{{Minimal, cinematic}} poster for {{coffee, skincare}} with bold typography",
+  },
+  {
+    label: "Character set",
+    prompt: "A {{robot, astronaut}} character in {{pixel art, watercolor}} style",
+  },
+];
+
 export function HomePage({ forceLanguage }: HomePageProps) {
   const { state, actions } = useGeneratorState();
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -260,6 +275,22 @@ export function HomePage({ forceLanguage }: HomePageProps) {
         availableCredits={userCredits}
         isSessionReady={sessionReady}
       />
+
+      {!state.promptTemplate.trim() && state.results.length === 0 && (
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+          <span className="text-xs font-medium text-muted-foreground">{t("promptTemplates")}</span>
+          {STARTER_TEMPLATES.map((starter) => (
+            <button
+              key={starter.label}
+              type="button"
+              onClick={() => setPromptTemplate(starter.prompt)}
+              className="rounded-full border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-accent-blue/40 hover:text-accent-blue"
+            >
+              {starter.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div ref={resultsRef}>
         <ResultsGrid
