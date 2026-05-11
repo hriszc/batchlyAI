@@ -187,6 +187,25 @@ describe("createReplicatePredictions", () => {
     expect(results[0].id).toBe("rep-001");
   });
 
+  it("switches z-image-fast to img2img when a reference image is provided", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({ id: "rep-img2img", status: "starting", urls: { get: "u", cancel: "c" } }),
+    });
+
+    await createReplicatePredictions({
+      prompt: "edit this image",
+      model: "z-image-fast",
+      urls: ["https://r2.example.com/uploads/ref.png"],
+      n: 1,
+    });
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.version).toBe("5c958e90e0f904240629ee35c69196e3bd790b5528c0696705ebdb1656871dd8");
+    expect(body.input.image).toBe("https://r2.example.com/uploads/ref.png");
+  });
+
   it("calculates dimensions for aspect ratio 16:9", async () => {
     mockFetch.mockResolvedValue({
       ok: true,
@@ -231,6 +250,26 @@ describe("createReplicatePredictions", () => {
     await expect(createReplicatePredictions({ prompt: "", n: 1 })).rejects.toThrow(
       "Replicate API error 422",
     );
+  });
+
+  it("passes reference images to video generations", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({ id: "video-ref", status: "starting", urls: { get: "u", cancel: "c" } }),
+    });
+
+    await createReplicatePredictions({
+      prompt: "make a video",
+      model: "z-video-fast",
+      urls: ["https://r2.example.com/uploads/video-ref.png"],
+      n: 1,
+      duration: 5,
+    });
+
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.input.image).toBe("https://r2.example.com/uploads/video-ref.png");
+    expect(body.input.duration).toBe(5);
   });
 });
 

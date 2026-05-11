@@ -76,6 +76,7 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
       body.aspectRatio || "1:1",
       n,
       durationSeconds,
+      body.attachedUrls,
     );
     if (cachedUrls) {
       return jsonResponse(
@@ -114,6 +115,7 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
             texts.length,
             texts,
             durationSeconds,
+            body.attachedUrls,
           );
         }
 
@@ -207,6 +209,7 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
           n,
           model,
           duration: body.duration,
+          urls: body.attachedUrls?.length ? body.attachedUrls : undefined,
         });
         isVideo = model.startsWith("z-video");
       } else {
@@ -449,6 +452,10 @@ export const Route = createFileRoute("/api/generate")({
             aspectRatio: raw.aspectRatio || "1:1",
             n: 1,
             model: "z-image-fast",
+            urls:
+              Array.isArray(raw.attachedUrls) && raw.attachedUrls.length
+                ? raw.attachedUrls
+                : undefined,
           });
 
           if (kv) {
