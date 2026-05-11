@@ -133,7 +133,7 @@ describe("handleUpload", () => {
     );
     expect(resp.status).toBe(200);
     const body = (await resp.json()) as { publicUrl: string; key: string };
-    expect(body.publicUrl).toContain("/api/files/uploads/");
+    expect(body.publicUrl).toMatch(/^https:\/\/batchlyai\.com\/api\/files\/uploads\//);
     expect(body.publicUrl).toContain("expires=");
     expect(body.publicUrl).toContain("sig=");
     expect(body.key).toContain("uploads/");
@@ -142,7 +142,7 @@ describe("handleUpload", () => {
 
   it("generates signed file URLs compatible with GRS uploads", async () => {
     const url = await createSignedFileUrl("/api/files/uploads/u1/photo.png");
-    expect(url).toContain("/api/files/uploads/u1/photo.png");
+    expect(url).toMatch(/^https:\/\/batchlyai\.com\/api\/files\/uploads\/u1\/photo\.png\?/);
     expect(url).toContain("expires=");
     expect(url).toContain("sig=");
   });
