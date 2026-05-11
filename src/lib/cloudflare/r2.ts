@@ -1,5 +1,9 @@
 interface R2Binding {
-  put(key: string, value: ArrayBuffer | ReadableStream | string): Promise<void>;
+  put(
+    key: string,
+    value: ArrayBuffer | ReadableStream | string,
+    options?: { httpMetadata?: { contentType?: string } },
+  ): Promise<void>;
 }
 
 function getR2Binding(): R2Binding | null {
@@ -53,7 +57,8 @@ export async function mirrorImageToR2(imageUrl: string, r2Key: string): Promise<
       return imageUrl;
     }
     const blob = await resp.arrayBuffer();
-    await r2.put(r2Key, blob);
+    const contentType = resp.headers.get("Content-Type") || "image/png";
+    await r2.put(r2Key, blob, { httpMetadata: { contentType } });
     console.log("[r2] mirrored OK:", r2Key);
     return getR2PublicUrl(r2Key);
   } catch (err) {
