@@ -69,16 +69,6 @@ export function GeneratorCard({
     [actions],
   );
 
-  useEffect(() => {
-    try {
-      if (state.promptTemplate) {
-        sessionStorage.setItem("pendingPrompt", state.promptTemplate);
-      } else {
-        sessionStorage.removeItem("pendingPrompt");
-      }
-    } catch {}
-  }, [state.promptTemplate]);
-
   const handleBuyCredits = useCallback(async () => {
     setBuyLoading(true);
     try {
