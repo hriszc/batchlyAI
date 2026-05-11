@@ -178,17 +178,25 @@ function inferName(prompt: string): string {
 
 function inferDescription(prompt: string, name: string, category: ExploreCategory): string {
   const scene = name.toLowerCase();
+  const topic = stripPromptTemplateMarkers(prompt).slice(0, 96);
   switch (category) {
     case "ecommerce":
-      return `Use this ${scene} for product pages, campaigns, and storefront visuals.`;
+      return topic
+        ? `Use this ${scene} for product pages, storefronts, and campaign creatives featuring ${topic}.`
+        : `Use this ${scene} for product pages, storefronts, and campaign creatives.`;
     case "social-media":
-      return `Use this ${scene} for posts, stories, and short-form content.`;
+      return topic
+        ? `Use this ${scene} for posts, stories, and short-form content around ${topic}.`
+        : `Use this ${scene} for posts, stories, and short-form content.`;
     case "marketing":
-      return `Use this ${scene} for ads, launches, and brand promotion.`;
+      return topic
+        ? `Use this ${scene} for ads, launches, and brand promotion around ${topic}.`
+        : `Use this ${scene} for ads, launches, and brand promotion.`;
     case "art":
-      return `Use this ${scene} for artistic concepts, moodboards, and inspiration.`;
+      return topic
+        ? `Use this ${scene} for artistic concepts, moodboards, and inspiration based on ${topic}.`
+        : `Use this ${scene} for artistic concepts, moodboards, and inspiration.`;
     default: {
-      const topic = stripPromptTemplateMarkers(prompt).slice(0, 80);
       return topic ? `Use this ${scene} for the prompt: ${topic}.` : `Use this ${scene} anywhere.`;
     }
   }
@@ -227,7 +235,7 @@ function cleanName(value: string | null | undefined): string | null {
 function cleanDescription(value: string | null | undefined): string | null {
   if (!value) return null;
   const cleaned = collapseWhitespace(value).replace(/\s*[\r\n]+\s*/g, " ");
-  return cleaned.slice(0, 140) || null;
+  return cleaned.slice(0, 160) || null;
 }
 
 export async function generateExploreMetadata(
@@ -254,8 +262,8 @@ export async function generateExploreMetadata(
             "You write publish-ready metadata for an AI image gallery.",
             "Return strict JSON only with keys: name, description, category.",
             "Rules:",
-            "- name: 2-6 words, concrete scene or object name, no abstract adjectives.",
-            "- description: one short sentence that explains the use case.",
+            "- name: 2-6 words, concrete scene or object name, no abstract adjectives, and include the main searchable subject.",
+            "- description: one short sentence, 120-160 characters max, that mentions the use case and relevant keywords.",
             "- category: one of ecommerce, art, social-media, marketing, general.",
             "- Keep the language aligned with the prompt.",
             "- Do not include markdown, code fences, or extra keys.",
