@@ -1,5 +1,4 @@
 import "@tanstack/react-start/server-only";
-
 import { generateText } from "@/lib/ai";
 
 const EXPLORE_CATEGORIES = ["ecommerce", "art", "social-media", "marketing", "general"] as const;
@@ -208,12 +207,18 @@ function pickPreviewImageUrl(input: ExploreMetadataInput): string | null {
     ...(Array.isArray(input.resultUrls) ? input.resultUrls : []),
     input.coverUrl,
   ];
-  const url = previewCandidates.find((candidate) => typeof candidate === "string" && candidate.trim());
+  const url = previewCandidates.find(
+    (candidate) => typeof candidate === "string" && candidate.trim(),
+  );
   return url?.trim() || null;
 }
 
 function parseMetadataResponse(text: string): Partial<ExploreMetadata> {
-  const trimmed = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
+  const trimmed = text
+    .trim()
+    .replace(/^```(?:json)?/i, "")
+    .replace(/```$/i, "")
+    .trim();
   const start = trimmed.indexOf("{");
   const end = trimmed.lastIndexOf("}");
   if (start < 0 || end <= start) return {};
@@ -257,23 +262,22 @@ export async function generateExploreMetadata(
   if (needsAi && prompt) {
     try {
       const response = await generateText({
-        prompt:
-          [
-            "You write publish-ready metadata for an AI image gallery.",
-            "Return strict JSON only with keys: name, description, category.",
-            "Rules:",
-            "- name: 2-6 words, concrete scene or object name, no abstract adjectives, and include the main searchable subject.",
-            "- description: one short sentence, 120-160 characters max, that mentions the use case and relevant keywords.",
-            "- category: one of ecommerce, art, social-media, marketing, general.",
-            "- Keep the language aligned with the prompt.",
-            "- Do not include markdown, code fences, or extra keys.",
-            "",
-            `Prompt: ${prompt}`,
-            input.model ? `Model: ${input.model}` : null,
-            input.aspectRatio ? `Aspect ratio: ${input.aspectRatio}` : null,
-          ]
-            .filter(Boolean)
-            .join("\n"),
+        prompt: [
+          "You write publish-ready metadata for an AI image gallery.",
+          "Return strict JSON only with keys: name, description, category.",
+          "Rules:",
+          "- name: 2-6 words, concrete scene or object name, no abstract adjectives, and include the main searchable subject.",
+          "- description: one short sentence, 120-160 characters max, that mentions the use case and relevant keywords.",
+          "- category: one of ecommerce, art, social-media, marketing, general.",
+          "- Keep the language aligned with the prompt.",
+          "- Do not include markdown, code fences, or extra keys.",
+          "",
+          `Prompt: ${prompt}`,
+          input.model ? `Model: ${input.model}` : null,
+          input.aspectRatio ? `Aspect ratio: ${input.aspectRatio}` : null,
+        ]
+          .filter(Boolean)
+          .join("\n"),
         maxTokens: 220,
       });
       generated = parseMetadataResponse(response);

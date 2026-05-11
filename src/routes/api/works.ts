@@ -6,8 +6,8 @@ import { createAuth } from "@/lib/auth/auth";
 import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { mirrorImageToR2 } from "@/lib/cloudflare/r2";
 import { getDb } from "@/lib/db";
-import { generateExploreMetadata } from "@/lib/explore-metadata";
 import { work } from "@/lib/db/schema/data-flywheel.schema";
+import { generateExploreMetadata } from "@/lib/explore-metadata";
 
 export async function handleGetWorks(request: Request): Promise<Response> {
   const binding = getD1Binding();
@@ -100,7 +100,7 @@ export async function handlePostWork(request: Request): Promise<Response> {
     const coverIndex = body.resultUrls?.indexOf(body.coverUrl) ?? -1;
     const resultUrls = body.resultUrls?.length
       ? await Promise.all(
-        body.resultUrls.map((url, i) => mirrorImageToR2(url, `works/${id}/${i}.png`)),
+          body.resultUrls.map((url, i) => mirrorImageToR2(url, `works/${id}/${i}.png`)),
         )
       : [];
     const coverUrl =

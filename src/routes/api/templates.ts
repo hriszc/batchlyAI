@@ -5,8 +5,8 @@ import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
-import { generateExploreMetadata } from "@/lib/explore-metadata";
 import { template as templateTable } from "@/lib/db/schema";
+import { generateExploreMetadata } from "@/lib/explore-metadata";
 
 function slugify(text: string): string {
   return text
@@ -27,11 +27,7 @@ export async function handleGetTemplates(request: Request): Promise<Response> {
   const limit = Math.min(parseInt(url.searchParams.get("limit") || "20"), 50);
   const offset = parseInt(url.searchParams.get("offset") || "0");
 
-  let query = db
-    .select()
-    .from(templateTable)
-    .where(eq(templateTable.isPublic, true))
-    .$dynamic();
+  let query = db.select().from(templateTable).where(eq(templateTable.isPublic, true)).$dynamic();
 
   if (category) {
     query = query.where(eq(templateTable.category, category));
@@ -39,10 +35,7 @@ export async function handleGetTemplates(request: Request): Promise<Response> {
 
   if (search) {
     query = query.where(
-      or(
-        like(templateTable.name, `%${search}%`),
-        like(templateTable.description, `%${search}%`),
-      ),
+      or(like(templateTable.name, `%${search}%`), like(templateTable.description, `%${search}%`)),
     );
   }
 
@@ -62,10 +55,7 @@ export async function handleGetTemplates(request: Request): Promise<Response> {
   }
   if (search) {
     countQuery = countQuery.where(
-      or(
-        like(templateTable.name, `%${search}%`),
-        like(templateTable.description, `%${search}%`),
-      ),
+      or(like(templateTable.name, `%${search}%`), like(templateTable.description, `%${search}%`)),
     );
   }
   const [countResult] = await countQuery;
@@ -101,10 +91,7 @@ export async function handlePostTemplate(request: Request): Promise<Response> {
   };
 
   if (!body.promptTemplate || !body.variableGroups) {
-    return jsonResponse(
-      { error: "Missing required fields: promptTemplate, variableGroups" },
-      400,
-    );
+    return jsonResponse({ error: "Missing required fields: promptTemplate, variableGroups" }, 400);
   }
 
   if (!body.promptTemplate.includes("{{")) {
