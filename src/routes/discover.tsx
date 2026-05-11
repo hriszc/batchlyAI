@@ -37,6 +37,12 @@ const TAB_LABELS: Record<DiscoverTab, string> = {
   templates: "Templates",
 };
 
+function normalizeDiscoverTab(tab: unknown): DiscoverTab {
+  return typeof tab === "string" && TABS.includes(tab as DiscoverTab)
+    ? (tab as DiscoverTab)
+    : "hot";
+}
+
 const meta = createPageMeta({
   title: "Discover — BatchlyAI",
   description: "Discover AI-generated works and remix them",
@@ -45,6 +51,10 @@ const meta = createPageMeta({
 });
 
 export const Route = createFileRoute("/discover")({
+  validateSearch: (search: Record<string, unknown>) => {
+    const tab = normalizeDiscoverTab(search.tab);
+    return tab === "hot" ? {} : { tab };
+  },
   head: () => ({
     htmlAttrs: { lang: "en" },
     meta: meta.meta,
@@ -58,11 +68,9 @@ export const Route = createFileRoute("/discover")({
 
 function DiscoverPage() {
   const { t } = useLanguage();
-  const [activeTab, setActiveTab] = useState<DiscoverTab>(() => {
-    if (typeof window === "undefined") return "hot";
-    const tab = new URLSearchParams(window.location.search).get("tab");
-    return TABS.includes(tab as DiscoverTab) ? (tab as DiscoverTab) : "hot";
-  });
+  const navigate = Route.useNavigate();
+  const { tab } = Route.useSearch();
+  const activeTab = tab ?? "hot";
   const [works, setWorks] = useState<WorkCard[]>([]);
   const [templates, setTemplates] = useState<TemplateCard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,15 +78,6 @@ function DiscoverPage() {
   useEffect(() => {
     // oxlint-disable-next-line react-hooks-js/set-state-in-effect
     setLoading(true);
-    if (typeof window !== "undefined") {
-      const url = new URL(window.location.href);
-      if (activeTab === "hot") {
-        url.searchParams.delete("tab");
-      } else {
-        url.searchParams.set("tab", activeTab);
-      }
-      window.history.replaceState({}, "", url.toString());
-    }
 
     if (activeTab === "templates") {
       fetch("/api/templates?limit=20")
@@ -108,7 +107,13 @@ function DiscoverPage() {
         {TABS.map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() =>
+              void navigate({
+                to: "/discover",
+                search: tab === "hot" ? {} : { tab },
+                replace: true,
+              })
+            }
             className={`rounded-lg px-3 py-1.5 text-sm whitespace-nowrap ${activeTab === tab ? "bg-accent-blue text-white" : "bg-muted/30 text-muted-foreground hover:bg-muted"}`}
           >
             {tab === "hot" || tab === "new" || tab === "templates" ? t(tab) : TAB_LABELS[tab]}
