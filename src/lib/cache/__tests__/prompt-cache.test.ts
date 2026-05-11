@@ -43,6 +43,20 @@ describe("getCachedResult", () => {
     expect(get.mock.calls[0]?.[0]).not.toBe(get.mock.calls[1]?.[0]);
   });
 
+  it("includes attached urls in the cache key", async () => {
+    const get = vi.fn().mockResolvedValue(null);
+    (globalThis as any).__env__ = { batchlyai_kv: { get } };
+
+    await getCachedResult("prompt", "z-image-fast", "1:1", 1, undefined, [
+      "https://a.example.com/1.png",
+    ]);
+    await getCachedResult("prompt", "z-image-fast", "1:1", 1, undefined, [
+      "https://b.example.com/2.png",
+    ]);
+
+    expect(get.mock.calls[0]?.[0]).not.toBe(get.mock.calls[1]?.[0]);
+  });
+
   it("respects n parameter to limit results", async () => {
     const entry = { urls: ["u1", "u2", "u3", "u4"], createdAt: Date.now() };
     (globalThis as any).__env__ = {

@@ -6,6 +6,7 @@ interface ImageGenerationParams {
   n?: number;
   model?: string;
   duration?: number;
+  urls?: string[];
 }
 
 // Cloudflare AI Gateway — provides caching, retries, analytics.
@@ -139,6 +140,8 @@ interface ReplicateCreateResult {
 
 const REPLICATE_MODEL_VERSIONS: Record<string, string> = {
   "z-image-fast": "cba7f388939b0db49dbea3341f8d732577aa0a964d9eefea5d186ab47e60deba",
+  "z-image-fast-img2img":
+    "5c958e90e0f904240629ee35c69196e3bd790b5528c0696705ebdb1656871dd8",
   "z-video-fast": "prunaai/p-video",
   "z-video-pro": "alibaba/happyhorse-1.0",
 };
@@ -183,9 +186,13 @@ export async function createReplicatePredictions({
   n = 1,
   model,
   duration,
+  urls,
 }: ImageGenerationParams): Promise<ReplicateCreateResult[]> {
+  const hasReferenceImage = !!urls?.[0];
   const version =
-    (model ? REPLICATE_MODEL_VERSIONS[model] : null) ?? REPLICATE_MODEL_VERSIONS["z-image-fast"];
+    model === "z-image-fast" && hasReferenceImage
+      ? REPLICATE_MODEL_VERSIONS["z-image-fast-img2img"]
+      : (model ? REPLICATE_MODEL_VERSIONS[model] : null) ?? REPLICATE_MODEL_VERSIONS["z-image-fast"];
   const key = env.REPLICATE_API_KEY; // optional: Gateway handles auth in managed mode
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (key) headers.Authorization = `Bearer ${key}`;
@@ -225,6 +232,9 @@ export async function createReplicatePredictions({
             height,
             num_outputs: 1,
             ...(duration ? { duration } : {}),
+            ...((model === "z-image-fast" || model?.startsWith("z-video")) && hasReferenceImage
+              ? { image: urls[0] }
+              : {}),
           },
         }),
       },

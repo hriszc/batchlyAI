@@ -116,7 +116,12 @@ describe("handleGenerate", () => {
     const mockReplicate = vi.fn().mockResolvedValue([makePrediction("pred-001")]);
 
     const resp = await handleGenerate({
-      request: makeRequest({ prompt: "test", n: 2, model: "z-image-fast" }),
+      request: makeRequest({
+        prompt: "test",
+        n: 2,
+        model: "z-image-fast",
+        attachedUrls: ["https://r2.example.com/uploads/ref.png"],
+      }),
       db,
       userId,
       replicateFn: mockReplicate,
@@ -125,6 +130,12 @@ describe("handleGenerate", () => {
     const body = (await resp.json()) as { predictionIds: string[]; async: boolean };
     expect(body.async).toBe(true);
     expect(body.predictionIds).toEqual(["pred-001"]);
+    expect(mockReplicate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: "z-image-fast",
+        urls: ["https://r2.example.com/uploads/ref.png"],
+      }),
+    );
   });
 
   it("z-image-fast refunds on API failure", async () => {
@@ -187,7 +198,13 @@ describe("handleGenerate", () => {
     const mockReplicate = vi.fn().mockResolvedValue([makePrediction("vid-001")]);
 
     const resp = await handleGenerate({
-      request: makeRequest({ prompt: "a sunset", n: 1, model: "z-video-fast", duration: 1 }),
+      request: makeRequest({
+        prompt: "a sunset",
+        n: 1,
+        model: "z-video-fast",
+        duration: 1,
+        attachedUrls: ["https://r2.example.com/uploads/video-ref.png"],
+      }),
       db,
       userId,
       replicateFn: mockReplicate,
@@ -196,6 +213,13 @@ describe("handleGenerate", () => {
     const body = (await resp.json()) as { predictionIds: string[]; async: boolean };
     expect(body.predictionIds).toEqual(["vid-001"]);
     expect(body.async).toBe(true);
+    expect(mockReplicate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: "z-video-fast",
+        duration: 1,
+        urls: ["https://r2.example.com/uploads/video-ref.png"],
+      }),
+    );
   });
 
   it("z-video-fast refunds on API failure", async () => {
