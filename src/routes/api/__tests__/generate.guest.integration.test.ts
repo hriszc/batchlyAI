@@ -60,7 +60,7 @@ describe("generate route guest path", () => {
   it("forwards attached urls to image turbo guest generation", async () => {
     mocks.mockReplicate.mockResolvedValue([{ id: "guest-pred-1", status: "processing" }]);
 
-    const post = (Route.options.server?.handlers as any).POST as (args: any) => Promise<Response>;
+    const post = (Route.options.server as any).handlers.POST as (args: any) => Promise<Response>;
     const resp = await post({
       request: makeRequest({
         prompt: "guest test",
