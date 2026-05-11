@@ -57,12 +57,12 @@ export function HomePage({ forceLanguage }: HomePageProps) {
       const coverUrl = state.results.find((r) => r.imageUrl)?.imageUrl || "";
       const resultUrls = state.results.filter((r) => r.imageUrl).map((r) => r.imageUrl!);
       const body = {
-        title: state.promptTemplate.slice(0, 80) || "Untitled",
         coverUrl,
         resultUrls,
         promptTemplate: state.promptTemplate,
         variableGroups: JSON.stringify(state.variableGroups),
         model: state.model,
+        aspectRatio: state.aspectRatio,
       };
       const resp = await fetch("/api/works", {
         method: "POST",
@@ -70,15 +70,24 @@ export function HomePage({ forceLanguage }: HomePageProps) {
         body: JSON.stringify(body),
       });
       if (resp.ok) {
+        const workData = (await resp.json()) as {
+          coverUrl?: string;
+          resultUrls?: string[];
+        };
+        const publicCoverUrl = workData.coverUrl || coverUrl;
+        const publicResultUrls = workData.resultUrls?.length ? workData.resultUrls : resultUrls;
         // Auto-save as template
         void fetch("/api/templates", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            name: body.title,
             promptTemplate: state.promptTemplate,
             variableGroups: JSON.stringify(state.variableGroups),
-            coverUrl,
+            model: state.model,
+            aspectRatio: state.aspectRatio,
+            previewImageUrl: publicCoverUrl,
+            coverUrl: publicCoverUrl,
+            resultUrls: publicResultUrls,
           }),
         }).catch(() => {});
         toast.success(t("savedSuccessfully"));
@@ -88,7 +97,15 @@ export function HomePage({ forceLanguage }: HomePageProps) {
     } finally {
       setPublishing(false);
     }
-  }, [publishing, state.promptTemplate, state.results, state.variableGroups, state.model, t]);
+  }, [
+    publishing,
+    state.promptTemplate,
+    state.results,
+    state.variableGroups,
+    state.model,
+    state.aspectRatio,
+    t,
+  ]);
   const { data: session, isPending: sessionLoading } = authClient.useSession();
   const sessionReady = hydrated && !sessionLoading;
   const visibleSession = sessionReady ? session : null;
