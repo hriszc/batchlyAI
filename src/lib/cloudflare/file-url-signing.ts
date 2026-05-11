@@ -30,10 +30,11 @@ async function hmacHex(input: string): Promise<string> {
 export async function createSignedFileUrl(pathname: string): Promise<string> {
   const expires = Math.floor(Date.now() / 1000) + FILE_URL_TTL_SECONDS;
   const sig = await hmacHex(`${pathname}.${expires}`);
-  const url = new URL(pathname, "https://batchlyai.com");
+  const base = (getRuntimeEnv()?.VITE_BASE_URL as string | undefined) || "https://batchlyai.com";
+  const url = new URL(pathname, base);
   url.searchParams.set("expires", String(expires));
   url.searchParams.set("sig", sig);
-  return `${url.pathname}?${url.searchParams.toString()}`;
+  return url.toString();
 }
 
 export async function hasValidSignedFileAccess(
