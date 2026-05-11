@@ -452,7 +452,10 @@ export const Route = createFileRoute("/api/generate")({
             aspectRatio: raw.aspectRatio || "1:1",
             n: 1,
             model: "z-image-fast",
-            urls: Array.isArray(raw.attachedUrls) && raw.attachedUrls.length ? raw.attachedUrls : undefined,
+            urls:
+              Array.isArray(raw.attachedUrls) && raw.attachedUrls.length
+                ? raw.attachedUrls
+                : undefined,
           });
 
           if (kv) {
