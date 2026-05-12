@@ -52,10 +52,14 @@ export function HomePage({ forceLanguage }: HomePageProps) {
 
   const handlePublish = useCallback(async () => {
     if (publishing || state.results.length === 0) return;
+    const coverUrl = state.results.find((r) => r.imageUrl)?.imageUrl;
+    const resultUrls = state.results.filter((r) => r.imageUrl).map((r) => r.imageUrl!);
+    if (!coverUrl || resultUrls.length === 0) {
+      toast.error(t("resultFailed"));
+      return;
+    }
     setPublishing(true);
     try {
-      const coverUrl = state.results.find((r) => r.imageUrl)?.imageUrl || "";
-      const resultUrls = state.results.filter((r) => r.imageUrl).map((r) => r.imageUrl!);
       const body = {
         coverUrl,
         resultUrls,

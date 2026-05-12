@@ -6,7 +6,8 @@ import { createTestDb, applyMigrations, seedUser } from "#test/db-setup";
 const mocks = vi.hoisted(() => {
   const mockGetSession = vi.fn();
   const mockPollReplicate = vi.fn();
-  return { mockGetSession, mockPollReplicate };
+  const mockMirrorImageToR2 = vi.fn((url: string) => Promise.resolve(url));
+  return { mockGetSession, mockPollReplicate, mockMirrorImageToR2 };
 });
 
 vi.mock("@/lib/auth/auth", () => ({
@@ -21,6 +22,10 @@ vi.mock("@/lib/rate-limit", () => ({
 
 vi.mock("@/lib/ai", () => ({
   pollReplicatePrediction: mocks.mockPollReplicate,
+}));
+
+vi.mock("@/lib/cloudflare/r2", () => ({
+  mirrorImageToR2: mocks.mockMirrorImageToR2,
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -321,6 +326,58 @@ describe("handleGenerateStatus", () => {
     expect(row).toBeDefined();
     const urls = JSON.parse(row!.resultUrls);
     expect(urls).toEqual(["https://replicate.delivery/test-output.png"]);
+  });
+
+  it("appends resultUrls when multiple async tasks finish for one generation", async () => {
+    const db = createTestDb();
+    applyMigrations(db);
+    seedUser(db, { id: "u1" });
+
+    const genId = "gen-test-append";
+    db.insert(generation)
+      .values({
+        id: genId,
+        userId: "u1",
+        promptTemplate: "test prompt",
+        resolvedPrompts: JSON.stringify(["test prompt"]),
+        variableGroups: JSON.stringify([]),
+        resultUrls: JSON.stringify([]),
+        model: "z-image-pro",
+        creditsUsed: 40,
+        createdAt: Math.floor(Date.now() / 1000),
+      })
+      .run();
+
+    const kvStore = new Map<string, string>();
+    kvStore.set("gen:grs-a", JSON.stringify({ generationId: genId, userId: "u1" }));
+    kvStore.set("gen:grs-b", JSON.stringify({ generationId: genId, userId: "u1" }));
+    kvStore.set(
+      "grs:grs-a",
+      JSON.stringify({ userId: "u1", status: "succeeded", urls: ["https://cdn/a.png"] }),
+    );
+    kvStore.set(
+      "grs:grs-b",
+      JSON.stringify({ userId: "u1", status: "succeeded", urls: ["https://cdn/b.png"] }),
+    );
+    const mockKv = {
+      get: vi.fn((key: string) => Promise.resolve(kvStore.get(key) ?? null)),
+      put: vi.fn(),
+    };
+
+    (globalThis as Record<string, unknown>).__env__ = {
+      batchlyai_kv: mockKv,
+      batchlyai_db: db,
+    };
+
+    const resp = await handleGenerateStatus(makeRequest("ids=grs-a,grs-b&type=grs"));
+    expect(resp.status).toBe(200);
+
+    const row = db
+      .select({ resultUrls: generation.resultUrls })
+      .from(generation)
+      .where(eq(generation.id, genId))
+      .get();
+    expect(JSON.parse(row!.resultUrls)).toEqual(["https://cdn/a.png", "https://cdn/b.png"]);
   });
 
   it("does not update generation when KV entry is missing", async () => {
