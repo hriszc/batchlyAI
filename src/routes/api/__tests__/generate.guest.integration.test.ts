@@ -57,7 +57,7 @@ describe("generate route guest path", () => {
     vi.restoreAllMocks();
   });
 
-  it("forwards attached urls to image turbo guest generation", async () => {
+  it("requires login before image turbo generation", async () => {
     mocks.mockReplicate.mockResolvedValue([{ id: "guest-pred-1", status: "processing" }]);
 
     const post = (Route.options.server as any).handlers.POST as (args: any) => Promise<Response>;
@@ -72,12 +72,9 @@ describe("generate route guest path", () => {
       context: {} as never,
     } as any);
 
-    expect(resp.status).toBe(200);
-    expect(mocks.mockReplicate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        model: "z-image-fast",
-        urls: ["https://r2.example.com/uploads/guest-ref.png"],
-      }),
-    );
+    await expect(resp.json()).resolves.toEqual({ error: "Please login to generate" });
+    expect(resp.status).toBe(401);
+    expect(mocks.mockReplicate).not.toHaveBeenCalled();
+    expect(mockKv.put).not.toHaveBeenCalled();
   });
 });
