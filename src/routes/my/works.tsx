@@ -54,9 +54,9 @@ function WorksPage() {
   if (!session?.user) {
     return (
       <main className="mx-auto max-w-[980px] px-4 py-16 text-center">
-        <p className="text-muted-foreground">Please log in to view your works.</p>
+        <p className="text-muted-foreground">{t("pleaseLoginToViewWorks")}</p>
         <Link to="/login" className="mt-2 inline-block text-accent-blue">
-          Login
+          {t("loginNav")}
         </Link>
       </main>
     );
@@ -75,7 +75,7 @@ function WorksPage() {
       {loading ? (
         <p className="text-muted-foreground">{t("loading")}</p>
       ) : works.length === 0 ? (
-        <p className="text-muted-foreground">No works yet. Publish from your generations.</p>
+        <p className="text-muted-foreground">{t("noWorksYet")}</p>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {works.map((w) => (
@@ -95,9 +95,11 @@ function WorksPage() {
                   <span className="rounded bg-muted/50 px-1.5 py-0.5">{w.category}</span>
                 )}
                 {!w.isPublished && (
-                  <span className="rounded bg-yellow-100 px-1.5 py-0.5 text-yellow-700">Draft</span>
+                  <span className="rounded bg-yellow-100 px-1.5 py-0.5 text-yellow-700">
+                    {t("draft")}
+                  </span>
                 )}
-                <span>{w.likeCount} likes</span>
+                <span>{t("likesCount", { count: w.likeCount })}</span>
               </div>
             </a>
           ))}

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { blogPosts } from "@/content/blog";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export const Route = createFileRoute("/blog/")({
   head: () => ({
@@ -16,12 +17,11 @@ export const Route = createFileRoute("/blog/")({
 });
 
 function BlogIndexPage() {
+  const { t } = useLanguage();
   return (
     <main className="mx-auto max-w-[720px] px-4 py-8">
-      <h1 className="text-2xl font-semibold">BatchlyAI Blog</h1>
-      <p className="mt-1 text-muted-foreground">
-        Tips, guides, and best practices for AI batch generation
-      </p>
+      <h1 className="text-2xl font-semibold">{t("blogTitle")}</h1>
+      <p className="mt-1 text-muted-foreground">{t("blogDescription")}</p>
 
       <div className="mt-8 space-y-6">
         {blogPosts.map((post) => (

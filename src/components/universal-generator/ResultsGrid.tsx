@@ -41,19 +41,20 @@ function filterBest(results: GeneratedResult[]): GeneratedResult[] {
 function getResultStatusText(
   results: GeneratedResult[],
   isGenerating: boolean,
+  t: ReturnType<typeof useLanguage>["t"],
   totalExpected?: number,
 ) {
   if (isGenerating) {
-    return totalExpected ? `Generating ${totalExpected} outputs...` : "Generating outputs...";
+    return totalExpected ? t("generatingCount", { count: totalExpected }) : t("generatingOutputs");
   }
   const complete = results.filter((r) => r.status === "complete").length;
   const pending = results.filter((r) => r.status === "pending" || r.status === "generating").length;
   const failed = results.filter((r) => r.status === "error").length;
   const parts = [];
-  if (complete > 0) parts.push(`${complete} ready`);
-  if (pending > 0) parts.push(`${pending} working`);
-  if (failed > 0) parts.push(`${failed} failed`);
-  return parts.length > 0 ? parts.join(" · ") : "No results yet";
+  if (complete > 0) parts.push(t("readyCount", { count: complete }));
+  if (pending > 0) parts.push(t("workingCount", { count: pending }));
+  if (failed > 0) parts.push(t("failedCount", { count: failed }));
+  return parts.length > 0 ? parts.join(" · ") : t("noResultsYet");
 }
 
 export function ResultsGrid({
@@ -135,7 +136,7 @@ export function ResultsGrid({
                 type="button"
                 onClick={onShare}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-lg border bg-muted/30 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                title="Share Results"
+                title={t("shareResultsAction")}
               >
                 <Share2Icon className="size-4" />
               </button>
@@ -156,7 +157,7 @@ export function ResultsGrid({
                 onClick={handleDownloadAll}
                 disabled={downloading}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-lg border bg-muted/30 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
-                title="Download All"
+                title={t("downloadAll")}
               >
                 <DownloadIcon className="size-4" />
               </button>
@@ -166,7 +167,7 @@ export function ResultsGrid({
       </div>
 
       <p className="mb-4 text-center text-sm text-muted-foreground">
-        {getResultStatusText(results, isGenerating, totalExpected)}
+        {getResultStatusText(results, isGenerating, t, totalExpected)}
       </p>
 
       {showActions && (
@@ -176,7 +177,9 @@ export function ResultsGrid({
             onClick={() => setShowAll(!showAll)}
             className="inline-flex items-center rounded-full border bg-muted/30 px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
-            {showAll ? `Show all (${results.length})` : `Best (${filterBest(results).length})`}
+            {showAll
+              ? t("showAllResults", { count: results.length })
+              : t("bestResults", { count: filterBest(results).length })}
           </button>
         </div>
       )}

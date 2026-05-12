@@ -79,9 +79,9 @@ function WorkDetailPage() {
   if (!data) {
     return (
       <main className="mx-auto max-w-[980px] px-4 py-16 text-center">
-        <p className="text-muted-foreground">Work not found</p>
+        <p className="text-muted-foreground">{t("workNotFound")}</p>
         <a href="/discover" className="mt-2 inline-block text-accent-blue">
-          Discover more
+          {t("discoverMore")}
         </a>
       </main>
     );
@@ -145,30 +145,30 @@ function WorkDetailPage() {
         <button
           onClick={() => {
             navigator.clipboard.writeText(data.promptTemplate);
-            toast.success("Copied!");
+            toast.success(t("copied"));
           }}
           className="inline-flex items-center gap-1.5 rounded-lg bg-muted/30 px-3 py-2 text-sm text-muted-foreground"
         >
-          <CopyIcon className="size-4" /> Copy prompt
+          <CopyIcon className="size-4" /> {t("copyPrompt")}
         </button>
       </div>
 
       <details className="mt-4">
         <summary className="cursor-pointer text-sm text-muted-foreground">
-          View prompt template
+          {t("viewPromptTemplate")}
         </summary>
         <pre className="mt-2 rounded-lg bg-muted/20 p-3 text-xs whitespace-pre-wrap">
           {data.promptTemplate}
         </pre>
       </details>
 
-      <h2 className="mt-8 mb-4 text-lg font-semibold">Results</h2>
+      <h2 className="mt-8 mb-4 text-lg font-semibold">{t("results")}</h2>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
         {resultUrls.map((url, i) => (
           <img
             key={i}
             src={url}
-            alt={`Result ${i + 1}`}
+            alt={t("resultAlt", { index: i + 1 })}
             className="aspect-square rounded-lg object-cover"
           />
         ))}

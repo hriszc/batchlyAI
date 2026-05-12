@@ -1,6 +1,7 @@
 import { useReducer, useCallback, useRef, useEffect } from "react";
 
 import { authClient } from "@/lib/auth/auth-client";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 import { MODELS } from "./models";
 import { unifiedPoll } from "./poll";
@@ -24,6 +25,7 @@ export function useGeneratorState() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const stateRef = useRef(state);
   const guestTokenRef = useRef<string | null>(null);
+  const { t } = useLanguage();
   const { data: session } = authClient.useSession();
   const isLoggedIn = !!session?.user?.id;
   useEffect(() => {
@@ -104,7 +106,7 @@ export function useGeneratorState() {
     if (combinations.length > 500) {
       dispatch({
         type: "SET_ERROR",
-        payload: "Too many combinations (max 500). Remove some variable values.",
+        payload: t("tooManyCombinationsDetailed"),
       });
       return;
     }
@@ -152,12 +154,15 @@ export function useGeneratorState() {
             };
 
             if (resp.status === 401) {
-              globalError = "Please login to generate";
+              globalError = t("loginRequiredToGenerate");
               return [];
             }
 
             if (resp.status === 402) {
-              globalError = `Insufficient credits: need ${json.required}, have ${json.available}`;
+              globalError = t("insufficientCreditsDetailed", {
+                required: json.required ?? 0,
+                available: json.available ?? 0,
+              });
               creditsRemaining = json.available ?? null;
               return [];
             }
@@ -325,46 +330,49 @@ export function useGeneratorState() {
           dispatch({ type: "SET_ERROR", payload: String(err) });
         });
     }
-  }, [getGuestToken, isLoggedIn]);
+  }, [getGuestToken, isLoggedIn, t]);
 
   const setError = useCallback((value: string | null) => {
     dispatch({ type: "SET_ERROR", payload: value });
   }, []);
 
-  const uploadFile = useCallback(async (file: File) => {
-    const id = `attach_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    dispatch({ type: "ADD_ATTACHMENT", payload: { id, name: file.name, uploading: true } });
+  const uploadFile = useCallback(
+    async (file: File) => {
+      const id = `attach_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      dispatch({ type: "ADD_ATTACHMENT", payload: { id, name: file.name, uploading: true } });
 
-    try {
-      const resp = await fetch("/api/upload-url", {
-        method: "POST",
-        body: file,
-        headers: {
-          "X-File-Name": encodeURIComponent(file.name),
-          "Content-Type": file.type || "application/octet-stream",
-        },
-      });
+      try {
+        const resp = await fetch("/api/upload-url", {
+          method: "POST",
+          body: file,
+          headers: {
+            "X-File-Name": encodeURIComponent(file.name),
+            "Content-Type": file.type || "application/octet-stream",
+          },
+        });
 
-      if (resp.status === 401) {
-        dispatch({ type: "SET_ERROR", payload: "Please login to upload files" });
+        if (resp.status === 401) {
+          dispatch({ type: "SET_ERROR", payload: t("loginRequiredToUpload") });
+          dispatch({ type: "REMOVE_ATTACHMENT", payload: id });
+          return;
+        }
+
+        if (!resp.ok) {
+          const errBody = (await resp.json().catch(() => ({}))) as { error?: string };
+          dispatch({ type: "SET_ERROR", payload: errBody.error || t("uploadFailed") });
+          dispatch({ type: "REMOVE_ATTACHMENT", payload: id });
+          return;
+        }
+
+        const { publicUrl, key } = (await resp.json()) as { publicUrl: string; key: string };
+        dispatch({ type: "UPDATE_ATTACHMENT", payload: { id, url: publicUrl, key } });
+      } catch {
+        dispatch({ type: "SET_ERROR", payload: t("uploadFailed") });
         dispatch({ type: "REMOVE_ATTACHMENT", payload: id });
-        return;
       }
-
-      if (!resp.ok) {
-        const errBody = (await resp.json().catch(() => ({}))) as { error?: string };
-        dispatch({ type: "SET_ERROR", payload: errBody.error || "Upload failed" });
-        dispatch({ type: "REMOVE_ATTACHMENT", payload: id });
-        return;
-      }
-
-      const { publicUrl, key } = (await resp.json()) as { publicUrl: string; key: string };
-      dispatch({ type: "UPDATE_ATTACHMENT", payload: { id, url: publicUrl, key } });
-    } catch {
-      dispatch({ type: "SET_ERROR", payload: "Upload failed" });
-      dispatch({ type: "REMOVE_ATTACHMENT", payload: id });
-    }
-  }, []);
+    },
+    [t],
+  );
 
   const removeAttachment = useCallback((id: string) => {
     dispatch({ type: "REMOVE_ATTACHMENT", payload: id });
