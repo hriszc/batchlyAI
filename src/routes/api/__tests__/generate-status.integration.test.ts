@@ -42,6 +42,20 @@ function makeRequest(params: string): Request {
   } as unknown as Request;
 }
 
+function makeRequestWithWaitUntil(params: string) {
+  const deferred: Promise<unknown>[] = [];
+  return {
+    request: {
+      url: `https://batchlyai.com/api/generate-status?${params}`,
+      headers: new Headers({ "CF-Connecting-IP": "1.2.3.4" }),
+      waitUntil: (promise: Promise<unknown>) => {
+        deferred.push(promise);
+      },
+    } as unknown as Request,
+    waitForDeferred: () => Promise.all(deferred),
+  };
+}
+
 describe("handleGenerateStatus", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -369,8 +383,10 @@ describe("handleGenerateStatus", () => {
       batchlyai_db: db,
     };
 
-    const resp = await handleGenerateStatus(makeRequest("ids=grs-a,grs-b&type=grs"));
+    const { request, waitForDeferred } = makeRequestWithWaitUntil("ids=grs-a,grs-b&type=grs");
+    const resp = await handleGenerateStatus(request);
     expect(resp.status).toBe(200);
+    await waitForDeferred();
 
     const row = db
       .select({ resultUrls: generation.resultUrls })
