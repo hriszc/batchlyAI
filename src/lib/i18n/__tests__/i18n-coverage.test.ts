@@ -25,6 +25,10 @@ const sourceFilesWithUserFacingCopy = [
   "src/routes/blog/$slug.tsx",
 ];
 
+const sourceFilesWithRuntimeUserFacingCopy = [
+  "src/components/universal-generator/useGeneratorState.ts",
+];
+
 const allowedHardcodedCopy = [
   "BatchlyAI",
   "BatchlyAI Blog",
@@ -163,5 +167,26 @@ describe("i18n 100% coverage", () => {
     }
 
     expect(offenders, `Hardcoded English UI copy: ${offenders.join("\n")}`).toEqual([]);
+  });
+
+  it("runtime user-facing errors do not introduce hardcoded English copy", () => {
+    const offenders: string[] = [];
+    const runtimeErrorPatterns = [
+      /SET_ERROR["\s,}:[\s\S]{0,120}?payload:\s*(["'`])([^"'`\n]*[A-Za-z][^"'`\n]*)\1/g,
+      /globalError\s*=\s*(["'`])([^"'`\n]*[A-Za-z][^"'`\n]*)\1/g,
+    ];
+
+    for (const file of sourceFilesWithRuntimeUserFacingCopy) {
+      const source = readFileSync(join(process.cwd(), file), "utf8");
+      for (const pattern of runtimeErrorPatterns) {
+        for (const match of source.matchAll(pattern)) {
+          const text = match[2].trim();
+          if (!text || allowedHardcodedCopy.some((allowed) => text.includes(allowed))) continue;
+          offenders.push(`${file}: runtime error "${text}"`);
+        }
+      }
+    }
+
+    expect(offenders, `Hardcoded English runtime copy: ${offenders.join("\n")}`).toEqual([]);
   });
 });

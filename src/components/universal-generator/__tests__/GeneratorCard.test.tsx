@@ -273,6 +273,17 @@ describe("GeneratorCard", () => {
     expect(screen.getByText("Buy 1000 Credits for $10")).toBeInTheDocument();
   });
 
+  it("shows Buy Credits button when localized error is insufficient credits", () => {
+    const creditErrorState: GeneratorState = {
+      ...baseState,
+      error: "积分不足：需要 20，当前只有 5",
+    };
+    renderWithProviders(<GeneratorCard state={creditErrorState} actions={mockActions} />, {
+      language: "zh",
+    });
+    expect(screen.getByText("购买 1000 积分 $10")).toBeInTheDocument();
+  });
+
   it("does not show Buy Credits button for other errors", () => {
     const otherErrorState: GeneratorState = {
       ...baseState,

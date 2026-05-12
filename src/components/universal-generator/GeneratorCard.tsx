@@ -59,6 +59,7 @@ export function GeneratorCard({
   const [buyLoading, setBuyLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useLanguage();
+  const insufficientCreditsMessage = t("insufficientCreditsTitle");
 
   const expand = useExpandVariables(state.promptTemplate, actions.setPromptTemplate);
 
@@ -201,7 +202,8 @@ export function GeneratorCard({
         <div className="px-4 pb-2">
           <div className="flex flex-wrap items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
             <span className="flex-1">{state.error}</span>
-            {state.error.includes("Insufficient credits") && (
+            {(state.error.includes("Insufficient credits") ||
+              state.error.includes(insufficientCreditsMessage)) && (
               <button
                 type="button"
                 onClick={handleBuyCredits}
