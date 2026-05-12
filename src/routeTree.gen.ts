@@ -16,6 +16,7 @@ import { Route as TemplatesIndexRouteImport } from './routes/templates/index'
 import { Route as CnIndexRouteImport } from './routes/cn/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as WorksWorkIdRouteImport } from './routes/works/$workId'
+import { Route as ToolsSlugRouteImport } from './routes/tools/$slug'
 import { Route as TemplatesSlugRouteImport } from './routes/templates/$slug'
 import { Route as RobotsTxtRouteImport } from './routes/robots.txt'
 import { Route as RCodeRouteImport } from './routes/r/$code'
@@ -85,6 +86,11 @@ const BlogIndexRoute = BlogIndexRouteImport.update({
 const WorksWorkIdRoute = WorksWorkIdRouteImport.update({
   id: '/works/$workId',
   path: '/works/$workId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ToolsSlugRoute = ToolsSlugRouteImport.update({
+  id: '/tools/$slug',
+  path: '/tools/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TemplatesSlugRoute = TemplatesSlugRouteImport.update({
@@ -294,6 +300,7 @@ export interface FileRoutesByFullPath {
   '/r/$code': typeof RCodeRoute
   '/robots/txt': typeof RobotsTxtRoute
   '/templates/$slug': typeof TemplatesSlugRoute
+  '/tools/$slug': typeof ToolsSlugRoute
   '/works/$workId': typeof WorksWorkIdRoute
   '/blog/': typeof BlogIndexRoute
   '/cn/': typeof CnIndexRoute
@@ -338,6 +345,7 @@ export interface FileRoutesByTo {
   '/r/$code': typeof RCodeRoute
   '/robots/txt': typeof RobotsTxtRoute
   '/templates/$slug': typeof TemplatesSlugRoute
+  '/tools/$slug': typeof ToolsSlugRoute
   '/works/$workId': typeof WorksWorkIdRoute
   '/blog': typeof BlogIndexRoute
   '/cn': typeof CnIndexRoute
@@ -384,6 +392,7 @@ export interface FileRoutesById {
   '/r/$code': typeof RCodeRoute
   '/robots/txt': typeof RobotsTxtRoute
   '/templates/$slug': typeof TemplatesSlugRoute
+  '/tools/$slug': typeof ToolsSlugRoute
   '/works/$workId': typeof WorksWorkIdRoute
   '/blog/': typeof BlogIndexRoute
   '/cn/': typeof CnIndexRoute
@@ -430,6 +439,7 @@ export interface FileRouteTypes {
     | '/r/$code'
     | '/robots/txt'
     | '/templates/$slug'
+    | '/tools/$slug'
     | '/works/$workId'
     | '/blog/'
     | '/cn/'
@@ -474,6 +484,7 @@ export interface FileRouteTypes {
     | '/r/$code'
     | '/robots/txt'
     | '/templates/$slug'
+    | '/tools/$slug'
     | '/works/$workId'
     | '/blog'
     | '/cn'
@@ -519,6 +530,7 @@ export interface FileRouteTypes {
     | '/r/$code'
     | '/robots/txt'
     | '/templates/$slug'
+    | '/tools/$slug'
     | '/works/$workId'
     | '/blog/'
     | '/cn/'
@@ -561,6 +573,7 @@ export interface RootRouteChildren {
   RCodeRoute: typeof RCodeRoute
   RobotsTxtRoute: typeof RobotsTxtRoute
   TemplatesSlugRoute: typeof TemplatesSlugRoute
+  ToolsSlugRoute: typeof ToolsSlugRoute
   WorksWorkIdRoute: typeof WorksWorkIdRoute
   BlogIndexRoute: typeof BlogIndexRoute
   CnIndexRoute: typeof CnIndexRoute
@@ -626,6 +639,13 @@ declare module '@tanstack/react-router' {
       path: '/works/$workId'
       fullPath: '/works/$workId'
       preLoaderRoute: typeof WorksWorkIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tools/$slug': {
+      id: '/tools/$slug'
+      path: '/tools/$slug'
+      fullPath: '/tools/$slug'
+      preLoaderRoute: typeof ToolsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/templates/$slug': {
@@ -950,6 +970,7 @@ const rootRouteChildren: RootRouteChildren = {
   RCodeRoute: RCodeRoute,
   RobotsTxtRoute: RobotsTxtRoute,
   TemplatesSlugRoute: TemplatesSlugRoute,
+  ToolsSlugRoute: ToolsSlugRoute,
   WorksWorkIdRoute: WorksWorkIdRoute,
   BlogIndexRoute: BlogIndexRoute,
   CnIndexRoute: CnIndexRoute,

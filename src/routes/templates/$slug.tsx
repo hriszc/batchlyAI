@@ -5,7 +5,30 @@ import { ArrowRightIcon } from "lucide-react";
 
 import { getD1Binding } from "@/lib/cloudflare/bindings";
 import * as schema from "@/lib/db/schema";
+import { seoLandingPages } from "@/lib/seo/landing-pages";
+import { mediaLabel, mediaTypeFromModel } from "@/lib/seo/media";
 import { createPageMeta } from "@/lib/seo/meta";
+import { templateHowToLd } from "@/lib/seo/structured-data";
+
+interface TemplateLoaderData {
+  id: string;
+  userId: string;
+  slug: string;
+  name: string;
+  description: string;
+  category: string;
+  promptTemplate: string;
+  variableGroups: Array<{
+    name?: string;
+    values: string[];
+  }>;
+  model: string;
+  aspectRatio: string;
+  previewImageUrl: string | null;
+  isPublic: boolean;
+  usageCount: number;
+  createdAt: number;
+}
 
 export const Route = createFileRoute("/templates/$slug")({
   loader: async ({ params }) => {
@@ -23,39 +46,42 @@ export const Route = createFileRoute("/templates/$slug")({
       }>,
     };
   },
-  head: ({ loaderData }) => ({
-    ...createPageMeta({
-      title: loaderData ? `${loaderData.name} — BatchlyAI Templates` : "Template — BatchlyAI",
-      description: loaderData?.description || "AI prompt template",
+  head: ({ loaderData }) => {
+    const mediaType = mediaTypeFromModel(loaderData?.model);
+    const label = mediaLabel(mediaType);
+    const seo = createPageMeta({
+      title: loaderData
+        ? `${loaderData.name} — AI ${label} prompt template`
+        : "AI prompt template — BatchlyAI",
+      description:
+        loaderData?.description ||
+        "Reusable AI image and video prompt template for batch generation",
       path: loaderData ? `/templates/${loaderData.slug}` : "/templates",
       locale: "en",
       ogImage: loaderData?.previewImageUrl || undefined,
       ogType: "article",
       jsonLd: loaderData
-        ? {
-            "@context": "https://schema.org",
-            "@type": "HowTo",
+        ? templateHowToLd({
             name: loaderData.name,
             description: loaderData.description,
-            step: [
-              { "@type": "HowToStep", text: "Open the template in BatchlyAI" },
-              {
-                "@type": "HowToStep",
-                text: `Generate images using the prompt: ${loaderData.promptTemplate}`,
-              },
-            ],
-          }
+            promptTemplate: loaderData.promptTemplate,
+            mediaType,
+          })
         : undefined,
-    }),
-    links: loaderData
-      ? [{ rel: "canonical", href: `https://batchlyai.com/templates/${loaderData.slug}` }]
-      : [{ rel: "canonical", href: "https://batchlyai.com/templates" }],
-  }),
+    });
+
+    return {
+      ...seo,
+      links: loaderData
+        ? [{ rel: "canonical", href: `https://batchlyai.com/templates/${loaderData.slug}` }]
+        : [{ rel: "canonical", href: "https://batchlyai.com/templates" }],
+    };
+  },
   component: TemplateDetailPage,
 });
 
 function TemplateDetailPage() {
-  const data = Route.useLoaderData();
+  const data = Route.useLoaderData() as TemplateLoaderData | null;
   const navigate = useNavigate();
 
   if (!data) {
@@ -78,12 +104,19 @@ function TemplateDetailPage() {
       search: { template: data.slug } as Record<string, string>,
     });
   };
+  const mediaType = mediaTypeFromModel(data.model);
+  const label = mediaLabel(mediaType);
+  const relatedTools = seoLandingPages
+    .filter((page) => page.mediaType === "both" || page.mediaType === mediaType)
+    .slice(0, 3);
 
   return (
     <main className="mx-auto max-w-[980px] px-4 py-8">
       <div className="flex flex-col gap-6 lg:flex-row">
         <div className="flex-1">
-          <span className="text-xs font-medium text-accent-blue">{data.category}</span>
+          <span className="text-xs font-medium text-accent-blue">
+            AI {label} template · {data.category}
+          </span>
           <h1 className="mt-1 text-2xl font-semibold">{data.name}</h1>
           <p className="mt-2 text-muted-foreground">{data.description}</p>
 
@@ -121,12 +154,31 @@ function TemplateDetailPage() {
             Use in Generator
             <ArrowRightIcon className="size-4" />
           </button>
+
+          <div className="mt-8 border-t pt-6">
+            <h3 className="text-sm font-medium">Related AI generation tools</h3>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {relatedTools.map((tool) => (
+                <a
+                  key={tool.slug}
+                  href={`/tools/${tool.slug}`}
+                  className="rounded-full bg-muted px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted/80 hover:text-foreground"
+                >
+                  {tool.h1}
+                </a>
+              ))}
+            </div>
+          </div>
         </div>
 
         {data.previewImageUrl && (
           <div className="lg:w-80">
             <div className="overflow-hidden rounded-lg border bg-card">
-              <img src={data.previewImageUrl} alt={data.name} className="w-full object-cover" />
+              <img
+                src={data.previewImageUrl}
+                alt={`AI ${label} prompt template preview for ${data.name}`}
+                className="w-full object-cover"
+              />
             </div>
           </div>
         )}

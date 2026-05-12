@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { hreflangLinks } from "@/lib/seo/hreflang";
+import { seoLandingPages } from "@/lib/seo/landing-pages";
+import { mediaTypeFromModel } from "@/lib/seo/media";
 import { createPageMeta } from "@/lib/seo/meta";
+import { templateHowToLd } from "@/lib/seo/structured-data";
 
 describe("hreflangLinks", () => {
   it("generates en + zh-CN + x-default links for root", () => {
@@ -58,5 +61,34 @@ describe("createPageMeta", () => {
     });
     expect(meta.scripts).toHaveLength(1);
     expect(meta.scripts[0].type).toBe("application/ld+json");
+  });
+});
+
+describe("mediaTypeFromModel", () => {
+  it("classifies image, video, text, and missing models", () => {
+    expect(mediaTypeFromModel("z-video-fast")).toBe("video");
+    expect(mediaTypeFromModel("z-text-pro")).toBe("text");
+    expect(mediaTypeFromModel("z-image-pro")).toBe("image");
+    expect(mediaTypeFromModel(null)).toBe("image");
+  });
+});
+
+describe("seoLandingPages", () => {
+  it("provides indexable image and video entry points", () => {
+    expect(seoLandingPages.some((page) => page.slug === "ai-product-visual-generator")).toBe(true);
+    expect(seoLandingPages.every((page) => page.title.includes("BatchlyAI"))).toBe(true);
+    expect(seoLandingPages.every((page) => page.mediaType === "both")).toBe(true);
+  });
+});
+
+describe("templateHowToLd", () => {
+  it("describes video templates as video generation workflows", () => {
+    const ld = templateHowToLd({
+      name: "Product video",
+      description: "Create product video variants",
+      promptTemplate: "Create {{style}} product video",
+      mediaType: "video",
+    });
+    expect(JSON.stringify(ld)).toContain("batch AI videos");
   });
 });

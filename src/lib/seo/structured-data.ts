@@ -15,7 +15,7 @@ export function softwareAppLd(): Record<string, unknown> {
     applicationCategory: "MultimediaApplication",
     operatingSystem: "Web",
     description:
-      "Universal AI Generator — batch generate all combinations from multi-variable prompts",
+      "Batch AI image and video generator for prompt variations, reusable templates, and creative workflows.",
     offers: {
       "@type": "Offer",
       price: "0",
@@ -68,5 +68,33 @@ export function creativeWorkLd(input: {
     image: input.image,
     author: { "@type": "Person", name: input.authorName },
     datePublished: input.datePublished,
+  };
+}
+
+export function templateHowToLd(input: {
+  name: string;
+  description: string;
+  promptTemplate: string;
+  mediaType: "image" | "video" | "text";
+}): Record<string, unknown> {
+  const mediaLabel =
+    input.mediaType === "video" ? "videos" : input.mediaType === "text" ? "text" : "images";
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    name: input.name,
+    description: input.description,
+    step: [
+      { "@type": "HowToStep", text: "Open the reusable prompt template in BatchlyAI." },
+      {
+        "@type": "HowToStep",
+        text: `Review the variables in this prompt: ${input.promptTemplate}`,
+      },
+      {
+        "@type": "HowToStep",
+        text: `Generate batch AI ${mediaLabel} from every prompt variation in one run.`,
+      },
+    ],
   };
 }

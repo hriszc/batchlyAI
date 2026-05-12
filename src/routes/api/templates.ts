@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { desc, eq, like, or, sql } from "drizzle-orm";
+import { and, desc, eq, like, or, sql, type SQL } from "drizzle-orm";
 
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
@@ -23,49 +23,50 @@ export async function handleGetTemplates(request: Request): Promise<Response> {
 
   const url = new URL(request.url);
   const category = url.searchParams.get("category") || "";
+  const mediaType = url.searchParams.get("mediaType") || "";
   const search = url.searchParams.get("search") || "";
   const limit = Math.min(parseInt(url.searchParams.get("limit") || "20"), 50);
   const offset = parseInt(url.searchParams.get("offset") || "0");
 
-  let query = db.select().from(templateTable).where(eq(templateTable.isPublic, true)).$dynamic();
+  const conditions: SQL[] = [eq(templateTable.isPublic, true)];
 
   if (category) {
-    query = query.where(eq(templateTable.category, category));
+    conditions.push(eq(templateTable.category, category));
+  }
+
+  if (mediaType === "image") {
+    conditions.push(like(templateTable.model, "z-image%"));
+  } else if (mediaType === "video") {
+    conditions.push(like(templateTable.model, "z-video%"));
+  } else if (mediaType === "text") {
+    conditions.push(like(templateTable.model, "z-text%"));
   }
 
   if (search) {
-    query = query.where(
-      or(like(templateTable.name, `%${search}%`), like(templateTable.description, `%${search}%`)),
+    conditions.push(
+      or(like(templateTable.name, `%${search}%`), like(templateTable.description, `%${search}%`))!,
     );
   }
 
-  const rows = await query
+  const rows = await db
+    .select()
+    .from(templateTable)
+    .where(and(...conditions))
     .orderBy(desc(templateTable.usageCount), desc(templateTable.createdAt))
     .limit(limit)
     .offset(offset);
 
-  let countQuery = db
+  const [{ total } = { total: 0 }] = await db
     .select({ total: sql<number>`COUNT(*)`.mapWith(Number) })
     .from(templateTable)
-    .where(eq(templateTable.isPublic, true))
-    .$dynamic();
-
-  if (category) {
-    countQuery = countQuery.where(eq(templateTable.category, category));
-  }
-  if (search) {
-    countQuery = countQuery.where(
-      or(like(templateTable.name, `%${search}%`), like(templateTable.description, `%${search}%`)),
-    );
-  }
-  const [countResult] = await countQuery;
+    .where(and(...conditions));
 
   const parsed = rows.map((r) => ({
     ...r,
     variableGroups: JSON.parse(r.variableGroups),
   }));
 
-  return jsonResponse({ templates: parsed, total: countResult?.total ?? 0 }, 200);
+  return jsonResponse({ templates: parsed, total }, 200);
 }
 
 export async function handlePostTemplate(request: Request): Promise<Response> {
