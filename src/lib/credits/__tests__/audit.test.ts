@@ -1,10 +1,10 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it, beforeEach } from "vitest";
 
-import { creditAuditEvent } from "@/lib/db/schema";
-import type { getDb } from "@/lib/db";
-
 import { applyMigrations, createTestDb, seedUser } from "#test/db-setup";
+import type { getDb } from "@/lib/db";
+import { creditAuditEvent } from "@/lib/db/schema";
+
 import {
   getCreditBalanceBreakdown,
   getDailyAiUsage,
