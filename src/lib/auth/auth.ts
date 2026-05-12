@@ -6,6 +6,7 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { env } from "@/env/server";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { getD1Binding } from "@/lib/cloudflare/bindings";
+import { SIGNUP_FREE_CREDITS } from "@/lib/credits/constants";
 import { getDb } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
 import { sendEmail } from "@/lib/email";
@@ -44,7 +45,7 @@ export function createAuth(d1Binding?: D1Database) {
         additionalFields: {
           credits: {
             type: "number",
-            defaultValue: 40,
+            defaultValue: SIGNUP_FREE_CREDITS,
           },
         },
       },

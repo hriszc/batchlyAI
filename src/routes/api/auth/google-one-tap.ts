@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
+import { recordCreditGrant } from "@/lib/credits/audit";
+import { SIGNUP_FREE_CREDITS } from "@/lib/credits/constants";
 import { getDb } from "@/lib/db";
 import { user as userTable, account as accountTable } from "@/lib/db/schema/auth.schema";
 
@@ -85,6 +87,7 @@ export const Route = createFileRoute("/api/auth/google-one-tap")({
         });
 
         let userId: string;
+        let createdUser = false;
 
         if (existingAccount) {
           userId = existingAccount.userId;
@@ -105,12 +108,14 @@ export const Route = createFileRoute("/api/auth/google-one-tap")({
             });
           } else {
             userId = generateId();
+            createdUser = true;
             await db.insert(userTable).values({
               id: userId,
               name: token.name,
               email: token.email,
               emailVerified: token.email_verified === "true",
               image: token.picture,
+              credits: SIGNUP_FREE_CREDITS,
               createdAt: new Date(),
               updatedAt: new Date(),
             });
@@ -123,6 +128,18 @@ export const Route = createFileRoute("/api/auth/google-one-tap")({
               updatedAt: new Date(),
             });
           }
+        }
+
+        if (createdUser) {
+          await recordCreditGrant({
+            db,
+            userId,
+            credits: SIGNUP_FREE_CREDITS,
+            creditType: "free",
+            source: "signup_free",
+            sourceId: userId,
+            metadata: { method: "google-one-tap" },
+          }).catch((err) => console.error("[credit-audit] google signup grant error:", err));
         }
 
         const session = await auth.api.createSession({

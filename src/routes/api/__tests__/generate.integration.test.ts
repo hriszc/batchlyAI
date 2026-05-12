@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { user as userTable } from "@/lib/db/schema/auth.schema";
+import { creditAuditEvent } from "@/lib/db/schema/credit-audit.schema";
 import { generation, savedPrompt } from "@/lib/db/schema/data-flywheel.schema";
 
 import { createTestDb, applyMigrations, seedUser } from "../../../../tests/db-setup";
@@ -134,6 +135,33 @@ describe("handleGenerate", () => {
       expect.objectContaining({
         model: "z-image-fast",
         urls: ["https://r2.example.com/uploads/ref.png"],
+      }),
+    );
+  });
+
+  it("records AI credit spend audit event", async () => {
+    const mockReplicate = vi.fn().mockResolvedValue([makePrediction("audit-pred-001")]);
+
+    const resp = await handleGenerate({
+      request: makeRequest({ prompt: "audit test", n: 1, model: "z-image-fast" }),
+      db,
+      userId,
+      replicateFn: mockReplicate,
+    } as any);
+
+    expect(resp.status).toBe(200);
+    const [event] = await db
+      .select()
+      .from(creditAuditEvent)
+      .where(eq(creditAuditEvent.eventType, "spend"));
+    expect(event).toEqual(
+      expect.objectContaining({
+        userId,
+        source: "ai_api",
+        provider: "replicate",
+        model: "z-image-fast",
+        apiCallCount: 1,
+        creditsDelta: -10,
       }),
     );
   });
