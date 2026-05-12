@@ -1,6 +1,7 @@
 import { and, eq, gte, sql } from "drizzle-orm";
 
 import { getD1Binding, getKvBinding } from "@/lib/cloudflare/bindings";
+import { recordCreditGrant } from "@/lib/credits/audit";
 import { getDb } from "@/lib/db";
 import { referral as referralTable, referralCode, user as userTable } from "@/lib/db/schema";
 
@@ -137,11 +138,29 @@ export async function processReferralAfterSignup(
     .update(userTable)
     .set({ credits: sql`${userTable.credits} + ${REFERRER_CREDITS}` })
     .where(eq(userTable.id, referrerId));
+  await recordCreditGrant({
+    db,
+    userId: referrerId,
+    credits: REFERRER_CREDITS,
+    creditType: "free",
+    source: "referral_free",
+    sourceId: refId,
+    metadata: { role: "referrer", refereeId: userId },
+  }).catch((err) => console.error("[credit-audit] referrer grant error:", err));
 
   await db
     .update(userTable)
     .set({ credits: sql`${userTable.credits} + ${REFEREE_CREDITS}` })
     .where(eq(userTable.id, userId));
+  await recordCreditGrant({
+    db,
+    userId,
+    credits: REFEREE_CREDITS,
+    creditType: "free",
+    source: "referral_free",
+    sourceId: refId,
+    metadata: { role: "referee", referrerId },
+  }).catch((err) => console.error("[credit-audit] referee grant error:", err));
 
   // TODO: re-enable tier tracking after migration 0003 is applied
   // const [referrerRecord] = await db

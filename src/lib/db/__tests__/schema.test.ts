@@ -6,4 +6,5 @@ describe("DB schema", () => {
   it("exports credit_purchase table", () => expect(schema.creditPurchase).toBeDefined());
   it("exports shared_batch table", () => expect(schema.sharedBatch).toBeDefined());
   it("exports generation table", () => expect(schema.generation).toBeDefined());
+  it("exports credit_audit_event table", () => expect(schema.creditAuditEvent).toBeDefined());
 });

@@ -3,6 +3,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { env } from "@/env/server";
 import { jsonResponse, verifyOrigin } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
+import { getD1Binding } from "@/lib/cloudflare/bindings";
+import { recordCreditGrant } from "@/lib/credits/audit";
+import { SIGNUP_FREE_CREDITS } from "@/lib/credits/constants";
+import { getDb } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { processReferralAfterSignup } from "@/lib/referral/process";
@@ -99,6 +103,19 @@ export const Route = createFileRoute("/api/auth/$")({
                   };
                   const user = json.user;
                   if (user?.email) {
+                    const binding = getD1Binding();
+                    if (binding && user.id) {
+                      await recordCreditGrant({
+                        db: getDb(binding),
+                        userId: user.id,
+                        credits: SIGNUP_FREE_CREDITS,
+                        creditType: "free",
+                        source: "signup_free",
+                        sourceId: user.id,
+                        metadata: { method: "email" },
+                      }).catch((err) => console.error("[credit-audit] signup grant error:", err));
+                    }
+
                     // BA's internal callback doesn't fire with direct API calls.
                     // Generate verification JWT with Web Crypto and send email ourselves.
                     const encoder = new TextEncoder();

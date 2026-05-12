@@ -3,6 +3,7 @@ import { and, eq, sql } from "drizzle-orm";
 
 import { env } from "@/env/server";
 import { jsonResponse } from "@/lib/api-helpers";
+import { recordCreditGrant } from "@/lib/credits/audit";
 import { getDb } from "@/lib/db";
 import { user as userTable, creditPurchase, referral } from "@/lib/db/schema";
 import { getStripe } from "@/lib/stripe";
@@ -97,6 +98,15 @@ export async function handleWebhook(request: Request): Promise<Response> {
         .update(userTable)
         .set({ credits: sql`${userTable.credits} + ${totalCredits}` })
         .where(eq(userTable.id, userId));
+      await recordCreditGrant({
+        db,
+        userId,
+        credits: totalCredits,
+        creditType: "paid",
+        source: "stripe_purchase",
+        sourceId: session.id,
+        metadata: { amountTotal, currency: session.currency ?? null },
+      }).catch((err) => console.error("[credit-audit] stripe grant error:", err));
 
       if (session.customer) {
         await db
@@ -143,6 +153,17 @@ export async function handleWebhook(request: Request): Promise<Response> {
               .update(referral)
               .set({ purchaseCommissionAwarded: commission })
               .where(eq(referral.id, refRecord.id));
+            await recordCreditGrant({
+              db,
+              userId: refRecord.referrerId,
+              credits: commission,
+              creditType: "free",
+              source: "referral_purchase_commission",
+              sourceId: refRecord.id,
+              metadata: { refereeId: userId, checkoutSessionId: session.id },
+            }).catch((err) =>
+              console.error("[credit-audit] referral commission grant error:", err),
+            );
 
             console.log(`[stripe] Referral commission: ${commission} credits awarded`);
           }

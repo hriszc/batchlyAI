@@ -11,6 +11,7 @@ import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getCachedResult, setCachedResult } from "@/lib/cache/prompt-cache";
 import { getD1Binding, getKvBinding } from "@/lib/cloudflare/bindings";
+import { recordAiCreditSpend } from "@/lib/credits/audit";
 import { getDb } from "@/lib/db";
 import { user as userTable } from "@/lib/db/schema/auth.schema";
 import { generation, savedPrompt } from "@/lib/db/schema/data-flywheel.schema";
@@ -33,6 +34,27 @@ export interface GenerateContext {
   textFn?: typeof generateText;
   getCachedFn?: typeof getCachedResult;
   setCachedFn?: typeof setCachedResult;
+}
+
+type AiProvider = "deepseek" | "replicate" | "grsai" | "workers-ai";
+
+async function auditAiSpend(input: {
+  db: ReturnType<typeof getDb>;
+  userId: string;
+  credits: number;
+  provider: AiProvider;
+  model: string;
+  apiCallCount: number;
+  sourceId?: string | null;
+  status?: "succeeded" | "failed" | "refunded";
+  metadata?: Record<string, unknown>;
+}) {
+  try {
+    await recordAiCreditSpend(input);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "unknown error";
+    console.error("[credit-audit] Failed to record AI spend:", message);
+  }
 }
 
 export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
@@ -135,6 +157,17 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
           // Generation history insert is non-fatal
         }
 
+        await auditAiSpend({
+          db,
+          userId,
+          credits: maxCost,
+          provider: "deepseek",
+          model: textModel,
+          apiCallCount: texts.length,
+          status: "succeeded",
+          metadata: { productModel: model },
+        });
+
         // Auto-save prompt (dedup by template, not resolved prompt)
         try {
           const existing = await db
@@ -174,6 +207,16 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
         try {
           const fallbackText = await generateTextFallback(body.prompt);
           if (fallbackText) {
+            await auditAiSpend({
+              db,
+              userId,
+              credits: maxCost,
+              provider: "workers-ai",
+              model: "text-fallback",
+              apiCallCount: 1,
+              status: "succeeded",
+              metadata: { primaryProvider: "deepseek", productModel: model },
+            });
             return jsonResponse(
               {
                 texts: [fallbackText],
@@ -193,6 +236,16 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
           .set({ credits: sql`${userTable.credits} + ${maxCost}` })
           .where(eq(userTable.id, userId));
         const message = err instanceof Error ? err.message : "Text generation failed";
+        await auditAiSpend({
+          db,
+          userId,
+          credits: maxCost,
+          provider: "deepseek",
+          model,
+          apiCallCount: n,
+          status: "refunded",
+          metadata: { error: message },
+        });
         return jsonResponse({ error: message }, 500);
       }
     }
@@ -225,6 +278,17 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
         // Check for synchronous results (AIGATE returned images directly)
         const syncUrls = grsaiResults.flatMap((p) => p.urls ?? []);
         if (syncUrls.length > 0) {
+          await auditAiSpend({
+            db,
+            userId,
+            credits: maxCost,
+            provider: "grsai",
+            model,
+            apiCallCount: grsaiResults.length,
+            status: "succeeded",
+            sourceId: grsaiResults.map((p) => p.id).join(","),
+            metadata: { sync: true, resultCount: syncUrls.length },
+          });
           return jsonResponse(
             { urls: syncUrls, creditsRemaining: deducted.credits, sync: true, watermark },
             200,
@@ -268,6 +332,16 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
             body.duration || 5,
           );
           if (fbResult.urls.length > 0) {
+            await auditAiSpend({
+              db,
+              userId,
+              credits: maxCost,
+              provider: "workers-ai",
+              model: "video-fallback",
+              apiCallCount: 1,
+              status: "succeeded",
+              metadata: { primaryProvider: "replicate", productModel: model },
+            });
             return jsonResponse(
               {
                 urls: fbResult.urls,
@@ -282,6 +356,19 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
         } else {
           const fbResult = await generateImageFallback(body.prompt, body.aspectRatio || "1:1", n);
           if (fbResult.urls.length > 0) {
+            await auditAiSpend({
+              db,
+              userId,
+              credits: maxCost,
+              provider: "workers-ai",
+              model: "image-fallback",
+              apiCallCount: n,
+              status: "succeeded",
+              metadata: {
+                primaryProvider: model === "z-image-fast" ? "replicate" : "grsai",
+                productModel: model,
+              },
+            });
             return jsonResponse(
               {
                 urls: fbResult.urls,
@@ -303,6 +390,16 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
         .set({ credits: sql`${userTable.credits} + ${maxCost}` })
         .where(eq(userTable.id, userId));
       const message = err instanceof Error ? err.message : "Generation failed";
+      await auditAiSpend({
+        db,
+        userId,
+        credits: maxCost,
+        provider: model === "z-image-fast" || model.startsWith("z-video") ? "replicate" : "grsai",
+        model,
+        apiCallCount: n,
+        status: "refunded",
+        metadata: { error: message },
+      });
       return jsonResponse({ error: message }, 500);
     }
 
@@ -348,6 +445,18 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
     } catch {
       // Generation history insert is non-fatal
     }
+
+    await auditAiSpend({
+      db,
+      userId,
+      credits: maxCost,
+      provider: model === "z-image-fast" || model.startsWith("z-video") ? "replicate" : "grsai",
+      model,
+      apiCallCount: predictionIds.length,
+      status: "succeeded",
+      sourceId: generationId,
+      metadata: { async: true, predictionIds },
+    });
 
     // Store generation ID in KV so webhook/poll can update resultUrls
     try {
