@@ -18,9 +18,49 @@ function hexToBuf(hex: string): Uint8Array {
 
 interface GrsWebhookPayload {
   id?: string;
+  task_id?: string;
+  url?: string;
   status?: string;
-  results?: { url: string }[];
+  results?: Array<{ url?: string } | string> | null;
+  failure_reason?: string;
   error?: string;
+}
+
+function extractImageUrls(body: GrsWebhookPayload): string[] {
+  const urls = new Set<string>();
+  if (typeof body.url === "string" && body.url) urls.add(body.url);
+  for (const result of body.results ?? []) {
+    if (typeof result === "string" && result) {
+      urls.add(result);
+    } else if (
+      typeof result === "object" &&
+      result &&
+      typeof result.url === "string" &&
+      result.url
+    ) {
+      urls.add(result.url);
+    }
+  }
+  return [...urls];
+}
+
+function parseUrlList(raw: string): string[] {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed)
+      ? parsed.filter((url): url is string => typeof url === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function mergeUniqueUrls(existing: string[], incoming: string[]): string[] {
+  return [...new Set([...existing, ...incoming])];
+}
+
+function safePathSegment(value: string): string {
+  return value.replace(/[^a-zA-Z0-9_-]/g, "_");
 }
 
 export async function handleGrsWebhook(request: Request): Promise<Response> {
@@ -52,7 +92,7 @@ export async function handleGrsWebhook(request: Request): Promise<Response> {
 
   try {
     const body = JSON.parse(rawBody) as GrsWebhookPayload;
-    const taskId = body.id;
+    const taskId = body.id || body.task_id;
 
     if (!taskId) {
       return jsonResponse({ error: "Missing task id" }, 400);
@@ -76,9 +116,9 @@ export async function handleGrsWebhook(request: Request): Promise<Response> {
       createdAt: number;
     };
 
-    if (body.status === "succeeded" && body.results?.length) {
+    const urls = extractImageUrls(body);
+    if (body.status === "succeeded" && urls.length > 0) {
       taskData.status = "succeeded";
-      const urls = body.results.map((r) => r.url);
       (taskData as Record<string, unknown>).urls = urls;
 
       // Mirror images to R2 and update generation record
@@ -96,26 +136,39 @@ export async function handleGrsWebhook(request: Request): Promise<Response> {
               urls.map((url, i) =>
                 mirrorImageToR2(
                   url,
-                  `generations/${genData.userId}/${genData.generationId}/${i}.png`,
+                  `generations/${genData.userId}/${genData.generationId}/${safePathSegment(taskId)}-${i}.png`,
                 ),
               ),
             );
             const db = getDb(binding);
+            const [existingGeneration] = await db
+              .select({ resultUrls: generation.resultUrls })
+              .from(generation)
+              .where(eq(generation.id, genData.generationId))
+              .limit(1);
+            const mergedUrls = mergeUniqueUrls(
+              parseUrlList(existingGeneration?.resultUrls ?? "[]"),
+              r2Urls,
+            );
             await db
               .update(generation)
-              .set({ resultUrls: JSON.stringify(r2Urls) })
+              .set({ resultUrls: JSON.stringify(mergedUrls) })
               .where(eq(generation.id, genData.generationId));
             console.log(
-              `[grs-webhook] Updated generation ${genData.generationId} with ${r2Urls.length} URLs (R2 mirrored)`,
+              `[grs-webhook] Updated generation ${genData.generationId} with ${mergedUrls.length} URLs (R2 mirrored)`,
             );
           }
         }
       } catch (err) {
         console.error("[grs-webhook] Failed to update generation record:", err);
       }
+    } else if (body.status === "succeeded") {
+      taskData.status = "failed";
+      (taskData as Record<string, unknown>).error = "Generation finished without image URLs";
     } else if (body.status === "failed" || body.error) {
       taskData.status = "failed";
-      (taskData as Record<string, unknown>).error = body.error || "Generation failed";
+      (taskData as Record<string, unknown>).error =
+        body.error || body.failure_reason || "Generation failed";
     } else {
       taskData.status = body.status || "processing";
     }

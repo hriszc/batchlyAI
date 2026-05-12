@@ -112,6 +112,33 @@ describe("handleGrsWebhook", () => {
     ]);
   });
 
+  it("accepts succeeded GRS payloads with a top-level image URL", async () => {
+    mockKv.get.mockResolvedValue(
+      JSON.stringify({
+        userId: "u1",
+        status: "processing",
+        prompt: "a product photo",
+        createdAt: Date.now(),
+      }),
+    );
+
+    const resp = await handleGrsWebhook(
+      await makeRequest({
+        body: {
+          id: "grs-task-top-url",
+          status: "succeeded",
+          url: "https://grs-cdn.com/output/product.png",
+          results: null,
+        },
+      }),
+    );
+
+    expect(resp.status).toBe(200);
+    const putValue = JSON.parse(mockKv.put.mock.calls[0][1] as string);
+    expect(putValue.status).toBe("succeeded");
+    expect(putValue.urls).toEqual(["https://grs-cdn.com/output/product.png"]);
+  });
+
   it("updates KV with failed status and error message", async () => {
     mockKv.get.mockResolvedValue(
       JSON.stringify({

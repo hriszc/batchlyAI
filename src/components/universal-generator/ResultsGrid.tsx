@@ -116,6 +116,10 @@ export function ResultsGrid({
 
   if (!isGenerating && results.length === 0) return null;
 
+  const publishableCount = results.filter((r) => r.status === "complete" && r.imageUrl).length;
+  const downloadableCount = displayResults.filter(
+    (r) => r.status === "complete" && (r.imageUrl || r.textContent),
+  ).length;
   const showActions = !isGenerating && results.length > 0;
 
   return (
@@ -136,7 +140,7 @@ export function ResultsGrid({
                 <Share2Icon className="size-4" />
               </button>
             )}
-            {onPublish && (
+            {onPublish && publishableCount > 0 && (
               <button
                 type="button"
                 onClick={onPublish}
@@ -146,7 +150,7 @@ export function ResultsGrid({
                 {t("publish")}
               </button>
             )}
-            {displayResults.length >= 2 && (
+            {downloadableCount >= 2 && (
               <button
                 type="button"
                 onClick={handleDownloadAll}

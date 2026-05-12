@@ -145,6 +145,14 @@ describe("ResultsGrid", () => {
     expect(btn).toBeInTheDocument();
   });
 
+  it("hides publish button when no image completed successfully", () => {
+    const onPublish = vi.fn();
+    renderWithProviders(
+      <ResultsGrid results={[errorResult]} isGenerating={false} onPublish={onPublish} />,
+    );
+    expect(screen.queryByTitle("Publish as Work")).not.toBeInTheDocument();
+  });
+
   it("clicking publish button calls onPublish", async () => {
     const onPublish = vi.fn();
     renderWithProviders(

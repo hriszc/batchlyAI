@@ -17,6 +17,25 @@ interface GrsTaskData {
   error?: string;
 }
 
+function mergeUniqueUrls(existing: string[], incoming: string[]): string[] {
+  return [...new Set([...existing, ...incoming])];
+}
+
+function parseUrlList(raw: string): string[] {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed)
+      ? parsed.filter((url): url is string => typeof url === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function safePathSegment(value: string): string {
+  return value.replace(/[^a-zA-Z0-9_-]/g, "_");
+}
+
 function parseOwnerId(raw: string | null): string | null {
   if (!raw) return null;
   try {
@@ -56,20 +75,29 @@ async function tryUpdateGeneration(kv: KVNamespace, predictionId: string, urls: 
       return;
     }
 
-    // Mirror images to R2 for permanent storage
+    // Mirror images to R2 for permanent storage.
     const r2Urls = await Promise.all(
       urls.map((url, i) =>
-        mirrorImageToR2(url, `generations/${genData.userId}/${genData.generationId}/${i}.png`),
+        mirrorImageToR2(
+          url,
+          `generations/${genData.userId}/${genData.generationId}/${safePathSegment(predictionId)}-${i}.png`,
+        ),
       ),
     );
 
     const db = getDb(binding);
+    const [existing] = await db
+      .select({ resultUrls: generation.resultUrls })
+      .from(generation)
+      .where(eq(generation.id, genData.generationId))
+      .limit(1);
+    const mergedUrls = mergeUniqueUrls(parseUrlList(existing?.resultUrls ?? "[]"), r2Urls);
     await db
       .update(generation)
-      .set({ resultUrls: JSON.stringify(r2Urls) })
+      .set({ resultUrls: JSON.stringify(mergedUrls) })
       .where(eq(generation.id, genData.generationId));
     console.log(
-      `[gen-status] Updated generation ${genData.generationId} with ${r2Urls.length} URLs`,
+      `[gen-status] Updated generation ${genData.generationId} with ${mergedUrls.length} URLs`,
     );
   } catch (err) {
     console.error("[gen-status] Failed to update generation record:", err);
@@ -98,7 +126,10 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
   // Nitro injects waitUntil from the Cloudflare execution context
   const req = request as Request & { waitUntil?: (p: Promise<unknown>) => void };
   const waitUntil = req.waitUntil?.bind(req) ?? ((_p: Promise<unknown>) => {});
-  const mirrorTasks: Promise<void>[] = [];
+  let mirrorTaskChain = Promise.resolve();
+  const scheduleMirrorTask = (task: () => Promise<void>) => {
+    mirrorTaskChain = mirrorTaskChain.then(task, task);
+  };
 
   const url = new URL(request.url);
   const idsParam = url.searchParams.get("ids");
@@ -124,9 +155,17 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
             if (ownerId !== userId) {
               return { id, status: "error", urls: null, error: "Not found" };
             }
-            if (data.status === "succeeded" && data.urls) {
-              mirrorTasks.push(tryUpdateGeneration(kv, id, data.urls));
+            if (data.status === "succeeded" && data.urls?.length) {
+              scheduleMirrorTask(() => tryUpdateGeneration(kv, id, data.urls!));
               return { id, status: "succeeded", urls: data.urls, error: null };
+            }
+            if (data.status === "succeeded") {
+              return {
+                id,
+                status: "failed",
+                urls: null,
+                error: "Generation finished without image URLs",
+              };
             }
             if (data.status === "failed") {
               return {
@@ -143,9 +182,7 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
         }),
       );
 
-      if (mirrorTasks.length > 0) {
-        waitUntil(Promise.all(mirrorTasks));
-      }
+      waitUntil(mirrorTaskChain);
       return jsonResponse({ results }, 200);
     }
 
@@ -179,14 +216,12 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
     if (kv) {
       for (const [i, r] of results.entries()) {
         if (r.status === "succeeded" && r.urls?.length) {
-          mirrorTasks.push(tryUpdateGeneration(kv, ids[i], r.urls));
+          scheduleMirrorTask(() => tryUpdateGeneration(kv, ids[i], r.urls!));
         }
       }
     }
 
-    if (mirrorTasks.length > 0) {
-      waitUntil(Promise.all(mirrorTasks));
-    }
+    waitUntil(mirrorTaskChain);
     return jsonResponse({ results: results.map((r, i) => ({ id: ids[i], ...r })) }, 200);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
