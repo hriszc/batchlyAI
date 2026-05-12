@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { getPostBySlug } from "@/content/blog";
 import type { BlogPost } from "@/content/blog";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { createPageMeta } from "@/lib/seo/meta";
 
 export const Route = createFileRoute("/blog/$slug")({
@@ -73,13 +74,14 @@ function InlineMarkdown({ text }: { text: string }) {
 
 function BlogPostPage() {
   const post = Route.useLoaderData() as BlogPost | null;
+  const { t } = useLanguage();
 
   if (!post) {
     return (
       <main className="mx-auto max-w-[720px] px-4 py-16 text-center">
-        <h1 className="text-2xl font-semibold">Post not found</h1>
+        <h1 className="text-2xl font-semibold">{t("postNotFound")}</h1>
         <Link to="/blog" className="mt-4 inline-block text-accent-blue hover:underline">
-          Back to blog
+          {t("backToBlog")}
         </Link>
       </main>
     );

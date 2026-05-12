@@ -89,7 +89,7 @@ export function GeneratorToolbar({
         {showSettings && (
           <div className="absolute bottom-full left-0 z-10 mb-2 w-56 rounded-xl border bg-popover p-3 shadow-lg">
             <p className="mb-2 text-xs font-semibold text-foreground">
-              {modelInfo?.label} Settings
+              {t("settingsTitle", { model: modelInfo?.label || "" })}
             </p>
             {isImage && (
               <div className="space-y-2">
@@ -144,11 +144,11 @@ export function GeneratorToolbar({
       {isGuest ? (
         <div
           className="inline-flex items-center gap-1.5 rounded-lg border bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground"
-          title="Guest mode: Image Turbo only"
+          title={t("guestImageTurboOnly")}
         >
-          <span className="font-medium text-foreground">Image Turbo</span>
+          <span className="font-medium text-foreground">{t("imageTurbo")}</span>
           <span className="rounded-full bg-accent-blue/10 px-1.5 py-0.5 text-[10px] font-medium text-accent-blue">
-            Guest
+            {t("guestBadge")}
           </span>
         </div>
       ) : (

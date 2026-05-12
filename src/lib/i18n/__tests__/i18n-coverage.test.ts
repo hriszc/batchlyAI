@@ -1,10 +1,69 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { describe, it, expect } from "vitest";
 
 import { translations, getTranslation } from "../translations";
 import type { TranslationKey } from "../translations";
 
-function isTranslationKey(s: string): s is TranslationKey {
-  return s in translations.en;
+const allowedSameValueKeys = new Set<TranslationKey>([
+  "siteTitle",
+  "emailPlaceholder",
+  "imageTurbo",
+]);
+
+const sourceFilesWithUserFacingCopy = [
+  "src/components/universal-generator/GeneratorToolbar.tsx",
+  "src/components/universal-generator/ResultCard.tsx",
+  "src/components/universal-generator/ResultsGrid.tsx",
+  "src/routes/g/$shareId.tsx",
+  "src/routes/my/generations.tsx",
+  "src/routes/my/works.tsx",
+  "src/routes/templates/$slug.tsx",
+  "src/routes/works/$workId.tsx",
+  "src/routes/blog/index.tsx",
+  "src/routes/blog/$slug.tsx",
+];
+
+const allowedHardcodedCopy = [
+  "BatchlyAI",
+  "BatchlyAI Blog",
+  "AI",
+  "X",
+  "Twitter",
+  "png",
+  "txt",
+  "batchlyai.com",
+  "Inter",
+  "system-ui",
+  "sans-serif",
+  "http",
+  "https",
+  "GET",
+  "POST",
+  "Content-Type",
+  "summary_large_image",
+  "schema.org",
+  "BlogPosting",
+  "Person",
+  "Unknown",
+  "Short",
+  "Medium",
+  "Long",
+];
+
+function stripNonUiCode(source: string) {
+  return source
+    .replace(/import[\s\S]*?;\n/g, "")
+    .replace(/const meta = createPageMeta\([\s\S]*?\n\}\);/g, "")
+    .replace(/head: \([\s\S]*?\n  component:/g, "component:")
+    .replace(/className="[^"]*"/g, "")
+    .replace(/to="[^"]*"/g, "")
+    .replace(/href="[^"]*"/g, "")
+    .replace(/src="[^"]*"/g, "")
+    .replace(/dateTime=\{[^}]*\}/g, "")
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\/\/.*$/gm, "");
 }
 
 describe("i18n 100% coverage", () => {
@@ -70,5 +129,39 @@ describe("i18n 100% coverage", () => {
     }
     console.log(`i18n coverage: ${coverage}% (${covered}/${total} keys)`);
     expect(covered).toBe(total);
+  });
+
+  it("zh values are real translations, not copied English", () => {
+    const copied = enKeys.filter((key) => {
+      const typedKey = key as TranslationKey;
+      return (
+        !allowedSameValueKeys.has(typedKey) &&
+        translations.en[typedKey] === translations.zh[typedKey]
+      );
+    });
+
+    expect(copied, `ZH values copied from EN: ${copied.join(", ")}`).toEqual([]);
+  });
+
+  it("key UI files do not introduce hardcoded English copy", () => {
+    const offenders: string[] = [];
+    const visibleAttribute = /\b(?:title|placeholder|aria-label)="([^"\n]*[A-Za-z][^"\n]*)"/g;
+    const jsxText = />\s*([A-Z][^<>{}\n]+?)\s*</g;
+
+    for (const file of sourceFilesWithUserFacingCopy) {
+      const source = stripNonUiCode(readFileSync(join(process.cwd(), file), "utf8"));
+      for (const match of source.matchAll(visibleAttribute)) {
+        const text = match[1].trim();
+        if (!text || allowedHardcodedCopy.some((allowed) => text.includes(allowed))) continue;
+        offenders.push(`${file}: visible attribute "${text}"`);
+      }
+      for (const match of source.matchAll(jsxText)) {
+        const text = match[1].trim();
+        if (!text || allowedHardcodedCopy.some((allowed) => text.includes(allowed))) continue;
+        offenders.push(`${file}: >${text}<`);
+      }
+    }
+
+    expect(offenders, `Hardcoded English UI copy: ${offenders.join("\n")}`).toEqual([]);
   });
 });

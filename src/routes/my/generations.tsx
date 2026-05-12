@@ -56,9 +56,9 @@ function GenerationsPage() {
   if (!session?.user) {
     return (
       <main className="mx-auto max-w-[980px] px-4 py-16 text-center">
-        <p className="text-muted-foreground">Please log in to view your generations.</p>
+        <p className="text-muted-foreground">{t("pleaseLoginToView")}</p>
         <Link to="/login" className="mt-2 inline-block text-accent-blue">
-          Login
+          {t("loginNav")}
         </Link>
       </main>
     );
@@ -95,7 +95,7 @@ function GenerationsPage() {
                 />
               ) : (
                 <div className="mb-3 flex h-40 w-full items-center justify-center rounded-lg bg-muted text-xs text-muted-foreground">
-                  Processing...
+                  {t("processing")}
                 </div>
               )}
               <p className="line-clamp-2 text-sm font-medium text-foreground">
@@ -103,7 +103,9 @@ function GenerationsPage() {
               </p>
               <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
                 <span className="rounded bg-muted/50 px-1.5 py-0.5">{gen.model}</span>
-                <span>{gen.creditsUsed} credits</span>
+                <span>
+                  {gen.creditsUsed} {t("credits")}
+                </span>
                 <span>{new Date(gen.createdAt * 1000).toLocaleDateString()}</span>
               </div>
             </button>
@@ -127,7 +129,7 @@ function GenerationsPage() {
                 <img
                   key={i}
                   src={url}
-                  alt={`Result ${i + 1}`}
+                  alt={t("resultAlt", { index: i + 1 })}
                   className="rounded-lg object-cover"
                 />
               ))}
@@ -136,7 +138,7 @@ function GenerationsPage() {
               onClick={() => setSelected(null)}
               className="mt-4 w-full rounded-lg bg-muted py-2 text-sm"
             >
-              Close
+              {t("close")}
             </button>
           </div>
         </div>

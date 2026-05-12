@@ -5,6 +5,7 @@ import { ArrowRightIcon } from "lucide-react";
 
 import { getD1Binding } from "@/lib/cloudflare/bindings";
 import * as schema from "@/lib/db/schema";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { seoLandingPages } from "@/lib/seo/landing-pages";
 import { mediaLabel, mediaTypeFromModel } from "@/lib/seo/media";
 import { createPageMeta } from "@/lib/seo/meta";
@@ -83,16 +84,17 @@ export const Route = createFileRoute("/templates/$slug")({
 function TemplateDetailPage() {
   const data = Route.useLoaderData() as TemplateLoaderData | null;
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   if (!data) {
     return (
       <main className="mx-auto max-w-[980px] px-4 py-16 text-center">
-        <h1 className="text-2xl font-semibold">Template not found</h1>
+        <h1 className="text-2xl font-semibold">{t("templateNotFound")}</h1>
         <a
           href="/discover?tab=templates"
           className="mt-4 inline-block text-accent-blue hover:underline"
         >
-          Browse templates in Discover
+          {t("browseTemplatesDiscover")}
         </a>
       </main>
     );
@@ -115,7 +117,7 @@ function TemplateDetailPage() {
       <div className="flex flex-col gap-6 lg:flex-row">
         <div className="flex-1">
           <span className="text-xs font-medium text-accent-blue">
-            AI {label} template · {data.category}
+            {t("aiTemplateBadge", { label, category: data.category })}
           </span>
           <h1 className="mt-1 text-2xl font-semibold">{data.name}</h1>
           <p className="mt-2 text-muted-foreground">{data.description}</p>
@@ -125,12 +127,12 @@ function TemplateDetailPage() {
           </div>
 
           <div className="mt-4">
-            <h3 className="text-sm font-medium">Variable Values</h3>
+            <h3 className="text-sm font-medium">{t("variableValues")}</h3>
             <div className="mt-2 flex flex-wrap gap-2">
               {data.variableGroups.map((group, i) => (
                 <div key={i} className="rounded-lg border bg-card px-3 py-2">
                   <span className="text-[10px] text-muted-foreground">
-                    {group.name || `Var ${i + 1}`}
+                    {group.name || t("varShort", { index: i + 1 })}
                   </span>
                   <div className="flex flex-wrap gap-1">
                     {group.values.map((v, j) => (
@@ -151,12 +153,12 @@ function TemplateDetailPage() {
             onClick={handleUseTemplate}
             className="mt-6 inline-flex h-10 items-center justify-center gap-2 rounded-full bg-accent-blue px-6 text-sm font-medium text-white transition-colors hover:bg-accent-blue-hover"
           >
-            Use in Generator
+            {t("useInGenerator")}
             <ArrowRightIcon className="size-4" />
           </button>
 
           <div className="mt-8 border-t pt-6">
-            <h3 className="text-sm font-medium">Related AI generation tools</h3>
+            <h3 className="text-sm font-medium">{t("relatedAiTools")}</h3>
             <div className="mt-3 flex flex-wrap gap-2">
               {relatedTools.map((tool) => (
                 <a

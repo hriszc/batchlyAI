@@ -4,6 +4,7 @@ import { drizzle } from "drizzle-orm/d1";
 
 import { getD1Binding } from "@/lib/cloudflare/bindings";
 import * as schema from "@/lib/db/schema";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export const Route = createFileRoute("/g/$shareId")({
   loader: async ({ params }) => {
@@ -47,19 +48,18 @@ export const Route = createFileRoute("/g/$shareId")({
 
 function SharedBatchPage() {
   const data = Route.useLoaderData();
+  const { t } = useLanguage();
 
   if (!data) {
     return (
       <main className="mx-auto max-w-[980px] px-4 py-16 text-center">
-        <h1 className="text-2xl font-semibold">Batch not found</h1>
-        <p className="mt-2 text-muted-foreground">
-          This shared batch may have been removed or the link is invalid.
-        </p>
+        <h1 className="text-2xl font-semibold">{t("batchNotFound")}</h1>
+        <p className="mt-2 text-muted-foreground">{t("batchNotFoundDesc")}</p>
         <a
           href="/"
           className="mt-6 inline-flex h-9 items-center justify-center rounded-full bg-accent-blue px-5 text-sm font-medium text-white"
         >
-          Try BatchlyAI
+          {t("tryBatchlyAI")}
         </a>
       </main>
     );
@@ -71,7 +71,7 @@ function SharedBatchPage() {
     <main className="mx-auto max-w-[980px] px-4 py-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold">Shared Batch</h1>
+          <h1 className="text-xl font-semibold">{t("sharedBatch")}</h1>
           <p className="mt-1 font-mono text-sm text-muted-foreground">{data.promptTemplate}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {data.variableGroups.map((group, i) => (
@@ -79,7 +79,8 @@ function SharedBatchPage() {
                 key={i}
                 className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
               >
-                {group.name || `Var ${i + 1}`}: {group.values.slice(0, 3).join(", ")}
+                {group.name || t("varShort", { index: i + 1 })}:{" "}
+                {group.values.slice(0, 3).join(", ")}
                 {group.values.length > 3 ? ` +${group.values.length - 3}` : ""}
               </span>
             ))}
@@ -87,18 +88,18 @@ function SharedBatchPage() {
         </div>
         <div className="flex gap-2">
           <a
-            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent("Check out this AI batch generation!")}`}
+            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(t("tweetText"))}`}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex h-8 items-center gap-1 rounded-full bg-muted px-3 text-xs font-medium transition-colors hover:bg-muted/80"
           >
-            Share on X
+            {t("shareOnX")}
           </a>
           <a
             href="/"
             className="inline-flex h-9 items-center justify-center gap-2 rounded-full bg-accent-blue px-5 text-sm font-medium text-white transition-colors hover:bg-accent-blue-hover"
           >
-            Try in BatchlyAI
+            {t("tryInBatchlyAI")}
           </a>
         </div>
       </div>
@@ -107,7 +108,11 @@ function SharedBatchPage() {
         {imageUrls.map((url, i) => (
           <div key={i} className="overflow-hidden rounded-lg border bg-card shadow-sm">
             <div className="aspect-square bg-muted">
-              <img src={url} alt={`Result ${i + 1}`} className="h-full w-full object-cover" />
+              <img
+                src={url}
+                alt={t("resultAlt", { index: i + 1 })}
+                className="h-full w-full object-cover"
+              />
             </div>
           </div>
         ))}
