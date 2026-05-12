@@ -6,9 +6,9 @@ import { createPageMeta } from "@/lib/seo/meta";
 import { softwareAppLd } from "@/lib/seo/structured-data";
 
 const meta = createPageMeta({
-  title: "BatchlyAI — Universal AI Generator",
+  title: "BatchlyAI — Batch AI Image & Video Generator",
   description:
-    "Universal AI Generator — batch generate all combinations from multi-variable prompts",
+    "Batch-generate AI images and videos from prompt variations. Create product visuals, social content, ad creatives, and brand concepts with reusable templates.",
   path: "/",
   locale: "en",
   jsonLd: softwareAppLd(),

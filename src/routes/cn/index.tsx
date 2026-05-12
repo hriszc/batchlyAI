@@ -6,8 +6,9 @@ import { createPageMeta } from "@/lib/seo/meta";
 import { softwareAppLd } from "@/lib/seo/structured-data";
 
 const meta = createPageMeta({
-  title: "BatchlyAI — 万能 AI 生成器",
-  description: "万能 AI 生成器 — 一次输入多组变量，批量生成所有组合结果",
+  title: "BatchlyAI — AI 图片与视频批量生成器",
+  description:
+    "通过 Prompt 变量组合批量生成 AI 图片和视频，用可复用模板快速制作商品视觉、社媒内容、广告素材和品牌概念。",
   path: "/cn",
   locale: "zh-CN",
   jsonLd: softwareAppLd(),

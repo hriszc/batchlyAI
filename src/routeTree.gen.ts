@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as GuestRouteRouteImport } from './routes/_guest/route'
 import { Route as IndexRouteImport } from './routes/index'
@@ -16,6 +17,7 @@ import { Route as TemplatesIndexRouteImport } from './routes/templates/index'
 import { Route as CnIndexRouteImport } from './routes/cn/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as WorksWorkIdRouteImport } from './routes/works/$workId'
+import { Route as ToolsSlugRouteImport } from './routes/tools/$slug'
 import { Route as TemplatesSlugRouteImport } from './routes/templates/$slug'
 import { Route as RobotsTxtRouteImport } from './routes/robots.txt'
 import { Route as RCodeRouteImport } from './routes/r/$code'
@@ -53,6 +55,11 @@ import { Route as ApiDiagEmailRouteImport } from './routes/api/diag/email'
 import { Route as ApiAuthGoogleOneTapRouteImport } from './routes/api/auth/google-one-tap'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DiscoverRoute = DiscoverRouteImport.update({
   id: '/discover',
   path: '/discover',
@@ -85,6 +92,11 @@ const BlogIndexRoute = BlogIndexRouteImport.update({
 const WorksWorkIdRoute = WorksWorkIdRouteImport.update({
   id: '/works/$workId',
   path: '/works/$workId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ToolsSlugRoute = ToolsSlugRouteImport.update({
+  id: '/tools/$slug',
+  path: '/tools/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TemplatesSlugRoute = TemplatesSlugRouteImport.update({
@@ -271,6 +283,7 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/discover': typeof DiscoverRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/forgot-password': typeof GuestForgotPasswordRoute
   '/login': typeof GuestLoginRoute
   '/reset-password': typeof GuestResetPasswordRoute
@@ -294,6 +307,7 @@ export interface FileRoutesByFullPath {
   '/r/$code': typeof RCodeRoute
   '/robots/txt': typeof RobotsTxtRoute
   '/templates/$slug': typeof TemplatesSlugRoute
+  '/tools/$slug': typeof ToolsSlugRoute
   '/works/$workId': typeof WorksWorkIdRoute
   '/blog/': typeof BlogIndexRoute
   '/cn/': typeof CnIndexRoute
@@ -315,6 +329,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/discover': typeof DiscoverRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/forgot-password': typeof GuestForgotPasswordRoute
   '/login': typeof GuestLoginRoute
   '/reset-password': typeof GuestResetPasswordRoute
@@ -338,6 +353,7 @@ export interface FileRoutesByTo {
   '/r/$code': typeof RCodeRoute
   '/robots/txt': typeof RobotsTxtRoute
   '/templates/$slug': typeof TemplatesSlugRoute
+  '/tools/$slug': typeof ToolsSlugRoute
   '/works/$workId': typeof WorksWorkIdRoute
   '/blog': typeof BlogIndexRoute
   '/cn': typeof CnIndexRoute
@@ -361,6 +377,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_guest': typeof GuestRouteRouteWithChildren
   '/discover': typeof DiscoverRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_guest/forgot-password': typeof GuestForgotPasswordRoute
   '/_guest/login': typeof GuestLoginRoute
   '/_guest/reset-password': typeof GuestResetPasswordRoute
@@ -384,6 +401,7 @@ export interface FileRoutesById {
   '/r/$code': typeof RCodeRoute
   '/robots/txt': typeof RobotsTxtRoute
   '/templates/$slug': typeof TemplatesSlugRoute
+  '/tools/$slug': typeof ToolsSlugRoute
   '/works/$workId': typeof WorksWorkIdRoute
   '/blog/': typeof BlogIndexRoute
   '/cn/': typeof CnIndexRoute
@@ -407,6 +425,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/discover'
+    | '/sitemap.xml'
     | '/forgot-password'
     | '/login'
     | '/reset-password'
@@ -430,6 +449,7 @@ export interface FileRouteTypes {
     | '/r/$code'
     | '/robots/txt'
     | '/templates/$slug'
+    | '/tools/$slug'
     | '/works/$workId'
     | '/blog/'
     | '/cn/'
@@ -451,6 +471,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/discover'
+    | '/sitemap.xml'
     | '/forgot-password'
     | '/login'
     | '/reset-password'
@@ -474,6 +495,7 @@ export interface FileRouteTypes {
     | '/r/$code'
     | '/robots/txt'
     | '/templates/$slug'
+    | '/tools/$slug'
     | '/works/$workId'
     | '/blog'
     | '/cn'
@@ -496,6 +518,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_guest'
     | '/discover'
+    | '/sitemap.xml'
     | '/_guest/forgot-password'
     | '/_guest/login'
     | '/_guest/reset-password'
@@ -519,6 +542,7 @@ export interface FileRouteTypes {
     | '/r/$code'
     | '/robots/txt'
     | '/templates/$slug'
+    | '/tools/$slug'
     | '/works/$workId'
     | '/blog/'
     | '/cn/'
@@ -542,6 +566,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GuestRouteRoute: typeof GuestRouteRouteWithChildren
   DiscoverRoute: typeof DiscoverRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiExpandVarsRoute: typeof ApiExpandVarsRoute
   ApiGenerateRoute: typeof ApiGenerateRoute
   ApiGenerateStatusRoute: typeof ApiGenerateStatusRoute
@@ -561,6 +586,7 @@ export interface RootRouteChildren {
   RCodeRoute: typeof RCodeRoute
   RobotsTxtRoute: typeof RobotsTxtRoute
   TemplatesSlugRoute: typeof TemplatesSlugRoute
+  ToolsSlugRoute: typeof ToolsSlugRoute
   WorksWorkIdRoute: typeof WorksWorkIdRoute
   BlogIndexRoute: typeof BlogIndexRoute
   CnIndexRoute: typeof CnIndexRoute
@@ -579,6 +605,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/discover': {
       id: '/discover'
       path: '/discover'
@@ -626,6 +659,13 @@ declare module '@tanstack/react-router' {
       path: '/works/$workId'
       fullPath: '/works/$workId'
       preLoaderRoute: typeof WorksWorkIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tools/$slug': {
+      id: '/tools/$slug'
+      path: '/tools/$slug'
+      fullPath: '/tools/$slug'
+      preLoaderRoute: typeof ToolsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/templates/$slug': {
@@ -931,6 +971,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GuestRouteRoute: GuestRouteRouteWithChildren,
   DiscoverRoute: DiscoverRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiExpandVarsRoute: ApiExpandVarsRoute,
   ApiGenerateRoute: ApiGenerateRoute,
   ApiGenerateStatusRoute: ApiGenerateStatusRoute,
@@ -950,6 +991,7 @@ const rootRouteChildren: RootRouteChildren = {
   RCodeRoute: RCodeRoute,
   RobotsTxtRoute: RobotsTxtRoute,
   TemplatesSlugRoute: TemplatesSlugRoute,
+  ToolsSlugRoute: ToolsSlugRoute,
   WorksWorkIdRoute: WorksWorkIdRoute,
   BlogIndexRoute: BlogIndexRoute,
   CnIndexRoute: CnIndexRoute,

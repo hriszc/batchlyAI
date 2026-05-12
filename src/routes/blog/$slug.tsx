@@ -1,47 +1,44 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { getPostBySlug } from "@/content/blog";
+import type { BlogPost } from "@/content/blog";
+import { createPageMeta } from "@/lib/seo/meta";
 
 export const Route = createFileRoute("/blog/$slug")({
   loader: async ({ params }) => {
     const slug = (params as { slug: string }).slug;
     return getPostBySlug(slug) || null;
   },
-  head: ({ loaderData }) => ({
-    meta: [
-      {
-        title: loaderData ? `${loaderData.title} — BatchlyAI Blog` : "Blog — BatchlyAI",
-      },
-      {
-        name: "description",
-        content: loaderData?.description || "",
-      },
-      { property: "og:title", content: loaderData?.title || "" },
-      {
-        property: "og:description",
-        content: loaderData?.description || "",
-      },
-      { property: "og:type", content: "article" },
-    ],
-    scripts: loaderData
-      ? [
-          {
-            type: "application/ld+json",
-            children: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "BlogPosting",
-              headline: loaderData.title,
-              description: loaderData.description,
-              datePublished: loaderData.date,
-              author: {
-                "@type": "Person",
-                name: loaderData.author,
-              },
-            }),
-          },
-        ]
-      : [],
-  }),
+  head: ({ loaderData }) => {
+    const seo = createPageMeta({
+      title: loaderData ? `${loaderData.title} — BatchlyAI Blog` : "Blog — BatchlyAI",
+      description: loaderData?.description || "BatchlyAI blog",
+      path: loaderData ? `/blog/${loaderData.slug}` : "/blog",
+      locale: "en",
+      ogType: "article",
+      jsonLd: loaderData
+        ? {
+            "@context": "https://schema.org",
+            "@type": "BlogPosting",
+            headline: loaderData.title,
+            description: loaderData.description,
+            datePublished: loaderData.date,
+            author: {
+              "@type": "Person",
+              name: loaderData.author,
+            },
+          }
+        : undefined,
+    });
+
+    return {
+      meta: seo.meta,
+      links: loaderData
+        ? [{ rel: "canonical", href: `https://batchlyai.com/blog/${loaderData.slug}` }]
+        : [{ rel: "canonical", href: "https://batchlyai.com/blog" }],
+      scripts: seo.scripts,
+    };
+  },
   component: BlogPostPage,
 });
 
@@ -75,7 +72,7 @@ function InlineMarkdown({ text }: { text: string }) {
 }
 
 function BlogPostPage() {
-  const post = Route.useLoaderData();
+  const post = Route.useLoaderData() as BlogPost | null;
 
   if (!post) {
     return (
