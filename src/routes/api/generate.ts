@@ -408,80 +408,8 @@ export const Route = createFileRoute("/api/generate")({
 
         const session = await auth.api.getSession({ headers: request.headers });
 
-        // Guest generation: 2 free per day, IP-tracked, Image Turbo only
         if (!session?.user?.id) {
-          const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-          const guestKey = `guest:${ip}`;
-          const today = new Date().toISOString().slice(0, 10);
-          const kvKey = `guest-gen:${guestKey}:${today}`;
-
-          const kv = getKvBinding();
-          let count = 0;
-          if (kv) {
-            const raw = await kv.get(kvKey);
-            count = raw ? parseInt(raw, 10) : 0;
-          }
-          if (count >= 2) {
-            return jsonResponse(
-              {
-                error:
-                  "Guest limit reached. Sign up for 40 free credits and more daily generations!",
-              },
-              402,
-            );
-          }
-
-          const raw = await request.json();
-          if (!raw.prompt) return jsonResponse({ error: "Missing prompt" }, 400);
-          const guestToken =
-            typeof raw.guestToken === "string" && raw.guestToken.trim()
-              ? raw.guestToken.trim()
-              : null;
-          if (!guestToken) {
-            return jsonResponse({ error: "Missing guest token" }, 400);
-          }
-          if (raw.model && raw.model !== "z-image-fast") {
-            return jsonResponse(
-              { error: "Guest users can only use Image Turbo. Sign up for full access." },
-              402,
-            );
-          }
-
-          const guestPredictions = await createReplicatePredictions({
-            prompt: raw.prompt,
-            aspectRatio: raw.aspectRatio || "1:1",
-            n: 1,
-            model: "z-image-fast",
-            urls:
-              Array.isArray(raw.attachedUrls) && raw.attachedUrls.length
-                ? raw.attachedUrls
-                : undefined,
-          });
-
-          if (kv) {
-            await kv.put(kvKey, String(count + 1), { expirationTtl: 86400 });
-            await Promise.all(
-              guestPredictions.map((p) =>
-                kv.put(`guest:${p.id}`, JSON.stringify({ guestToken, status: "processing" }), {
-                  expirationTtl: 3600,
-                }),
-              ),
-            );
-          }
-
-          return jsonResponse(
-            {
-              predictionIds: guestPredictions.map((p) => p.id),
-              status: "processing",
-              async: true,
-              creditsRemaining: null,
-              modelType: "replicate",
-              isVideo: false,
-              watermark: true,
-              guest: true,
-            },
-            200,
-          );
+          return jsonResponse({ error: "Please login to generate" }, 401);
         }
 
         const userLimit = checkRateLimit(`generate:user:${session.user.id}`, 30, 60);
