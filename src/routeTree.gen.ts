@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as GuestRouteRouteImport } from './routes/_guest/route'
 import { Route as IndexRouteImport } from './routes/index'
@@ -54,6 +55,11 @@ import { Route as ApiDiagEmailRouteImport } from './routes/api/diag/email'
 import { Route as ApiAuthGoogleOneTapRouteImport } from './routes/api/auth/google-one-tap'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DiscoverRoute = DiscoverRouteImport.update({
   id: '/discover',
   path: '/discover',
@@ -277,6 +283,7 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/discover': typeof DiscoverRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/forgot-password': typeof GuestForgotPasswordRoute
   '/login': typeof GuestLoginRoute
   '/reset-password': typeof GuestResetPasswordRoute
@@ -322,6 +329,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/discover': typeof DiscoverRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/forgot-password': typeof GuestForgotPasswordRoute
   '/login': typeof GuestLoginRoute
   '/reset-password': typeof GuestResetPasswordRoute
@@ -369,6 +377,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_guest': typeof GuestRouteRouteWithChildren
   '/discover': typeof DiscoverRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_guest/forgot-password': typeof GuestForgotPasswordRoute
   '/_guest/login': typeof GuestLoginRoute
   '/_guest/reset-password': typeof GuestResetPasswordRoute
@@ -416,6 +425,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/discover'
+    | '/sitemap.xml'
     | '/forgot-password'
     | '/login'
     | '/reset-password'
@@ -461,6 +471,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/discover'
+    | '/sitemap.xml'
     | '/forgot-password'
     | '/login'
     | '/reset-password'
@@ -507,6 +518,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_guest'
     | '/discover'
+    | '/sitemap.xml'
     | '/_guest/forgot-password'
     | '/_guest/login'
     | '/_guest/reset-password'
@@ -554,6 +566,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GuestRouteRoute: typeof GuestRouteRouteWithChildren
   DiscoverRoute: typeof DiscoverRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiExpandVarsRoute: typeof ApiExpandVarsRoute
   ApiGenerateRoute: typeof ApiGenerateRoute
   ApiGenerateStatusRoute: typeof ApiGenerateStatusRoute
@@ -592,6 +605,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/discover': {
       id: '/discover'
       path: '/discover'
@@ -951,6 +971,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GuestRouteRoute: GuestRouteRouteWithChildren,
   DiscoverRoute: DiscoverRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiExpandVarsRoute: ApiExpandVarsRoute,
   ApiGenerateRoute: ApiGenerateRoute,
   ApiGenerateStatusRoute: ApiGenerateStatusRoute,

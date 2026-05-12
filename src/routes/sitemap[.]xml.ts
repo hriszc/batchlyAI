@@ -1,11 +1,11 @@
+import { createFileRoute } from "@tanstack/react-router";
 import { desc, eq } from "drizzle-orm";
-import { defineHandler } from "nitro";
 
-import { blogPosts } from "../src/content/blog";
-import { getD1Binding } from "../src/lib/cloudflare/bindings";
-import { getDb } from "../src/lib/db";
-import { template as templateTable, work } from "../src/lib/db/schema";
-import { seoLandingPages } from "../src/lib/seo/landing-pages";
+import { blogPosts } from "@/content/blog";
+import { getD1Binding } from "@/lib/cloudflare/bindings";
+import { getDb } from "@/lib/db";
+import { template as templateTable, work } from "@/lib/db/schema";
+import { seoLandingPages } from "@/lib/seo/landing-pages";
 
 interface SitemapUrl {
   loc: string;
@@ -41,7 +41,7 @@ ${items}
 </urlset>`;
 }
 
-export default defineHandler(async () => {
+async function createSitemapResponse(): Promise<Response> {
   const urls: SitemapUrl[] = [
     { loc: `${BASE_URL}/`, changefreq: "daily", priority: "1.0" },
     { loc: `${BASE_URL}/cn`, changefreq: "daily", priority: "0.9" },
@@ -97,4 +97,12 @@ export default defineHandler(async () => {
       "Cache-Control": "public, max-age=3600",
     },
   });
+}
+
+export const Route = createFileRoute("/sitemap.xml")({
+  server: {
+    handlers: {
+      GET: createSitemapResponse,
+    },
+  },
 });
