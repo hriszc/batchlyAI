@@ -231,6 +231,11 @@ export const translations = {
     blogTitle: "BatchlyAI Blog",
     blog: "Blog",
     backToBlog: "Back to blog",
+    aboutNav: "About",
+    compareNav: "Compare",
+    homepageFaqTitle: "Batch AI image and video generation FAQ",
+    homepageFaqDescription:
+      "Clear answers for teams comparing BatchlyAI with single-prompt AI generation tools.",
   },
   zh: {
     siteTitle: "BatchlyAI",
@@ -461,6 +466,10 @@ export const translations = {
     blogTitle: "BatchlyAI 博客",
     blog: "博客",
     backToBlog: "返回博客",
+    aboutNav: "关于",
+    compareNav: "对比",
+    homepageFaqTitle: "AI 图片与视频批量生成常见问题",
+    homepageFaqDescription: "帮助你快速理解 BatchlyAI 和普通单条 Prompt 生成工具的区别。",
   },
 } as const;
 

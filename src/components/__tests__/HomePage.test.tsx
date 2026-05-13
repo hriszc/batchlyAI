@@ -91,6 +91,8 @@ describe("HomePage", () => {
   it("renders title in Chinese when forceLanguage is zh", () => {
     renderWithProviders(<HomePage forceLanguage="zh" />, { language: "zh" });
     expect(screen.getAllByAltText("BatchlyAI")[0]).toBeInTheDocument();
+    expect(screen.getByText("AI 图片与视频批量生成常见问题")).toBeInTheDocument();
+    expect(screen.getByText("BatchlyAI 是什么？")).toBeInTheDocument();
   });
 
   it("renders with no results initially", () => {

@@ -76,7 +76,7 @@ function FooterLinks() {
   return (
     <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
       <a href="/about" className="transition-colors hover:text-foreground">
-        About
+        {t("aboutNav")}
       </a>
       <a href="/blog" className="transition-colors hover:text-foreground">
         {t("blog")}
@@ -88,7 +88,7 @@ function FooterLinks() {
         href="/compare/ai-batch-generator-vs-single-prompt-tools"
         className="transition-colors hover:text-foreground"
       >
-        Compare
+        {t("compareNav")}
       </a>
     </div>
   );

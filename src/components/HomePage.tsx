@@ -11,7 +11,7 @@ import { computePromptCombinations } from "@/components/universal-generator/util
 import { useAuthGate } from "@/components/useAuthGate";
 import { authClient } from "@/lib/auth/auth-client";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { homepageFaq } from "@/lib/seo/geo-content";
+import { getHomepageFaq } from "@/lib/seo/geo-content";
 
 export function shouldRedirectToCn(): boolean {
   if (typeof window === "undefined") return false;
@@ -47,7 +47,7 @@ const STARTER_TEMPLATES = [
 export function HomePage({ forceLanguage }: HomePageProps) {
   const { state, actions } = useGeneratorState();
   const resultsRef = useRef<HTMLDivElement>(null);
-  const { setLanguage, t } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const [hydrated, setHydrated] = useState(false);
   const [shareMode, setShareMode] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -122,6 +122,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
   const isLoggedIn = !!visibleUser;
   const canGuestGenerate = !isLoggedIn;
   const { setPromptTemplate, updateValue, setAspectRatio, setModel } = actions;
+  const homepageFaq = getHomepageFaq(language);
 
   useEffect(() => {
     // Keep the first client render aligned with SSR to avoid hydration remounts
@@ -333,8 +334,8 @@ export function HomePage({ forceLanguage }: HomePageProps) {
       </div>
 
       <FaqSection
-        title="Batch AI image and video generation FAQ"
-        description="Clear answers for teams comparing BatchlyAI with single-prompt AI generation tools."
+        title={t("homepageFaqTitle")}
+        description={t("homepageFaqDescription")}
         items={homepageFaq}
       />
 

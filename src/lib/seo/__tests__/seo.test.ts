@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { homepageFaq } from "@/lib/seo/geo-content";
+import { getHomepageFaq, homepageFaq } from "@/lib/seo/geo-content";
 import { hreflangLinks } from "@/lib/seo/hreflang";
 import { seoLandingPages } from "@/lib/seo/landing-pages";
 import { mediaTypeFromModel } from "@/lib/seo/media";
@@ -103,6 +103,13 @@ describe("faqPageLd", () => {
     expect(ld["@type"]).toBe("FAQPage");
     expect(JSON.stringify(ld)).toContain("What is BatchlyAI?");
     expect(JSON.stringify(ld)).toContain("batch AI image and video generator");
+  });
+
+  it("provides Chinese homepage FAQ content", () => {
+    const faq = getHomepageFaq("zh");
+    expect(faq).toHaveLength(homepageFaq.length);
+    expect(faq[0].question).toContain("BatchlyAI 是什么");
+    expect(faq[3].answer).toContain("视频工作流");
   });
 });
 

@@ -38,6 +38,33 @@ export const homepageFaq: FaqItem[] = [
   },
 ];
 
+export const homepageFaqZh: FaqItem[] = [
+  {
+    question: "BatchlyAI 是什么？",
+    answer:
+      "BatchlyAI 是一个 AI 图片与视频批量生成器。你可以把产品、场景、风格、受众等写成 Prompt 变量，系统会一次生成所有组合。",
+  },
+  {
+    question: "BatchlyAI 适合谁使用？",
+    answer:
+      "BatchlyAI 适合电商运营、市场团队、内容创作者、设计师和 Prompt 工程师，尤其适合需要快速测试多种视觉方向的人。",
+  },
+  {
+    question: "BatchlyAI 和普通 AI 生图工具有什么区别？",
+    answer:
+      "普通工具通常一次跑一条 Prompt；BatchlyAI 用变量模板批量生成组合，更适合对比背景、风格、角度、受众和格式。",
+  },
+  {
+    question: "BatchlyAI 支持视频吗？",
+    answer:
+      "支持。BatchlyAI 不只做图片，也支持视频工作流，可以用同一套变量思路探索商品短视频、广告视频和社媒内容方向。",
+  },
+];
+
+export function getHomepageFaq(language: "en" | "zh"): FaqItem[] {
+  return language === "zh" ? homepageFaqZh : homepageFaq;
+}
+
 export const aboutFaq: FaqItem[] = [
   {
     question: "What problem does BatchlyAI solve?",
