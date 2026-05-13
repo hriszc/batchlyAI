@@ -290,6 +290,9 @@ describe("pollReplicatePrediction", () => {
     const result = await pollReplicatePrediction("p1");
     expect(result.status).toBe("succeeded");
     expect(result.urls).toEqual(["https://img.png"]);
+    expect(mockFetch).toHaveBeenCalledWith("https://api.replicate.com/v1/predictions/p1", {
+      headers: { Authorization: "Bearer test-rep-key" },
+    });
   });
 
   it("returns failed with error", async () => {

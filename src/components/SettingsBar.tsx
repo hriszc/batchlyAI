@@ -16,6 +16,7 @@ import { CreditPurchasePopover } from "@/components/CreditPurchasePopover";
 import { useTheme } from "@/components/theme-provider";
 import { authClient } from "@/lib/auth/auth-client";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { buildCnRedirectHref } from "@/lib/i18n/locale-routing";
 
 export function SettingsBar() {
   const { theme, setTheme } = useTheme();
@@ -49,6 +50,17 @@ export function SettingsBar() {
 
   const toggleTheme = () => {
     setTheme(resolved === "dark" ? "light" : "dark");
+  };
+
+  const toggleLanguage = () => {
+    const nextLanguage = language === "en" ? "zh" : "en";
+    setLanguage(nextLanguage);
+    if (typeof window === "undefined") return;
+    if (nextLanguage === "zh" && !window.location.pathname.startsWith("/cn")) {
+      window.location.assign(buildCnRedirectHref(window.location.search, window.location.hash));
+    } else if (nextLanguage === "en" && window.location.pathname.startsWith("/cn")) {
+      window.location.assign(`/${window.location.search}${window.location.hash}`);
+    }
   };
 
   const handleSignOut = async () => {
@@ -231,7 +243,7 @@ export function SettingsBar() {
         {t("discover")}
       </a>
       <button
-        onClick={() => setLanguage(language === "en" ? "zh" : "en")}
+        onClick={toggleLanguage}
         className="hidden h-8 items-center justify-center rounded-full bg-muted/80 px-2.5 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-muted hover:text-foreground sm:inline-flex"
         aria-label={t("switchLang")}
       >

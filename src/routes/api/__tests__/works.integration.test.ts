@@ -182,4 +182,68 @@ describe("handleGenerationFile", () => {
 
     expect(resp.status).toBe(200);
   });
+
+  it("returns 401 for anonymous private generation files", async () => {
+    const resp = await handleGenerationFile(
+      {
+        headers: new Headers(),
+        url: "https://batchlyai.com/api/generation-files/generations/u1/gen-1/0.png",
+      } as unknown as Request,
+      { _splat: "generations/u1/gen-1/0.png" },
+    );
+
+    expect(resp.status).toBe(401);
+  });
+
+  it("does not check published works before authenticating private generation files", async () => {
+    const querySpy = vi.fn();
+    const dbWithFailingLookup = {
+      select: () => {
+        querySpy();
+        throw new Error("work lookup should not run");
+      },
+    };
+    (globalThis as Record<string, unknown>).__env__ = {
+      batchlyai_db: dbWithFailingLookup,
+      batchlyai_r2: {
+        get: vi.fn(),
+      },
+    };
+
+    const resp = await handleGenerationFile(
+      {
+        headers: new Headers(),
+        url: "https://batchlyai.com/api/generation-files/generations/u1/gen-1/0.png",
+      } as unknown as Request,
+      { _splat: "generations/u1/gen-1/0.png" },
+    );
+
+    expect(resp.status).toBe(401);
+    expect(querySpy).not.toHaveBeenCalled();
+  });
+
+  it("reads generation file keys from Nitro splat params", async () => {
+    mocks.mockGetSession.mockResolvedValue({ user: { id: "u1" } });
+    const mockGet = vi.fn().mockResolvedValue({
+      body: new ReadableStream(),
+      writeHttpMetadata: vi.fn(),
+    });
+    (globalThis as Record<string, unknown>).__env__ = {
+      batchlyai_db: db,
+      batchlyai_r2: {
+        get: mockGet,
+      },
+    };
+
+    const resp = await handleGenerationFile(
+      {
+        headers: new Headers(),
+        url: "https://batchlyai.com/api/generation-files/generations/u1/gen-1/0.png",
+      } as unknown as Request,
+      { _: "generations/u1/gen-1/0.png" } as unknown as { _splat: string },
+    );
+
+    expect(resp.status).toBe(200);
+    expect(mockGet).toHaveBeenCalledWith("generations/u1/gen-1/0.png");
+  });
 });

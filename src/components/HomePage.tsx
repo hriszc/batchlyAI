@@ -11,18 +11,23 @@ import { computePromptCombinations } from "@/components/universal-generator/util
 import { useAuthGate } from "@/components/useAuthGate";
 import { authClient } from "@/lib/auth/auth-client";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import {
+  buildCnRedirectHref,
+  isChineseLanguageTag,
+  parseStoredLanguage,
+} from "@/lib/i18n/locale-routing";
 import { getHomepageFaq } from "@/lib/seo/geo-content";
 
 export function shouldRedirectToCn(): boolean {
   if (typeof window === "undefined") return false;
   if (window.location.pathname.startsWith("/cn")) return false;
   try {
-    const saved = localStorage.getItem("language");
+    const saved = parseStoredLanguage(localStorage.getItem("language"));
     if (saved === "en") return false;
     if (saved === "zh") return true;
   } catch {}
-  const lang = (navigator.language || "").toLowerCase();
-  return lang.startsWith("zh");
+  const preferred = navigator.languages?.[0] || navigator.language || "";
+  return isChineseLanguageTag(preferred);
 }
 
 interface HomePageProps {
@@ -150,18 +155,19 @@ export function HomePage({ forceLanguage }: HomePageProps) {
     } catch {}
   }, [state.promptTemplate]);
 
-  // Switch Chinese browsers to Chinese in-place. A client-side redirect can race
-  // with first input and wipe the generator prompt by remounting the page.
+  // Server routing normally handles this. Keep a client fallback for static
+  // previews and client-only navigations where the first request did not run.
   useEffect(() => {
-    if (!forceLanguage && shouldRedirectToCn()) {
-      setLanguage("zh");
-      document.documentElement.lang = "zh-CN";
+    if (forceLanguage === "zh" || !shouldRedirectToCn()) return;
+    const target = buildCnRedirectHref(window.location.search, window.location.hash);
+    if (window.location.pathname !== "/cn") {
+      window.location.replace(target);
     }
-  }, [forceLanguage, setLanguage]);
+  }, [forceLanguage]);
 
   useEffect(() => {
     if (forceLanguage) {
-      setLanguage(forceLanguage);
+      setLanguage(forceLanguage, { persist: false });
       document.documentElement.lang = forceLanguage === "zh" ? "zh-CN" : "en";
     }
   }, [forceLanguage, setLanguage]);

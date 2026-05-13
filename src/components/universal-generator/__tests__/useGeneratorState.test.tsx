@@ -220,6 +220,35 @@ describe("useGeneratorState", () => {
     vi.unstubAllGlobals();
   });
 
+  it("ignores duplicate startGenerating calls while a batch is already in flight", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ texts: ["Hello"], creditsRemaining: 90 }),
+      }),
+    );
+
+    const { result } = renderHook(() => useGeneratorState(), {
+      wrapper: createWrapper(),
+    });
+
+    act(() => {
+      result.current.actions.setModel("z-text-fast");
+      result.current.actions.setPromptTemplate("{{hello}}");
+    });
+
+    await act(async () => {
+      result.current.actions.startGenerating();
+      result.current.actions.startGenerating();
+      await new Promise((r) => setTimeout(r, 100));
+    });
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    vi.unstubAllGlobals();
+  });
+
   it("uploadFile adds attachment and removes it on failure", async () => {
     vi.stubGlobal(
       "fetch",
