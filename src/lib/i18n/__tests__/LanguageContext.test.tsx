@@ -42,8 +42,7 @@ describe("LanguageContext", () => {
   });
 
   // --- localStorage preference overrides browser ---
-  it("uses localStorage 'zh' outside the English root route", () => {
-    window.history.replaceState({}, "", "/discover");
+  it("uses localStorage 'zh' even when browser is English", () => {
     localStorage.setItem("language", "zh");
     vi.stubGlobal("navigator", { language: "en-US" });
     const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });
@@ -58,7 +57,6 @@ describe("LanguageContext", () => {
   });
 
   it("uses language cookie when localStorage has no preference", () => {
-    window.history.replaceState({}, "", "/discover");
     document.cookie = "language=zh; Path=/";
     vi.stubGlobal("navigator", { language: "en-US" });
     const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });

@@ -22,7 +22,6 @@ export const LanguageContext = createContext<LanguageContextState>({
 
 function getStoredLanguage(): Language {
   if (typeof window === "undefined") return "en";
-  if (window.location.pathname === "/") return "en";
   try {
     const stored = parseStoredLanguage(localStorage.getItem("language"));
     if (stored) return stored;
