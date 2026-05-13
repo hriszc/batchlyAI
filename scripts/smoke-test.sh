@@ -82,6 +82,8 @@ SIGNUP=$(curl -s --max-time 15 -X POST "$BASE/api/auth/sign-up/email" \
   -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\",\"name\":\"SmokeTest\"}" 2>&1 || true)
 if echo "$SIGNUP" | grep -q '"token"'; then
   green "sign-up API ok (user created, verification email should be sent)"
+elif echo "$SIGNUP" | grep -qE 'Human verification required|Human verification failed'; then
+  green "sign-up API protected by Turnstile"
 elif echo "$SIGNUP" | grep -qE 'already|exists'; then
   warn "sign-up: $EMAIL already exists (retry collision)"
 else
@@ -89,7 +91,9 @@ else
 fi
 
 # 6. Sign-up gives correct default credits
-if echo "$SIGNUP" | grep -q '"credits":40'; then
+if echo "$SIGNUP" | grep -qE 'Human verification required|Human verification failed'; then
+  warn "sign-up credits: skipped because Turnstile blocks direct API signup"
+elif echo "$SIGNUP" | grep -q '"credits":40'; then
   green "sign-up gives 40 default credits"
 else
   warn "sign-up credits: not verified"
@@ -107,14 +111,18 @@ else
   red "sign-in API: $SIGNIN"
 fi
 
-# 8. Unverified account blocked (smoke user just created, not verified yet)
-UNVERIFIED=$(curl -s --max-time 15 -X POST "$BASE/api/auth/sign-in/email" \
-  -H "Content-Type: application/json" \
-  -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" 2>&1 || true)
-if echo "$UNVERIFIED" | grep -qE 'Email not verified|EMAIL_NOT_VERIFIED'; then
-  green "unverified account properly blocked"
+# 8. Unverified account blocked (when smoke user was created)
+if echo "$SIGNUP" | grep -qE 'Human verification required|Human verification failed'; then
+  green "unverified account check skipped because signup was blocked by Turnstile"
 else
-  warn "unverified block: unexpected — $UNVERIFIED"
+  UNVERIFIED=$(curl -s --max-time 15 -X POST "$BASE/api/auth/sign-in/email" \
+    -H "Content-Type: application/json" \
+    -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" 2>&1 || true)
+  if echo "$UNVERIFIED" | grep -qE 'Email not verified|EMAIL_NOT_VERIFIED'; then
+    green "unverified account properly blocked"
+  else
+    warn "unverified block: unexpected — $UNVERIFIED"
+  fi
 fi
 
 # 9. Invalid credentials properly rejected

@@ -8,6 +8,7 @@ export const env = createEnv({
     VITE_GOOGLE_CLIENT_ID: z.string().optional(),
     VITE_GA4_MEASUREMENT_ID: z.string().optional(),
     VITE_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
+    VITE_TURNSTILE_SITE_KEY: z.string().optional(),
   },
   runtimeEnv: import.meta.env,
 });

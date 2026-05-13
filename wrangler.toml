@@ -29,6 +29,7 @@ bucket_name = "batchlyai-uploads"
 #   STRIPE_SECRET_KEY
 #   STRIPE_WEBHOOK_SECRET
 #   GA4_API_SECRET
+#   TURNSTILE_SECRET_KEY
 #   R2_ENDPOINT
 #   R2_BUCKET
 
@@ -56,5 +57,6 @@ strategy = "canary"
 [vars]
 VITE_BASE_URL = "https://batchlyai.com"
 VITE_GA4_MEASUREMENT_ID = "G-NXC67QZF3N"
+# Set after creating the production Turnstile widget.
+# VITE_TURNSTILE_SITE_KEY = ""
 GA4_MEASUREMENT_ID = "G-NXC67QZF3N"
-
