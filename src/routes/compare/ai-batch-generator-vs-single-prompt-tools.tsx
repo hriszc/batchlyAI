@@ -9,6 +9,20 @@ const title = "Batch AI Generator vs Single-Prompt Tools — BatchlyAI";
 const description =
   "Compare BatchlyAI with normal one-prompt AI image and video generators, including when batch prompt variables create a better workflow.";
 
+const tableHeaders = ["Criteria", "BatchlyAI", "Single-prompt tools"] as const;
+
+const batchlyReasons = [
+  "You need many variations from one product, topic, or offer.",
+  "You want to test variables such as background, audience, style, and format.",
+  "You need repeatable templates for image and video creative work.",
+];
+
+const singlePromptReasons = [
+  "You only need one asset.",
+  "You already know the exact scene and style.",
+  "You do not need to compare controlled creative variations.",
+];
+
 export const Route = createFileRoute("/compare/ai-batch-generator-vs-single-prompt-tools")({
   head: () => {
     const seo = createPageMeta({
@@ -70,9 +84,9 @@ function ComparePage() {
 
       <section className="mt-10 overflow-hidden rounded-lg border bg-card">
         <div className="grid grid-cols-3 border-b bg-muted/40 px-4 py-3 text-sm font-semibold">
-          <div>Criteria</div>
-          <div>BatchlyAI</div>
-          <div>Single-prompt tools</div>
+          {tableHeaders.map((header) => (
+            <div key={header}>{header}</div>
+          ))}
         </div>
         {rows.map(([criteria, batchly, single]) => (
           <div
@@ -90,9 +104,9 @@ function ComparePage() {
         <div className="rounded-lg border bg-card p-5">
           <h2 className="text-lg font-semibold text-foreground">Choose BatchlyAI when</h2>
           <ul className="mt-3 space-y-2 text-sm leading-6 text-muted-foreground">
-            <li>You need many variations from one product, topic, or offer.</li>
-            <li>You want to test variables such as background, audience, style, and format.</li>
-            <li>You need repeatable templates for image and video creative work.</li>
+            {batchlyReasons.map((reason) => (
+              <li key={reason}>{reason}</li>
+            ))}
           </ul>
         </div>
         <div className="rounded-lg border bg-card p-5">
@@ -100,9 +114,9 @@ function ComparePage() {
             Choose a single-prompt tool when
           </h2>
           <ul className="mt-3 space-y-2 text-sm leading-6 text-muted-foreground">
-            <li>You only need one asset.</li>
-            <li>You already know the exact scene and style.</li>
-            <li>You do not need to compare controlled creative variations.</li>
+            {singlePromptReasons.map((reason) => (
+              <li key={reason}>{reason}</li>
+            ))}
           </ul>
         </div>
       </section>
