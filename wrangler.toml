@@ -57,6 +57,5 @@ strategy = "canary"
 [vars]
 VITE_BASE_URL = "https://batchlyai.com"
 VITE_GA4_MEASUREMENT_ID = "G-NXC67QZF3N"
-# Set after creating the production Turnstile widget.
-# VITE_TURNSTILE_SITE_KEY = ""
+VITE_TURNSTILE_SITE_KEY = "0x4AAAAAADOeomQ9BGuE2XWx"
 GA4_MEASUREMENT_ID = "G-NXC67QZF3N"
