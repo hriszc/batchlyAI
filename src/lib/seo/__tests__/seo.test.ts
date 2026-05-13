@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 
+import { getHomepageFaq, homepageFaq } from "@/lib/seo/geo-content";
 import { hreflangLinks } from "@/lib/seo/hreflang";
 import { seoLandingPages } from "@/lib/seo/landing-pages";
 import { mediaTypeFromModel } from "@/lib/seo/media";
 import { createPageMeta } from "@/lib/seo/meta";
-import { templateHowToLd } from "@/lib/seo/structured-data";
+import { faqPageLd, templateHowToLd } from "@/lib/seo/structured-data";
 
 describe("hreflangLinks", () => {
   it("generates en + zh-CN + x-default links for root", () => {
@@ -62,6 +63,20 @@ describe("createPageMeta", () => {
     expect(meta.scripts).toHaveLength(1);
     expect(meta.scripts[0].type).toBe("application/ld+json");
   });
+  it("includes multiple jsonLd scripts when provided", () => {
+    const meta = createPageMeta({
+      title: "T",
+      description: "D",
+      path: "/",
+      locale: "en",
+      jsonLd: [{ "@type": "WebPage" }, { "@type": "FAQPage" }],
+    });
+    expect(meta.scripts).toHaveLength(2);
+    expect(meta.scripts.map((script) => JSON.parse(script.children)["@type"])).toEqual([
+      "WebPage",
+      "FAQPage",
+    ]);
+  });
 });
 
 describe("mediaTypeFromModel", () => {
@@ -78,6 +93,23 @@ describe("seoLandingPages", () => {
     expect(seoLandingPages.some((page) => page.slug === "ai-product-visual-generator")).toBe(true);
     expect(seoLandingPages.every((page) => page.title.includes("BatchlyAI"))).toBe(true);
     expect(seoLandingPages.every((page) => page.mediaType === "both")).toBe(true);
+    expect(seoLandingPages.every((page) => page.faq.length >= 2)).toBe(true);
+  });
+});
+
+describe("faqPageLd", () => {
+  it("maps visible FAQ content into FAQPage JSON-LD", () => {
+    const ld = faqPageLd(homepageFaq);
+    expect(ld["@type"]).toBe("FAQPage");
+    expect(JSON.stringify(ld)).toContain("What is BatchlyAI?");
+    expect(JSON.stringify(ld)).toContain("batch AI image and video generator");
+  });
+
+  it("provides Chinese homepage FAQ content", () => {
+    const faq = getHomepageFaq("zh");
+    expect(faq).toHaveLength(homepageFaq.length);
+    expect(faq[0].question).toContain("BatchlyAI 是什么");
+    expect(faq[3].answer).toContain("视频工作流");
   });
 });
 

@@ -1,8 +1,9 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
+import { FaqSection } from "@/components/seo/FaqSection";
 import { getSeoLandingPage, seoLandingPages, type SeoLandingPage } from "@/lib/seo/landing-pages";
 import { createPageMeta } from "@/lib/seo/meta";
-import { webPageLd } from "@/lib/seo/structured-data";
+import { faqPageLd, webPageLd } from "@/lib/seo/structured-data";
 
 export const Route = createFileRoute("/tools/$slug")({
   loader: async ({ params }) => {
@@ -18,11 +19,14 @@ export const Route = createFileRoute("/tools/$slug")({
       description: page.description,
       path: `/tools/${page.slug}`,
       locale: "en",
-      jsonLd: webPageLd({
-        title: page.title,
-        description: page.description,
-        url: `https://batchlyai.com/tools/${page.slug}`,
-      }),
+      jsonLd: [
+        webPageLd({
+          title: page.title,
+          description: page.description,
+          url: `https://batchlyai.com/tools/${page.slug}`,
+        }),
+        faqPageLd(page.faq),
+      ],
     });
 
     return {
@@ -89,6 +93,12 @@ function ToolLandingPage() {
           ))}
         </div>
       </section>
+
+      <FaqSection
+        title={`FAQ about ${page.h1}`}
+        description="Short answers for search engines, AI answer engines, and users comparing generation workflows."
+        items={page.faq}
+      />
 
       <section className="mt-10 border-t pt-8">
         <h2 className="text-xl font-semibold text-foreground">Related AI generation tools</h2>

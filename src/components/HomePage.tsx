@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { LoginCard } from "@/components/LoginCard";
+import { FaqSection } from "@/components/seo/FaqSection";
 import { GeneratorCard } from "@/components/universal-generator/GeneratorCard";
 import { ResultsGrid } from "@/components/universal-generator/ResultsGrid";
 import { ShareScreenshot } from "@/components/universal-generator/ShareScreenshot";
@@ -15,6 +16,7 @@ import {
   isChineseLanguageTag,
   parseStoredLanguage,
 } from "@/lib/i18n/locale-routing";
+import { getHomepageFaq } from "@/lib/seo/geo-content";
 
 export function shouldRedirectToCn(): boolean {
   if (typeof window === "undefined") return false;
@@ -50,7 +52,7 @@ const STARTER_TEMPLATES = [
 export function HomePage({ forceLanguage }: HomePageProps) {
   const { state, actions } = useGeneratorState();
   const resultsRef = useRef<HTMLDivElement>(null);
-  const { setLanguage, t } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const [hydrated, setHydrated] = useState(false);
   const [shareMode, setShareMode] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -125,6 +127,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
   const isLoggedIn = !!visibleUser;
   const canGuestGenerate = !isLoggedIn;
   const { setPromptTemplate, updateValue, setAspectRatio, setModel } = actions;
+  const homepageFaq = getHomepageFaq(language);
 
   useEffect(() => {
     // Keep the first client render aligned with SSR to avoid hydration remounts
@@ -335,6 +338,12 @@ export function HomePage({ forceLanguage }: HomePageProps) {
           onPublish={isLoggedIn ? handlePublish : undefined}
         />
       </div>
+
+      <FaqSection
+        title={t("homepageFaqTitle")}
+        description={t("homepageFaqDescription")}
+        items={homepageFaq}
+      />
 
       {shareMode && (
         <ShareScreenshot

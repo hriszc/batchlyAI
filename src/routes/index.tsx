@@ -8,9 +8,10 @@ import {
   getLanguageCookie,
   shouldRedirectRootToCn,
 } from "@/lib/i18n/locale-routing";
+import { homepageFaq } from "@/lib/seo/geo-content";
 import { hreflangLinks } from "@/lib/seo/hreflang";
 import { createPageMeta } from "@/lib/seo/meta";
-import { softwareAppLd } from "@/lib/seo/structured-data";
+import { faqPageLd, organizationLd, softwareAppLd } from "@/lib/seo/structured-data";
 
 const meta = createPageMeta({
   title: "BatchlyAI — Batch AI Image & Video Generator",
@@ -18,7 +19,7 @@ const meta = createPageMeta({
     "Batch-generate AI images and videos from prompt variations. Create product visuals, social content, ad creatives, and brand concepts with reusable templates.",
   path: "/",
   locale: "en",
-  jsonLd: softwareAppLd(),
+  jsonLd: [softwareAppLd(), organizationLd(), faqPageLd(homepageFaq)],
 });
 
 const getRootLocaleRequest = createServerFn({ method: "GET" }).handler(async () => ({
