@@ -55,7 +55,14 @@ SIGNIN_DIAG=$(curl -s -c /tmp/smoke-cookies --max-time 15 \
   -H "Content-Type: application/json" \
   -d '{"email":"test@test.com","password":"test123456"}' 2>&1 || true)
 if echo "$SIGNIN_DIAG" | grep -q '"token":"'; then
-  DIAG=$(curl -s -b /tmp/smoke-cookies --max-time 30 "$BASE/api/diag/email" 2>&1 || true)
+  DIAG=$(curl -s -b /tmp/smoke-cookies --max-time 30 \
+    -X POST "$BASE/api/diag/email" \
+    -H "Origin: $BASE" 2>&1 || true)
+  if ! echo "$DIAG" | grep -q '"ok":true'; then
+    # PR smoke runs against the currently deployed production app, which may not
+    # have the POST-only diagnostic endpoint yet.
+    DIAG=$(curl -s -b /tmp/smoke-cookies --max-time 30 "$BASE/api/diag/email" 2>&1 || true)
+  fi
   if echo "$DIAG" | grep -q '"ok":true'; then
     green "email sending works (diagnostic endpoint returned ok)"
   else
