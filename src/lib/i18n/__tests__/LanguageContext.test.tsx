@@ -12,26 +12,27 @@ function createWrapper() {
 describe("LanguageContext", () => {
   beforeEach(() => {
     localStorage.clear();
+    window.history.replaceState({}, "", "/");
     vi.restoreAllMocks();
   });
 
-  // --- Initial language detection (synchronous) ---
+  // --- Initial language selection ---
   it("defaults to en when no browser preference and no localStorage", () => {
     vi.stubGlobal("navigator", { language: "en-US" });
     const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });
     expect(result.current.language).toBe("en");
   });
 
-  it("detects Chinese from browser language on first visit", () => {
+  it("keeps provider language en for Chinese browser on first visit", () => {
     vi.stubGlobal("navigator", { language: "zh-CN" });
     const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });
-    expect(result.current.language).toBe("zh");
+    expect(result.current.language).toBe("en");
   });
 
-  it("detects Chinese from zh-TW variant", () => {
+  it("keeps provider language en for zh-TW browser on first visit", () => {
     vi.stubGlobal("navigator", { language: "zh-TW" });
     const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });
-    expect(result.current.language).toBe("zh");
+    expect(result.current.language).toBe("en");
   });
 
   it("returns en for non-Chinese languages", () => {
@@ -55,6 +56,13 @@ describe("LanguageContext", () => {
     expect(result.current.language).toBe("en");
   });
 
+  it("uses language cookie when localStorage has no preference", () => {
+    document.cookie = "language=zh; Path=/";
+    vi.stubGlobal("navigator", { language: "en-US" });
+    const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });
+    expect(result.current.language).toBe("zh");
+  });
+
   // --- setLanguage persists ---
   it("setLanguage updates language and persists to localStorage", () => {
     vi.stubGlobal("navigator", { language: "en-US" });
@@ -69,9 +77,20 @@ describe("LanguageContext", () => {
     expect(localStorage.getItem("language")).toBe("en");
   });
 
+  it("setLanguage can update language without persisting route-forced language", () => {
+    vi.stubGlobal("navigator", { language: "en-US" });
+    const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });
+
+    act(() => result.current.setLanguage("zh", { persist: false }));
+    expect(result.current.language).toBe("zh");
+    expect(localStorage.getItem("language")).toBeNull();
+  });
+
   // --- Translation function ---
   it("t() returns translated string", () => {
-    vi.stubGlobal("navigator", { language: "zh-CN" });
+    window.history.replaceState({}, "", "/discover");
+    localStorage.setItem("language", "zh");
+    vi.stubGlobal("navigator", { language: "en-US" });
     const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });
     expect(result.current.language).toBe("zh");
     // "generate" → "开始生成" in zh
@@ -96,6 +115,6 @@ describe("LanguageContext", () => {
     localStorage.setItem("language", "de");
     vi.stubGlobal("navigator", { language: "zh-CN" });
     const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });
-    expect(result.current.language).toBe("zh"); // falls back to browser detection
+    expect(result.current.language).toBe("en");
   });
 });

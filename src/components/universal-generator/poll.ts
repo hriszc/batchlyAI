@@ -28,9 +28,9 @@ export async function unifiedPoll(
   pendings: AsyncPending[],
   estimatedMs?: number,
   onProgress?: (progress: PollProgress) => void,
+  pollIntervalMs = 2000,
 ): Promise<GeneratedResult[]> {
   const maxAttempts = 60;
-  const interval = 2000;
 
   const idToCombo = new Map<string, PromptCombination>();
   const allIds: string[] = [];
@@ -50,7 +50,7 @@ export async function unifiedPoll(
   const startTime = Date.now();
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    await new Promise((r) => setTimeout(r, interval));
+    await new Promise((r) => setTimeout(r, pollIntervalMs));
 
     try {
       const resp = await fetch(

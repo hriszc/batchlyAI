@@ -5,7 +5,7 @@ import {
   Undo2Icon,
   ShoppingCartIcon,
 } from "lucide-react";
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 
 import { calculateGenerationCredits } from "@/lib/generator-credits";
@@ -57,7 +57,6 @@ export function GeneratorCard({
 }: GeneratorCardProps) {
   const [showVariables, setShowVariables] = useState(false);
   const [buyLoading, setBuyLoading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useLanguage();
   const insufficientCreditsMessage = t("insufficientCreditsTitle");
 
@@ -293,24 +292,20 @@ export function GeneratorCard({
               <WandSparklesIcon className="h-4 w-4 text-muted-foreground" />
             </button>
           )}
-          <input
-            ref={fileInputRef}
-            type="file"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) actions.uploadFile(file);
-              e.target.value = "";
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border bg-muted/30 transition-colors hover:bg-muted"
-            title={t("attach")}
-          >
+          <label className="relative flex h-9 w-9 cursor-pointer items-center justify-center overflow-hidden rounded-lg border bg-muted/30 transition-colors hover:bg-muted">
+            <input
+              type="file"
+              className="absolute inset-0 cursor-pointer opacity-0"
+              aria-label={t("attach")}
+              accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml,image/bmp,image/tiff"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) actions.uploadFile(file);
+                e.target.value = "";
+              }}
+            />
             <PaperclipIcon className="h-4 w-4 text-muted-foreground" />
-          </button>
+          </label>
         </div>
 
         <button

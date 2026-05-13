@@ -25,6 +25,7 @@ export function useGeneratorState() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const stateRef = useRef(state);
   const guestTokenRef = useRef<string | null>(null);
+  const generationInFlightRef = useRef(false);
   const { t } = useLanguage();
   const { data: session } = authClient.useSession();
   const isLoggedIn = !!session?.user?.id;
@@ -94,6 +95,9 @@ export function useGeneratorState() {
   }, []);
 
   const startGenerating = useCallback(() => {
+    if (generationInFlightRef.current) return;
+    generationInFlightRef.current = true;
+
     const currentState = stateRef.current;
     dispatch({ type: "START_GENERATING" });
     dispatch({ type: "SET_PROGRESS", payload: null });
@@ -108,6 +112,7 @@ export function useGeneratorState() {
         type: "SET_ERROR",
         payload: t("tooManyCombinationsDetailed"),
       });
+      generationInFlightRef.current = false;
       return;
     }
 
@@ -231,9 +236,15 @@ export function useGeneratorState() {
           if (asyncPendings.length > 0) {
             const isVideo = model?.category === "video";
             const estimatedMs = isVideo ? 300_000 : 90_000;
-            const polled = (await unifiedPoll(asyncPendings, estimatedMs, (p) => {
-              dispatch({ type: "SET_PROGRESS", payload: p });
-            })) as typeof results;
+            const pollIntervalMs = isVideo ? 10_000 : 5_000;
+            const polled = (await unifiedPoll(
+              asyncPendings,
+              estimatedMs,
+              (p) => {
+                dispatch({ type: "SET_PROGRESS", payload: p });
+              },
+              pollIntervalMs,
+            )) as typeof results;
             results = [...results, ...polled];
           }
 
@@ -253,6 +264,9 @@ export function useGeneratorState() {
         })
         .catch((err) => {
           dispatch({ type: "SET_ERROR", payload: String(err) });
+        })
+        .finally(() => {
+          generationInFlightRef.current = false;
         });
     } else {
       // Text generation via DeepSeek
@@ -328,6 +342,9 @@ export function useGeneratorState() {
         })
         .catch((err) => {
           dispatch({ type: "SET_ERROR", payload: String(err) });
+        })
+        .finally(() => {
+          generationInFlightRef.current = false;
         });
     }
   }, [getGuestToken, isLoggedIn, t]);

@@ -153,6 +153,18 @@ describe("GeneratorCard", () => {
     expect(screen.getByText("sketch.jpg")).toBeInTheDocument();
   });
 
+  it("uploads selected attachment from the attach control", async () => {
+    const uploadFile = vi.fn();
+    renderWithProviders(
+      <GeneratorCard state={baseState} actions={{ ...mockActions, uploadFile }} />,
+    );
+
+    const file = new File(["image"], "reference.png", { type: "image/png" });
+    await userEvent.upload(screen.getByLabelText("Attach"), file);
+
+    expect(uploadFile).toHaveBeenCalledWith(file);
+  });
+
   it("calls removeAttachment when close button on file clicked", async () => {
     const removeAttachment = vi.fn();
     const stateWithFile: GeneratorState = {

@@ -8,7 +8,16 @@ vi.mock("@/lib/db", () => ({ getDb: (b: any) => b }));
 vi.mock("@/lib/cloudflare/bindings", () => ({
   getD1Binding: () => ((globalThis as any).__env__?.batchlyai_db as any) ?? undefined,
 }));
+vi.mock("@/lib/cloudflare/r2", () => ({
+  mirrorImageToR2: vi.fn((url: string, key: string) =>
+    Promise.resolve(`/api/generation-files/${key}`),
+  ),
+}));
 
+import { eq } from "drizzle-orm";
+
+import { mirrorImageToR2 } from "@/lib/cloudflare/r2";
+import { generation } from "@/lib/db/schema/data-flywheel.schema";
 import { handleGetGenerations } from "@/routes/api/generations";
 function req(url = "https://x.com/api/generations"): Request {
   return { url, headers: new Headers() } as any;
@@ -58,5 +67,43 @@ describe("handleGetGenerations", () => {
       headers: new Headers(),
     } as any);
     expect(r.status).toBe(200);
+  });
+
+  it("mirrors external result URLs to durable generation file URLs when reading history", async () => {
+    seedUser(db, { id: "u1" });
+    db.insert(generation)
+      .values({
+        id: "gen-1",
+        userId: "u1",
+        promptTemplate: "test",
+        resolvedPrompts: JSON.stringify(["test"]),
+        variableGroups: JSON.stringify([]),
+        resultUrls: JSON.stringify(["https://replicate.delivery/tmp/output.png"]),
+        model: "z-image-fast",
+        creditsUsed: 1,
+        createdAt: 1,
+      })
+      .run();
+
+    const r = await handleGetGenerations(req());
+    expect(r.status).toBe(200);
+    const body = (await r.json()) as { generations: Array<{ resultUrls: string[] }> };
+
+    expect(mirrorImageToR2).toHaveBeenCalledWith(
+      "https://replicate.delivery/tmp/output.png",
+      "generations/u1/gen-1/0.png",
+    );
+    expect(body.generations[0].resultUrls).toEqual([
+      "/api/generation-files/generations/u1/gen-1/0.png",
+    ]);
+
+    const row = db
+      .select({ resultUrls: generation.resultUrls })
+      .from(generation)
+      .where(eq(generation.id, "gen-1"))
+      .get();
+    expect(JSON.parse(row.resultUrls)).toEqual([
+      "/api/generation-files/generations/u1/gen-1/0.png",
+    ]);
   });
 });
