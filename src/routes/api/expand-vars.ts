@@ -1,11 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { runExpandLLM } from "@/lib/ai";
-import { jsonResponse } from "@/lib/api-helpers";
+import { jsonResponse, requireValidOrigin } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getExpandCache, setExpandCache } from "@/lib/cache/prompt-cache";
 
 export async function handleExpandVars(request: Request): Promise<Response> {
+  const originError = requireValidOrigin(request);
+  if (originError) return originError;
+
   const auth = createAuth();
   if (!auth) {
     return jsonResponse({ error: "Database not available" }, 501);

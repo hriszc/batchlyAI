@@ -20,8 +20,8 @@ vi.mock("@/lib/cache/prompt-cache", () => ({
 
 import { handleExpandVars } from "@/routes/api/expand-vars";
 
-function makeReq(body: Record<string, unknown>): Request {
-  return { json: () => Promise.resolve(body) } as unknown as Request;
+function makeReq(body: Record<string, unknown>, headers = new Headers()): Request {
+  return { headers, json: () => Promise.resolve(body) } as unknown as Request;
 }
 
 describe("handleExpandVars", () => {
@@ -37,6 +37,16 @@ describe("handleExpandVars", () => {
     mocks.mockGetSession.mockResolvedValue(null);
     const resp = await handleExpandVars(makeReq({}));
     expect(resp.status).toBe(401);
+  });
+
+  it("returns 403 for invalid origin before auth or expansion", async () => {
+    const resp = await handleExpandVars(
+      makeReq({ descriptions: ["colors"] }, new Headers({ Origin: "https://evil.example" })),
+    );
+
+    expect(resp.status).toBe(403);
+    expect(mocks.mockGetSession).not.toHaveBeenCalled();
+    expect(mocks.mockRunExpandLLM).not.toHaveBeenCalled();
   });
 
   it("returns 400 when descriptions is missing", async () => {
