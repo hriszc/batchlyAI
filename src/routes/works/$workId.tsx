@@ -100,7 +100,7 @@ function WorkDetailPage() {
   };
 
   const handleRemix = () => {
-    navigate({ to: `/?remix=${data.id}` });
+    void navigate({ to: `/?remix=${data.id}` });
   };
 
   const resultUrls = (data.resultUrls as string[]) || [];
@@ -144,7 +144,7 @@ function WorkDetailPage() {
         </button>
         <button
           onClick={() => {
-            navigator.clipboard.writeText(data.promptTemplate);
+            void navigator.clipboard.writeText(data.promptTemplate);
             toast.success(t("copied"));
           }}
           className="inline-flex items-center gap-1.5 rounded-lg bg-muted/30 px-3 py-2 text-sm text-muted-foreground"

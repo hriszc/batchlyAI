@@ -78,6 +78,13 @@ describe("HomePage", () => {
     expect(screen.getByText(/Universal AI Generator/)).toBeInTheDocument();
   });
 
+  it("keeps the root homepage in English for Chinese browsers before redirect completes", () => {
+    vi.stubGlobal("navigator", { language: "zh-CN" });
+    renderWithProviders(<HomePage forceLanguage="en" />);
+    expect(screen.getByText(/Universal AI Generator/)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Describe your image/)).toBeInTheDocument();
+  });
+
   it("renders GeneratorCard", () => {
     renderWithProviders(<HomePage />);
     expect(screen.getByPlaceholderText(/Describe your image/)).toBeInTheDocument();
@@ -91,6 +98,8 @@ describe("HomePage", () => {
   it("renders title in Chinese when forceLanguage is zh", () => {
     renderWithProviders(<HomePage forceLanguage="zh" />, { language: "zh" });
     expect(screen.getAllByAltText("BatchlyAI")[0]).toBeInTheDocument();
+    expect(screen.getByText("AI 图片与视频批量生成常见问题")).toBeInTheDocument();
+    expect(screen.getByText("BatchlyAI 是什么？")).toBeInTheDocument();
   });
 
   it("renders with no results initially", () => {

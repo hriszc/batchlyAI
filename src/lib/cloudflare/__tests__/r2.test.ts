@@ -1,7 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
-const mockR2Put = vi.fn();
-
 vi.mock("@/lib/cloudflare/r2", async () => {
   const actual = await vi.importActual<typeof import("@/lib/cloudflare/r2")>("@/lib/cloudflare/r2");
   // We test the actual functions but mock the binding

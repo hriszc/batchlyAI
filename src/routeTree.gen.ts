@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as DiscoverRouteImport } from './routes/discover'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as GuestRouteRouteImport } from './routes/_guest/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TemplatesIndexRouteImport } from './routes/templates/index'
@@ -25,6 +26,8 @@ import { Route as MyWorksRouteImport } from './routes/my/works'
 import { Route as MyPromptsRouteImport } from './routes/my/prompts'
 import { Route as MyGenerationsRouteImport } from './routes/my/generations'
 import { Route as GShareIdRouteImport } from './routes/g/$shareId'
+import { Route as ExamplesSlugRouteImport } from './routes/examples/$slug'
+import { Route as CompareAiBatchGeneratorVsSinglePromptToolsRouteImport } from './routes/compare/ai-batch-generator-vs-single-prompt-tools'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as ApiWorksRouteImport } from './routes/api/works'
 import { Route as ApiUploadUrlRouteImport } from './routes/api/upload-url'
@@ -68,6 +71,11 @@ const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
 const DiscoverRoute = DiscoverRouteImport.update({
   id: '/discover',
   path: '/discover',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GuestRouteRoute = GuestRouteRouteImport.update({
@@ -134,6 +142,17 @@ const GShareIdRoute = GShareIdRouteImport.update({
   path: '/g/$shareId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ExamplesSlugRoute = ExamplesSlugRouteImport.update({
+  id: '/examples/$slug',
+  path: '/examples/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompareAiBatchGeneratorVsSinglePromptToolsRoute =
+  CompareAiBatchGeneratorVsSinglePromptToolsRouteImport.update({
+    id: '/compare/ai-batch-generator-vs-single-prompt-tools',
+    path: '/compare/ai-batch-generator-vs-single-prompt-tools',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const BlogSlugRoute = BlogSlugRouteImport.update({
   id: '/blog/$slug',
   path: '/blog/$slug',
@@ -282,6 +301,7 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/discover': typeof DiscoverRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -301,6 +321,8 @@ export interface FileRoutesByFullPath {
   '/api/upload-url': typeof ApiUploadUrlRoute
   '/api/works': typeof ApiWorksRouteWithChildren
   '/blog/$slug': typeof BlogSlugRoute
+  '/compare/ai-batch-generator-vs-single-prompt-tools': typeof CompareAiBatchGeneratorVsSinglePromptToolsRoute
+  '/examples/$slug': typeof ExamplesSlugRoute
   '/g/$shareId': typeof GShareIdRoute
   '/my/generations': typeof MyGenerationsRoute
   '/my/prompts': typeof MyPromptsRoute
@@ -328,6 +350,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/discover': typeof DiscoverRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -347,6 +370,8 @@ export interface FileRoutesByTo {
   '/api/upload-url': typeof ApiUploadUrlRoute
   '/api/works': typeof ApiWorksRouteWithChildren
   '/blog/$slug': typeof BlogSlugRoute
+  '/compare/ai-batch-generator-vs-single-prompt-tools': typeof CompareAiBatchGeneratorVsSinglePromptToolsRoute
+  '/examples/$slug': typeof ExamplesSlugRoute
   '/g/$shareId': typeof GShareIdRoute
   '/my/generations': typeof MyGenerationsRoute
   '/my/prompts': typeof MyPromptsRoute
@@ -376,6 +401,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_guest': typeof GuestRouteRouteWithChildren
+  '/about': typeof AboutRoute
   '/discover': typeof DiscoverRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -395,6 +421,8 @@ export interface FileRoutesById {
   '/api/upload-url': typeof ApiUploadUrlRoute
   '/api/works': typeof ApiWorksRouteWithChildren
   '/blog/$slug': typeof BlogSlugRoute
+  '/compare/ai-batch-generator-vs-single-prompt-tools': typeof CompareAiBatchGeneratorVsSinglePromptToolsRoute
+  '/examples/$slug': typeof ExamplesSlugRoute
   '/g/$shareId': typeof GShareIdRoute
   '/my/generations': typeof MyGenerationsRoute
   '/my/prompts': typeof MyPromptsRoute
@@ -424,6 +452,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/about'
     | '/discover'
     | '/robots.txt'
     | '/sitemap.xml'
@@ -443,6 +472,8 @@ export interface FileRouteTypes {
     | '/api/upload-url'
     | '/api/works'
     | '/blog/$slug'
+    | '/compare/ai-batch-generator-vs-single-prompt-tools'
+    | '/examples/$slug'
     | '/g/$shareId'
     | '/my/generations'
     | '/my/prompts'
@@ -470,6 +501,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/about'
     | '/discover'
     | '/robots.txt'
     | '/sitemap.xml'
@@ -489,6 +521,8 @@ export interface FileRouteTypes {
     | '/api/upload-url'
     | '/api/works'
     | '/blog/$slug'
+    | '/compare/ai-batch-generator-vs-single-prompt-tools'
+    | '/examples/$slug'
     | '/g/$shareId'
     | '/my/generations'
     | '/my/prompts'
@@ -517,6 +551,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_guest'
+    | '/about'
     | '/discover'
     | '/robots.txt'
     | '/sitemap.xml'
@@ -536,6 +571,8 @@ export interface FileRouteTypes {
     | '/api/upload-url'
     | '/api/works'
     | '/blog/$slug'
+    | '/compare/ai-batch-generator-vs-single-prompt-tools'
+    | '/examples/$slug'
     | '/g/$shareId'
     | '/my/generations'
     | '/my/prompts'
@@ -565,6 +602,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GuestRouteRoute: typeof GuestRouteRouteWithChildren
+  AboutRoute: typeof AboutRoute
   DiscoverRoute: typeof DiscoverRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -580,6 +618,8 @@ export interface RootRouteChildren {
   ApiUploadUrlRoute: typeof ApiUploadUrlRoute
   ApiWorksRoute: typeof ApiWorksRouteWithChildren
   BlogSlugRoute: typeof BlogSlugRoute
+  CompareAiBatchGeneratorVsSinglePromptToolsRoute: typeof CompareAiBatchGeneratorVsSinglePromptToolsRoute
+  ExamplesSlugRoute: typeof ExamplesSlugRoute
   GShareIdRoute: typeof GShareIdRoute
   MyGenerationsRoute: typeof MyGenerationsRoute
   MyPromptsRoute: typeof MyPromptsRoute
@@ -624,6 +664,13 @@ declare module '@tanstack/react-router' {
       path: '/discover'
       fullPath: '/discover'
       preLoaderRoute: typeof DiscoverRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_guest': {
@@ -715,6 +762,20 @@ declare module '@tanstack/react-router' {
       path: '/g/$shareId'
       fullPath: '/g/$shareId'
       preLoaderRoute: typeof GShareIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/examples/$slug': {
+      id: '/examples/$slug'
+      path: '/examples/$slug'
+      fullPath: '/examples/$slug'
+      preLoaderRoute: typeof ExamplesSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compare/ai-batch-generator-vs-single-prompt-tools': {
+      id: '/compare/ai-batch-generator-vs-single-prompt-tools'
+      path: '/compare/ai-batch-generator-vs-single-prompt-tools'
+      fullPath: '/compare/ai-batch-generator-vs-single-prompt-tools'
+      preLoaderRoute: typeof CompareAiBatchGeneratorVsSinglePromptToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog/$slug': {
@@ -970,6 +1031,7 @@ const ApiWorksRouteWithChildren = ApiWorksRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GuestRouteRoute: GuestRouteRouteWithChildren,
+  AboutRoute: AboutRoute,
   DiscoverRoute: DiscoverRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
@@ -985,6 +1047,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiUploadUrlRoute: ApiUploadUrlRoute,
   ApiWorksRoute: ApiWorksRouteWithChildren,
   BlogSlugRoute: BlogSlugRoute,
+  CompareAiBatchGeneratorVsSinglePromptToolsRoute:
+    CompareAiBatchGeneratorVsSinglePromptToolsRoute,
+  ExamplesSlugRoute: ExamplesSlugRoute,
   GShareIdRoute: GShareIdRoute,
   MyGenerationsRoute: MyGenerationsRoute,
   MyPromptsRoute: MyPromptsRoute,

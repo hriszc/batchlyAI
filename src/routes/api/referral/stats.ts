@@ -5,7 +5,7 @@ import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
-import { referral, referralCode, user as userTable } from "@/lib/db/schema";
+import { referral, referralCode } from "@/lib/db/schema";
 
 export const Route = createFileRoute("/api/referral/stats")({
   server: {

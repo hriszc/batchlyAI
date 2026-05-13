@@ -130,6 +130,10 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
   const scheduleMirrorTask = (task: () => Promise<void>) => {
     mirrorTaskChain = mirrorTaskChain.then(task, task);
   };
+  const flushMirrorTasks = () => {
+    waitUntil(mirrorTaskChain);
+    return mirrorTaskChain;
+  };
 
   const url = new URL(request.url);
   const idsParam = url.searchParams.get("ids");
@@ -182,7 +186,7 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
         }),
       );
 
-      waitUntil(mirrorTaskChain);
+      await flushMirrorTasks();
       return jsonResponse({ results }, 200);
     }
 
@@ -221,7 +225,7 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
       }
     }
 
-    waitUntil(mirrorTaskChain);
+    await flushMirrorTasks();
     return jsonResponse({ results: results.map((r, i) => ({ id: ids[i], ...r })) }, 200);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

@@ -18,7 +18,12 @@ export function jsonResponse(
 const ALLOWED_ORIGINS = ["https://batchlyai.com", "http://localhost:3000"];
 
 export function verifyOrigin(request: Request): boolean {
-  const origin = request.headers.get("Origin");
+  const origin = request.headers?.get("Origin");
   if (!origin) return true; // same-origin requests have no Origin header
   return ALLOWED_ORIGINS.includes(origin);
+}
+
+export function requireValidOrigin(request: Request): Response | null {
+  if (verifyOrigin(request)) return null;
+  return jsonResponse({ error: "Invalid origin" }, 403);
 }

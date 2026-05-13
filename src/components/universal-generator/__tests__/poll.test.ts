@@ -45,14 +45,19 @@ describe("unifiedPoll", () => {
       });
     }) as unknown as typeof fetch;
 
-    const results = await unifiedPoll([
-      { predictionIds: ["id1", "id2", "id3"], modelType: "replicate", combination: combo },
-    ]);
+    const results = await unifiedPoll(
+      [{ predictionIds: ["id1", "id2", "id3"], modelType: "replicate", combination: combo }],
+      undefined,
+      undefined,
+      1,
+    );
 
     // Should have all 3 results, not just the last 2
     expect(results).toHaveLength(3);
     expect(results.filter((r) => r.status === "complete")).toHaveLength(3);
-    expect(results.map((r) => r.imageUrl).sort()).toEqual(["url1", "url2", "url3"]);
+    expect(
+      results.map((r) => r.imageUrl).sort((a, b) => String(a).localeCompare(String(b))),
+    ).toEqual(["url1", "url2", "url3"]);
   });
 
   it("returns all results when all succeed in first poll", async () => {
@@ -67,9 +72,12 @@ describe("unifiedPoll", () => {
         }),
     }) as unknown as typeof fetch;
 
-    const results = await unifiedPoll([
-      { predictionIds: ["id1", "id2"], modelType: "replicate", combination: combo },
-    ]);
+    const results = await unifiedPoll(
+      [{ predictionIds: ["id1", "id2"], modelType: "replicate", combination: combo }],
+      undefined,
+      undefined,
+      1,
+    );
 
     expect(results).toHaveLength(2);
   });
@@ -86,9 +94,12 @@ describe("unifiedPoll", () => {
         }),
     }) as unknown as typeof fetch;
 
-    const results = await unifiedPoll([
-      { predictionIds: ["id1", "id2"], modelType: "replicate", combination: combo },
-    ]);
+    const results = await unifiedPoll(
+      [{ predictionIds: ["id1", "id2"], modelType: "replicate", combination: combo }],
+      undefined,
+      undefined,
+      1,
+    );
 
     const succeeded = results.filter((r) => r.status === "complete");
     const failed = results.filter((r) => r.status === "error");
@@ -111,10 +122,15 @@ describe("unifiedPoll", () => {
         }),
     }) as unknown as typeof fetch;
 
-    const results = await unifiedPoll([
-      { predictionIds: ["id_a1", "id_a2"], modelType: "replicate", combination: combo },
-      { predictionIds: ["id_b1"], modelType: "replicate", combination: combo2 },
-    ]);
+    const results = await unifiedPoll(
+      [
+        { predictionIds: ["id_a1", "id_a2"], modelType: "replicate", combination: combo },
+        { predictionIds: ["id_b1"], modelType: "replicate", combination: combo2 },
+      ],
+      undefined,
+      undefined,
+      1,
+    );
 
     expect(results).toHaveLength(3);
     // combo gets 2 results, combo2 gets 1

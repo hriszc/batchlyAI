@@ -3,7 +3,7 @@ import * as z from "zod";
 
 export const env = createEnv({
   server: {
-    VITE_BASE_URL: z.string().url().default("http://localhost:3000"),
+    VITE_BASE_URL: z.url().default("http://localhost:3000"),
     BETTER_AUTH_SECRET: z
       .string()
       .min(32)
@@ -15,6 +15,7 @@ export const env = createEnv({
     GRSAI_API_KEY: z.string().min(1).optional(),
     REPLICATE_API_KEY: z.string().optional(),
     GRS_WEBHOOK_SECRET: z.string().min(1).optional(),
+    FILE_URL_SIGNING_SECRET: z.string().min(32).optional(),
 
     // OAuth2 providers, optional, update as needed
     GITHUB_CLIENT_ID: z.string().optional(),

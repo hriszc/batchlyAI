@@ -1,3 +1,5 @@
+import type { FaqItem } from "@/lib/seo/geo-content";
+
 export interface SeoLandingPage {
   slug: string;
   title: string;
@@ -7,7 +9,7 @@ export interface SeoLandingPage {
   templateSearch: string;
   primaryUseCases: string[];
   examples: string[];
-  faqs: { question: string; answer: string }[];
+  faq: FaqItem[];
 }
 
 export const seoLandingPages: SeoLandingPage[] = [
@@ -25,16 +27,16 @@ export const seoLandingPages: SeoLandingPage[] = [
       "Test multiple backgrounds, styles, and camera angles",
       "Reuse proven prompts across image and video models",
     ],
-    faqs: [
+    faq: [
       {
         question: "What is a batch prompt generator?",
         answer:
-          "A batch prompt generator turns one reusable prompt with variables into many prompt combinations for AI image or video generation.",
+          "A batch prompt generator turns variable blocks inside one prompt into every possible prompt combination, then sends those combinations through image or video generation workflows.",
       },
       {
-        question: "Can BatchlyAI generate both images and videos?",
+        question: "Why use BatchlyAI for batch prompts?",
         answer:
-          "Yes. BatchlyAI supports image and video workflows, so teams can test prompt variations across multiple creative formats.",
+          "BatchlyAI keeps the base idea reusable while letting you compare scenes, styles, products, audiences, and formats without rewriting each prompt manually.",
       },
       {
         question: "Who uses batch prompt generation?",
@@ -57,16 +59,16 @@ export const seoLandingPages: SeoLandingPage[] = [
       "Generate multiple ad concepts from the same offer",
       "Find the prompt variables that produce the best result",
     ],
-    faqs: [
+    faq: [
       {
-        question: "How does an AI prompt variation generator work?",
+        question: "What is an AI prompt variation generator?",
         answer:
-          "It expands variables such as style, product, scene, audience, and format into every prompt combination you want to test.",
+          "An AI prompt variation generator creates many versions of a prompt by changing controlled variables such as product, audience, style, format, or scene.",
       },
       {
-        question: "Why test prompt variations?",
+        question: "How does prompt variation help creative testing?",
         answer:
-          "Prompt variations help identify which wording, visual style, and creative direction produce the strongest AI output.",
+          "Prompt variation makes it easier to isolate which prompt choices improve output quality, visual fit, and campaign relevance.",
       },
       {
         question: "Can I reuse prompt variation templates?",
@@ -89,16 +91,16 @@ export const seoLandingPages: SeoLandingPage[] = [
       "Generate short product video prompt variations",
       "Test ecommerce hero visuals before a campaign",
     ],
-    faqs: [
+    faq: [
       {
-        question: "Can BatchlyAI create ecommerce product visuals?",
+        question: "Can BatchlyAI generate product images and videos?",
         answer:
-          "Yes. BatchlyAI can generate batches of product image and video prompt variations for product pages, ads, and campaign tests.",
+          "Yes. BatchlyAI supports product image and video workflows, so teams can test ecommerce photos, lifestyle scenes, ad visuals, and short product video concepts from reusable prompts.",
       },
       {
-        question: "What product variables can I test?",
+        question: "What product variables should I test first?",
         answer:
-          "Common variables include product type, background, lighting, camera angle, season, audience, and visual style.",
+          "Start with background, camera angle, lighting, audience, and style. These variables usually change whether a product visual feels like a catalog image, lifestyle scene, or ad creative.",
       },
       {
         question: "Is this useful before a photoshoot or campaign?",
@@ -121,16 +123,16 @@ export const seoLandingPages: SeoLandingPage[] = [
       "Compare social thumbnail layouts before publishing",
       "Create platform-specific visual variations",
     ],
-    faqs: [
+    faq: [
       {
-        question: "What social media assets can BatchlyAI help create?",
+        question: "Can BatchlyAI create social media images and video concepts?",
         answer:
-          "BatchlyAI helps create prompt variations for social covers, thumbnails, carousel visuals, and short video concepts.",
+          "Yes. BatchlyAI can generate batches of social covers, thumbnails, carousel concepts, and short-form video visual directions.",
       },
       {
-        question: "Can I make platform-specific variations?",
+        question: "Which social platforms can I plan for?",
         answer:
-          "Yes. You can include platform, format, audience, tone, and visual hook as variables in a reusable prompt.",
+          "BatchlyAI prompts can include platform variables such as TikTok, YouTube, Instagram, X, LinkedIn, or Pinterest, then generate visual options for each format.",
       },
       {
         question: "How does this help content teams?",
@@ -153,16 +155,16 @@ export const seoLandingPages: SeoLandingPage[] = [
       "Test audiences, tones, and layouts in one batch",
       "Generate static image and short video ad concepts",
     ],
-    faqs: [
+    faq: [
       {
-        question: "How can BatchlyAI support ad creative testing?",
+        question: "How does BatchlyAI help generate ad creatives?",
         answer:
-          "BatchlyAI generates multiple ad creative prompt variations from variables like audience, hook, product, offer, scene, and format.",
+          "BatchlyAI lets you test offer angles, audiences, layouts, and visual hooks as prompt variables, then generate multiple ad creative options in one batch.",
       },
       {
-        question: "Can I create both static and video ad concepts?",
+        question: "Is BatchlyAI only for paid social ads?",
         answer:
-          "Yes. BatchlyAI supports image and video prompt workflows for static ads, short videos, and campaign concepting.",
+          "No. The same ad creative workflows can support landing page visuals, ecommerce hero images, creator briefs, and short video concept boards.",
       },
       {
         question: "What teams benefit from ad creative generation?",

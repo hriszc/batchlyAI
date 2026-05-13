@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeftIcon, SearchIcon, Trash2Icon, PencilIcon, XIcon } from "lucide-react";
+import { ArrowLeftIcon, SearchIcon, Trash2Icon, PencilIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -37,9 +37,8 @@ export const Route = createFileRoute("/my/prompts")({
 function PromptsPage() {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { data: session } = authClient.useSession();
-  const [prompts, setPrompts] = useState<PromptRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: session, isPending: sessionPending } = authClient.useSession();
+  const [prompts, setPrompts] = useState<PromptRecord[] | null>(null);
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<PromptRecord | null>(null);
   const [editName, setEditName] = useState("");
@@ -51,13 +50,11 @@ function PromptsPage() {
     fetch(`/api/prompts?${params}`)
       .then((r) => r.json() as Promise<{ prompts: PromptRecord[] }>)
       .then((d) => setPrompts(d.prompts || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(() => setPrompts([]));
   }, [search]);
 
   useEffect(() => {
     if (!session?.user) {
-      setLoading(false);
       return;
     }
     fetchPrompts();
@@ -76,7 +73,7 @@ function PromptsPage() {
   const handleLoad = (prompt: PromptRecord) => {
     const params = new URLSearchParams();
     if (prompt.model) params.set("model", prompt.model);
-    navigate({ to: `/?${params.toString()}` } as any);
+    void navigate({ to: `/?${params.toString()}` } as any);
   };
 
   return (
@@ -102,7 +99,7 @@ function PromptsPage() {
         </div>
       </div>
 
-      {loading ? (
+      {sessionPending || prompts === null ? (
         <p className="text-muted-foreground">{t("loading")}</p>
       ) : prompts.length === 0 ? (
         <p className="text-muted-foreground">

@@ -1,11 +1,16 @@
-import { createContext, use, useState, useEffect, useCallback } from "react";
+import { createContext, use, useCallback, useState } from "react";
 
+import { getLanguageCookie, parseStoredLanguage } from "./locale-routing";
 import type { Language, TranslationKey } from "./translations";
 import { translations } from "./translations";
 
+type SetLanguageOptions = {
+  persist?: boolean;
+};
+
 type LanguageContextState = {
   language: Language;
-  setLanguage: (lang: Language) => void;
+  setLanguage: (lang: Language, options?: SetLanguageOptions) => void;
   t: (key: TranslationKey, vars?: Record<string, string | number>) => string;
 };
 
@@ -15,47 +20,44 @@ export const LanguageContext = createContext<LanguageContextState>({
   t: (key) => key,
 });
 
-function detectBrowserLanguage(): Language {
-  if (typeof navigator === "undefined") return "en";
-  const lang = navigator.language || (navigator as { userLanguage?: string }).userLanguage || "";
-  return lang.toLowerCase().startsWith("zh") ? "zh" : "en";
-}
-
 function getStoredLanguage(): Language {
   if (typeof window === "undefined") return "en";
   try {
-    const stored = localStorage.getItem("language");
-    if (stored === "en" || stored === "zh") return stored;
+    const stored = parseStoredLanguage(localStorage.getItem("language"));
+    if (stored) return stored;
   } catch {
     // localStorage not available
   }
+  const cookieLanguage = getLanguageCookie(document.cookie);
+  if (cookieLanguage) return cookieLanguage;
   return "en";
 }
 
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  // Start with "en" for SSR hydration consistency
-  const [language, setLanguageState] = useState<Language>("en");
+function persistLanguage(lang: Language): void {
+  try {
+    localStorage.setItem("language", lang);
+  } catch {
+    // ignore
+  }
+  try {
+    document.cookie = `language=${lang}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  } catch {
+    // ignore
+  }
+}
 
-  // Sync to stored/browser preference after hydration (SSR-safe)
-  useEffect(() => {
+export function LanguageProvider({ children }: { children: React.ReactNode }) {
+  const [language, setLanguageState] = useState<Language>(() => {
     const stored = getStoredLanguage();
     if (stored !== "en") {
-      // User explicitly chose a language — respect it
-      setLanguageState(stored);
-    } else if (typeof localStorage !== "undefined" && localStorage.getItem("language") === "en") {
-      // User explicitly chose English — keep it
-    } else {
-      // No stored preference — use browser detection
-      const detected = detectBrowserLanguage();
-      if (detected !== "en") setLanguageState(detected);
+      return stored;
     }
-  }, []);
+    return "en";
+  });
 
-  const setLanguage = useCallback((lang: Language) => {
-    try {
-      localStorage.setItem("language", lang);
-    } catch {
-      // ignore
+  const setLanguage = useCallback((lang: Language, options?: SetLanguageOptions) => {
+    if (options?.persist !== false) {
+      persistLanguage(lang);
     }
     setLanguageState(lang);
   }, []);

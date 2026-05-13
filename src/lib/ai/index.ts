@@ -261,12 +261,20 @@ export async function pollReplicatePrediction(predictionId: string): Promise<Pol
   const pollHeaders: Record<string, string> = {};
   if (key) pollHeaders.Authorization = `Bearer ${key}`;
 
-  const resp = await fetchWithFallback(
-    `${REPLICATE_API_BASE}/v1/predictions/${predictionId}`,
-    `${REPLICATE_DIRECT}/${predictionId}`,
-    { headers: pollHeaders },
-    "replicate",
-  );
+  // Polling can happen many times per generated image. Keep status checks off
+  // Cloudflare AI Gateway so Gateway analytics reflect real generation creates,
+  // not repeated Replicate GET requests.
+  const directResp = key
+    ? await fetch(`${REPLICATE_DIRECT}/${predictionId}`, { headers: pollHeaders })
+    : null;
+  const resp =
+    directResp ??
+    (await fetchWithFallback(
+      `${REPLICATE_API_BASE}/v1/predictions/${predictionId}`,
+      `${REPLICATE_DIRECT}/${predictionId}`,
+      { headers: pollHeaders },
+      "replicate",
+    ));
 
   if (!resp.ok) {
     throw new Error(`Replicate poll error ${resp.status}`);

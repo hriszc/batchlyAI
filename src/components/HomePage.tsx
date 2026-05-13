@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { LoginCard } from "@/components/LoginCard";
+import { FaqSection } from "@/components/seo/FaqSection";
 import { GeneratorCard } from "@/components/universal-generator/GeneratorCard";
 import { ResultsGrid } from "@/components/universal-generator/ResultsGrid";
 import { ShareScreenshot } from "@/components/universal-generator/ShareScreenshot";
@@ -10,17 +11,23 @@ import { computePromptCombinations } from "@/components/universal-generator/util
 import { useAuthGate } from "@/components/useAuthGate";
 import { authClient } from "@/lib/auth/auth-client";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import {
+  buildCnRedirectHref,
+  isChineseLanguageTag,
+  parseStoredLanguage,
+} from "@/lib/i18n/locale-routing";
+import { getHomepageFaq } from "@/lib/seo/geo-content";
 
 export function shouldRedirectToCn(): boolean {
   if (typeof window === "undefined") return false;
   if (window.location.pathname.startsWith("/cn")) return false;
   try {
-    const saved = localStorage.getItem("language");
+    const saved = parseStoredLanguage(localStorage.getItem("language"));
     if (saved === "en") return false;
     if (saved === "zh") return true;
   } catch {}
-  const lang = (navigator.language || "").toLowerCase();
-  return lang.startsWith("zh");
+  const preferred = navigator.languages?.[0] || navigator.language || "";
+  return isChineseLanguageTag(preferred);
 }
 
 interface HomePageProps {
@@ -45,7 +52,7 @@ const STARTER_TEMPLATES = [
 export function HomePage({ forceLanguage }: HomePageProps) {
   const { state, actions } = useGeneratorState();
   const resultsRef = useRef<HTMLDivElement>(null);
-  const { setLanguage, t } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const [hydrated, setHydrated] = useState(false);
   const [shareMode, setShareMode] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -120,6 +127,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
   const isLoggedIn = !!visibleUser;
   const canGuestGenerate = !isLoggedIn;
   const { setPromptTemplate, updateValue, setAspectRatio, setModel } = actions;
+  const homepageFaq = getHomepageFaq(language);
 
   useEffect(() => {
     // Keep the first client render aligned with SSR to avoid hydration remounts
@@ -147,18 +155,19 @@ export function HomePage({ forceLanguage }: HomePageProps) {
     } catch {}
   }, [state.promptTemplate]);
 
-  // Switch Chinese browsers to Chinese in-place. A client-side redirect can race
-  // with first input and wipe the generator prompt by remounting the page.
+  // Server routing normally handles this. Keep a client fallback for static
+  // previews and client-only navigations where the first request did not run.
   useEffect(() => {
-    if (!forceLanguage && shouldRedirectToCn()) {
-      setLanguage("zh");
-      document.documentElement.lang = "zh-CN";
+    if (forceLanguage === "zh" || !shouldRedirectToCn()) return;
+    const target = buildCnRedirectHref(window.location.search, window.location.hash);
+    if (window.location.pathname !== "/cn") {
+      window.location.replace(target);
     }
-  }, [forceLanguage, setLanguage]);
+  }, [forceLanguage]);
 
   useEffect(() => {
     if (forceLanguage) {
-      setLanguage(forceLanguage);
+      setLanguage(forceLanguage, { persist: false });
       document.documentElement.lang = forceLanguage === "zh" ? "zh-CN" : "en";
     }
   }, [forceLanguage, setLanguage]);
@@ -329,6 +338,12 @@ export function HomePage({ forceLanguage }: HomePageProps) {
           onPublish={isLoggedIn ? handlePublish : undefined}
         />
       </div>
+
+      <FaqSection
+        title={t("homepageFaqTitle")}
+        description={t("homepageFaqDescription")}
+        items={homepageFaq}
+      />
 
       {shareMode && (
         <ShareScreenshot

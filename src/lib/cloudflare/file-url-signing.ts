@@ -1,16 +1,22 @@
 const FILE_URL_TTL_SECONDS = 30 * 24 * 60 * 60;
 
 function getRuntimeEnv(): Record<string, unknown> | undefined {
-  return (globalThis as Record<string, unknown>).__env__ as Record<string, unknown> | undefined;
+  const platformEnv = (globalThis as Record<string, unknown>).__env__ as
+    | Record<string, unknown>
+    | undefined;
+  return { ...process.env, ...(platformEnv ?? {}) };
 }
 
 function getFileUrlSecret(): string {
   const env = getRuntimeEnv();
-  return (
+  const secret =
+    (env?.FILE_URL_SIGNING_SECRET as string | undefined) ??
     (env?.GRS_WEBHOOK_SECRET as string | undefined) ??
-    (env?.BETTER_AUTH_SECRET as string | undefined) ??
-    "dev-secret-do-not-use-in-production-42-characters-minimum"
-  );
+    (env?.BETTER_AUTH_SECRET as string | undefined);
+  if (!secret || secret === "dev-secret-do-not-use-in-production-42-characters-minimum") {
+    throw new Error("FILE_URL_SIGNING_SECRET is not configured");
+  }
+  return secret;
 }
 
 async function hmacHex(input: string): Promise<string> {

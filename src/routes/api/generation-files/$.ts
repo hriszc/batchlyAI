@@ -13,26 +13,31 @@ interface R2Binding {
 }
 
 async function isPublishedWorkFile(fileUrl: string): Promise<boolean> {
-  const binding = getD1Binding();
-  if (!binding) return false;
+  try {
+    const binding = getD1Binding();
+    if (!binding) return false;
 
-  const db = getDb(binding);
-  const [row] = await db
-    .select({ id: work.id })
-    .from(work)
-    .where(
-      and(
-        eq(work.isPublished, 1),
-        or(eq(work.coverUrl, fileUrl), like(work.resultUrls, `%${fileUrl}%`)),
-      ),
-    )
-    .limit(1);
-  return !!row;
+    const db = getDb(binding);
+    const [row] = await db
+      .select({ id: work.id })
+      .from(work)
+      .where(
+        and(
+          eq(work.isPublished, 1),
+          or(eq(work.coverUrl, fileUrl), like(work.resultUrls, `%${fileUrl}%`)),
+        ),
+      )
+      .limit(1);
+    return !!row;
+  } catch (err) {
+    console.error("[generation-files] published work lookup failed:", err);
+    return false;
+  }
 }
 
 export async function handleGenerationFile(
   request: Request,
-  params: { _splat: string },
+  params: { _splat?: string; _?: string; "*"?: string },
 ): Promise<Response> {
   const env = (globalThis as Record<string, unknown>).__env__ as
     | Record<string, unknown>
@@ -40,18 +45,24 @@ export async function handleGenerationFile(
   const r2 = env?.batchlyai_r2 as R2Binding | undefined;
   if (!r2) return new Response("R2 not available", { status: 501 });
 
-  const key = params._splat;
+  const key = params._splat ?? params._ ?? params["*"];
   if (!key) return new Response("Not found", { status: 404 });
 
   const publicWorkFile =
-    key.startsWith("works/") || (await isPublishedWorkFile(`/api/generation-files/${key}`));
+    !key.startsWith("generations/") && (await isPublishedWorkFile(`/api/generation-files/${key}`));
 
   if (!publicWorkFile) {
     // Require authentication for private generation history files.
     const auth = createAuth();
     if (!auth) return new Response("Auth unavailable", { status: 501 });
 
-    const session = await auth.api.getSession({ headers: request.headers });
+    let session: { user?: { id?: string } } | null;
+    try {
+      session = await auth.api.getSession({ headers: request.headers });
+    } catch (err) {
+      console.error("[generation-files] session lookup failed:", err);
+      return new Response("Unauthorized", { status: 401 });
+    }
     if (!session?.user?.id) {
       return new Response("Unauthorized", { status: 401 });
     }
@@ -86,7 +97,7 @@ export const Route = createFileRoute("/api/generation-files/$")({
   server: {
     handlers: {
       GET: async ({ request, params }) =>
-        handleGenerationFile(request, params as { _splat: string }),
+        handleGenerationFile(request, params as { _splat?: string; _?: string; "*"?: string }),
     },
   },
 });

@@ -2,6 +2,8 @@
  * JSON-LD structured data generators for Google rich results.
  */
 
+import type { FaqItem } from "@/lib/seo/geo-content";
+
 export interface ScriptOptions {
   type: "application/ld+json";
   children: string;
@@ -24,6 +26,33 @@ export function softwareAppLd(): Record<string, unknown> {
   };
 }
 
+export function organizationLd(): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "BatchlyAI",
+    url: "https://batchlyai.com/",
+    logo: "https://batchlyai.com/logo-light.png",
+    email: "support@batchlyai.com",
+    sameAs: ["https://batchlyai.com/"],
+  };
+}
+
+export function faqPageLd(items: FaqItem[]): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
+  };
+}
+
 export function breadcrumbLd(items: { name: string; url: string }[]): Record<string, unknown> {
   return {
     "@context": "https://schema.org",
@@ -41,28 +70,14 @@ export function webPageLd(input: {
   title: string;
   description: string;
   url: string;
+  type?: "WebPage" | "AboutPage" | "CollectionPage";
 }): Record<string, unknown> {
   return {
     "@context": "https://schema.org",
-    "@type": "WebPage",
+    "@type": input.type ?? "WebPage",
     name: input.title,
     description: input.description,
     url: input.url,
-  };
-}
-
-export function faqPageLd(items: { question: string; answer: string }[]): Record<string, unknown> {
-  return {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: items.map((item) => ({
-      "@type": "Question",
-      name: item.question,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: item.answer,
-      },
-    })),
   };
 }
 
