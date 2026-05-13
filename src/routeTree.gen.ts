@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as GuestRouteRouteImport } from './routes/_guest/route'
@@ -20,7 +21,6 @@ import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as WorksWorkIdRouteImport } from './routes/works/$workId'
 import { Route as ToolsSlugRouteImport } from './routes/tools/$slug'
 import { Route as TemplatesSlugRouteImport } from './routes/templates/$slug'
-import { Route as RobotsTxtRouteImport } from './routes/robots.txt'
 import { Route as RCodeRouteImport } from './routes/r/$code'
 import { Route as MyWorksRouteImport } from './routes/my/works'
 import { Route as MyPromptsRouteImport } from './routes/my/prompts'
@@ -61,6 +61,11 @@ import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DiscoverRoute = DiscoverRouteImport.update({
@@ -110,11 +115,6 @@ const ToolsSlugRoute = ToolsSlugRouteImport.update({
 const TemplatesSlugRoute = TemplatesSlugRouteImport.update({
   id: '/templates/$slug',
   path: '/templates/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RobotsTxtRoute = RobotsTxtRouteImport.update({
-  id: '/robots/txt',
-  path: '/robots/txt',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RCodeRoute = RCodeRouteImport.update({
@@ -303,6 +303,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/discover': typeof DiscoverRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/forgot-password': typeof GuestForgotPasswordRoute
   '/login': typeof GuestLoginRoute
@@ -327,7 +328,6 @@ export interface FileRoutesByFullPath {
   '/my/prompts': typeof MyPromptsRoute
   '/my/works': typeof MyWorksRoute
   '/r/$code': typeof RCodeRoute
-  '/robots/txt': typeof RobotsTxtRoute
   '/templates/$slug': typeof TemplatesSlugRoute
   '/tools/$slug': typeof ToolsSlugRoute
   '/works/$workId': typeof WorksWorkIdRoute
@@ -352,6 +352,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/discover': typeof DiscoverRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/forgot-password': typeof GuestForgotPasswordRoute
   '/login': typeof GuestLoginRoute
@@ -376,7 +377,6 @@ export interface FileRoutesByTo {
   '/my/prompts': typeof MyPromptsRoute
   '/my/works': typeof MyWorksRoute
   '/r/$code': typeof RCodeRoute
-  '/robots/txt': typeof RobotsTxtRoute
   '/templates/$slug': typeof TemplatesSlugRoute
   '/tools/$slug': typeof ToolsSlugRoute
   '/works/$workId': typeof WorksWorkIdRoute
@@ -403,6 +403,7 @@ export interface FileRoutesById {
   '/_guest': typeof GuestRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/discover': typeof DiscoverRoute
+  '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/_guest/forgot-password': typeof GuestForgotPasswordRoute
   '/_guest/login': typeof GuestLoginRoute
@@ -427,7 +428,6 @@ export interface FileRoutesById {
   '/my/prompts': typeof MyPromptsRoute
   '/my/works': typeof MyWorksRoute
   '/r/$code': typeof RCodeRoute
-  '/robots/txt': typeof RobotsTxtRoute
   '/templates/$slug': typeof TemplatesSlugRoute
   '/tools/$slug': typeof ToolsSlugRoute
   '/works/$workId': typeof WorksWorkIdRoute
@@ -454,6 +454,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/discover'
+    | '/robots.txt'
     | '/sitemap.xml'
     | '/forgot-password'
     | '/login'
@@ -478,7 +479,6 @@ export interface FileRouteTypes {
     | '/my/prompts'
     | '/my/works'
     | '/r/$code'
-    | '/robots/txt'
     | '/templates/$slug'
     | '/tools/$slug'
     | '/works/$workId'
@@ -503,6 +503,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/discover'
+    | '/robots.txt'
     | '/sitemap.xml'
     | '/forgot-password'
     | '/login'
@@ -527,7 +528,6 @@ export interface FileRouteTypes {
     | '/my/prompts'
     | '/my/works'
     | '/r/$code'
-    | '/robots/txt'
     | '/templates/$slug'
     | '/tools/$slug'
     | '/works/$workId'
@@ -553,6 +553,7 @@ export interface FileRouteTypes {
     | '/_guest'
     | '/about'
     | '/discover'
+    | '/robots.txt'
     | '/sitemap.xml'
     | '/_guest/forgot-password'
     | '/_guest/login'
@@ -577,7 +578,6 @@ export interface FileRouteTypes {
     | '/my/prompts'
     | '/my/works'
     | '/r/$code'
-    | '/robots/txt'
     | '/templates/$slug'
     | '/tools/$slug'
     | '/works/$workId'
@@ -604,6 +604,7 @@ export interface RootRouteChildren {
   GuestRouteRoute: typeof GuestRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
   DiscoverRoute: typeof DiscoverRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiExpandVarsRoute: typeof ApiExpandVarsRoute
   ApiGenerateRoute: typeof ApiGenerateRoute
@@ -624,7 +625,6 @@ export interface RootRouteChildren {
   MyPromptsRoute: typeof MyPromptsRoute
   MyWorksRoute: typeof MyWorksRoute
   RCodeRoute: typeof RCodeRoute
-  RobotsTxtRoute: typeof RobotsTxtRoute
   TemplatesSlugRoute: typeof TemplatesSlugRoute
   ToolsSlugRoute: typeof ToolsSlugRoute
   WorksWorkIdRoute: typeof WorksWorkIdRoute
@@ -650,6 +650,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/discover': {
@@ -720,13 +727,6 @@ declare module '@tanstack/react-router' {
       path: '/templates/$slug'
       fullPath: '/templates/$slug'
       preLoaderRoute: typeof TemplatesSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/robots/txt': {
-      id: '/robots/txt'
-      path: '/robots/txt'
-      fullPath: '/robots/txt'
-      preLoaderRoute: typeof RobotsTxtRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/r/$code': {
@@ -1033,6 +1033,7 @@ const rootRouteChildren: RootRouteChildren = {
   GuestRouteRoute: GuestRouteRouteWithChildren,
   AboutRoute: AboutRoute,
   DiscoverRoute: DiscoverRoute,
+  RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiExpandVarsRoute: ApiExpandVarsRoute,
   ApiGenerateRoute: ApiGenerateRoute,
@@ -1054,7 +1055,6 @@ const rootRouteChildren: RootRouteChildren = {
   MyPromptsRoute: MyPromptsRoute,
   MyWorksRoute: MyWorksRoute,
   RCodeRoute: RCodeRoute,
-  RobotsTxtRoute: RobotsTxtRoute,
   TemplatesSlugRoute: TemplatesSlugRoute,
   ToolsSlugRoute: ToolsSlugRoute,
   WorksWorkIdRoute: WorksWorkIdRoute,

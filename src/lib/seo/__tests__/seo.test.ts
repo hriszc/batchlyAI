@@ -38,8 +38,8 @@ describe("createPageMeta", () => {
   });
   it("uses default ogImage when not provided", () => {
     const meta = createPageMeta({ title: "T", description: "D", path: "/", locale: "en" });
-    expect(meta.meta.find((m: any) => m.property === "og:image")?.content).toContain(
-      "og-default.png",
+    expect(meta.meta.find((m: any) => m.property === "og:image")?.content).toBe(
+      "https://batchlyai.com/og-default.png",
     );
   });
   it("sets noindex when requested", () => {
@@ -93,7 +93,7 @@ describe("seoLandingPages", () => {
     expect(seoLandingPages.some((page) => page.slug === "ai-product-visual-generator")).toBe(true);
     expect(seoLandingPages.every((page) => page.title.includes("BatchlyAI"))).toBe(true);
     expect(seoLandingPages.every((page) => page.mediaType === "both")).toBe(true);
-    expect(seoLandingPages.every((page) => page.faq.length >= 2)).toBe(true);
+    expect(seoLandingPages.every((page) => page.faq.length >= 3)).toBe(true);
   });
 });
 

@@ -2,7 +2,12 @@ import { a11yDevtoolsPlugin } from "@tanstack/devtools-a11y/react";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import type { QueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
-import { createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
+import {
+  createRootRouteWithContext,
+  HeadContent,
+  Scripts,
+  useLocation,
+} from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 
 import { GoogleOneTap } from "@/components/GoogleOneTap";
@@ -100,8 +105,11 @@ function SupportEmail() {
 }
 
 function RootDocument({ children }: { readonly children: React.ReactNode }) {
+  const pathname = useLocation({ select: (location) => location.pathname });
+  const htmlLang = pathname === "/cn" || pathname.startsWith("/cn/") ? "zh-CN" : "en";
+
   return (
-    <html lang="en" data-lang="en" suppressHydrationWarning>
+    <html lang={htmlLang} data-lang={htmlLang} suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>

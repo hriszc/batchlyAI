@@ -38,6 +38,11 @@ export const seoLandingPages: SeoLandingPage[] = [
         answer:
           "BatchlyAI keeps the base idea reusable while letting you compare scenes, styles, products, audiences, and formats without rewriting each prompt manually.",
       },
+      {
+        question: "Who uses batch prompt generation?",
+        answer:
+          "Creators, marketers, ecommerce teams, and designers use batch prompt generation to compare styles, scenes, products, and campaign ideas quickly.",
+      },
     ],
   },
   {
@@ -64,6 +69,11 @@ export const seoLandingPages: SeoLandingPage[] = [
         question: "How does prompt variation help creative testing?",
         answer:
           "Prompt variation makes it easier to isolate which prompt choices improve output quality, visual fit, and campaign relevance.",
+      },
+      {
+        question: "Can I reuse prompt variation templates?",
+        answer:
+          "Yes. BatchlyAI is built around reusable templates, so proven prompt structures can be saved and run again.",
       },
     ],
   },
@@ -92,6 +102,11 @@ export const seoLandingPages: SeoLandingPage[] = [
         answer:
           "Start with background, camera angle, lighting, audience, and style. These variables usually change whether a product visual feels like a catalog image, lifestyle scene, or ad creative.",
       },
+      {
+        question: "Is this useful before a photoshoot or campaign?",
+        answer:
+          "Yes. Teams can explore product visual directions before committing budget to a final shoot or ad concept.",
+      },
     ],
   },
   {
@@ -119,6 +134,11 @@ export const seoLandingPages: SeoLandingPage[] = [
         answer:
           "BatchlyAI prompts can include platform variables such as TikTok, YouTube, Instagram, X, LinkedIn, or Pinterest, then generate visual options for each format.",
       },
+      {
+        question: "How does this help content teams?",
+        answer:
+          "Content teams can compare many visual directions quickly and choose the strongest concepts before publishing.",
+      },
     ],
   },
   {
@@ -145,6 +165,11 @@ export const seoLandingPages: SeoLandingPage[] = [
         question: "Is BatchlyAI only for paid social ads?",
         answer:
           "No. The same ad creative workflows can support landing page visuals, ecommerce hero images, creator briefs, and short video concept boards.",
+      },
+      {
+        question: "What teams benefit from ad creative generation?",
+        answer:
+          "Performance marketers, founders, agencies, and ecommerce teams can use BatchlyAI to explore more creative angles faster.",
       },
     ],
   },
