@@ -9,7 +9,7 @@ import { template as templateTable } from "@/lib/db/schema";
 export const Route = createFileRoute("/api/templates/$slug")({
   server: {
     handlers: {
-      GET: async ({ request, params }) => {
+      GET: async ({ params }) => {
         const slug = (params as unknown as { slug: string }).slug;
         const binding = getD1Binding();
         if (!binding) return jsonResponse({ error: "DB unavailable" }, 501);

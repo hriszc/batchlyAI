@@ -53,7 +53,7 @@ function LoginForm() {
         const err = (result as { error: { message?: string } }).error;
         throw new Error(err.message || "Sign in failed");
       }
-      queryClient.invalidateQueries({ queryKey: authQueryOptions().queryKey });
+      void queryClient.invalidateQueries({ queryKey: authQueryOptions().queryKey });
       void router.invalidate();
       return result;
     },

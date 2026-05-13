@@ -64,6 +64,7 @@
     ".vercel",
     ".netlify",
     ".output",
+    "marketing/",
     "build/",
     ".claude/",
     "worker-configuration.d.ts",

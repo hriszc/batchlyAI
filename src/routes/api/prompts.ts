@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, desc, eq, like } from "drizzle-orm";
 
-import { jsonResponse } from "@/lib/api-helpers";
+import { jsonResponse, requireValidOrigin } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
@@ -46,12 +46,15 @@ export async function handleGetPrompts(request: Request): Promise<Response> {
     }
 
     return jsonResponse({ prompts: result }, 200);
-  } catch (err) {
+  } catch {
     return jsonResponse({ error: "Failed to fetch prompts" }, 500);
   }
 }
 
 export async function handleSavePrompt(request: Request): Promise<Response> {
+  const originError = requireValidOrigin(request);
+  if (originError) return originError;
+
   const auth = createAuth();
   if (!auth) return jsonResponse({ error: "Auth unavailable" }, 501);
   const session = await auth.api.getSession({ headers: request.headers });
@@ -87,12 +90,15 @@ export async function handleSavePrompt(request: Request): Promise<Response> {
     });
 
     return jsonResponse({ success: true }, 201);
-  } catch (err) {
+  } catch {
     return jsonResponse({ error: "Failed to save prompt" }, 500);
   }
 }
 
 export async function handleDeletePrompt(request: Request): Promise<Response> {
+  const originError = requireValidOrigin(request);
+  if (originError) return originError;
+
   const auth = createAuth();
   if (!auth) return jsonResponse({ error: "Auth unavailable" }, 501);
   const session = await auth.api.getSession({ headers: request.headers });
@@ -111,7 +117,7 @@ export async function handleDeletePrompt(request: Request): Promise<Response> {
       .where(and(eq(savedPrompt.id, id), eq(savedPrompt.userId, session.user.id)));
 
     return jsonResponse({ success: true }, 200);
-  } catch (err) {
+  } catch {
     return jsonResponse({ error: "Failed to delete prompt" }, 500);
   }
 }

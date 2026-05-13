@@ -1,12 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { jsonResponse } from "@/lib/api-helpers";
+import { jsonResponse, requireValidOrigin } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
 import { sharedBatch } from "@/lib/db/schema";
 
 export async function handleShare(request: Request): Promise<Response> {
+  const originError = requireValidOrigin(request);
+  if (originError) return originError;
+
   const auth = createAuth();
   if (!auth) return jsonResponse({ error: "Auth unavailable" }, 501);
 

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { jsonResponse } from "@/lib/api-helpers";
+import { env } from "@/env/server";
+import { jsonResponse, requireValidOrigin } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { recordCreditGrant } from "@/lib/credits/audit";
 import { SIGNUP_FREE_CREDITS } from "@/lib/credits/constants";
@@ -15,7 +16,10 @@ async function verifyGoogleToken(credential: string) {
     name: string;
     picture: string;
     sub: string;
-    email_verified: string;
+    email_verified: string | boolean;
+    aud: string;
+    iss: string;
+    exp: string;
   };
 }
 
@@ -34,6 +38,9 @@ export const Route = createFileRoute("/api/auth/google-one-tap")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const originError = requireValidOrigin(request);
+        if (originError) return originError;
+
         const auth = createAuth();
         if (!auth) {
           return jsonResponse({ error: "Auth not available" }, 501);
@@ -52,6 +59,20 @@ export const Route = createFileRoute("/api/auth/google-one-tap")({
 
         const token = await verifyGoogleToken(body.credential);
         if (!token?.email) {
+          return jsonResponse({ error: "Invalid Google credential" }, 401);
+        }
+        const expiresAt = Number.parseInt(token.exp, 10);
+        const validIssuer =
+          token.iss === "accounts.google.com" || token.iss === "https://accounts.google.com";
+        const emailVerified = token.email_verified === true || token.email_verified === "true";
+        if (
+          !env.GOOGLE_CLIENT_ID ||
+          token.aud !== env.GOOGLE_CLIENT_ID ||
+          !validIssuer ||
+          !Number.isFinite(expiresAt) ||
+          expiresAt <= Math.floor(Date.now() / 1000) ||
+          !emailVerified
+        ) {
           return jsonResponse({ error: "Invalid Google credential" }, 401);
         }
 
@@ -113,7 +134,7 @@ export const Route = createFileRoute("/api/auth/google-one-tap")({
               id: userId,
               name: token.name,
               email: token.email,
-              emailVerified: token.email_verified === "true",
+              emailVerified,
               image: token.picture,
               credits: SIGNUP_FREE_CREDITS,
               createdAt: new Date(),

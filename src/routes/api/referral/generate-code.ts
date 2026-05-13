@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq, sql } from "drizzle-orm";
 
-import { jsonResponse } from "@/lib/api-helpers";
+import { jsonResponse, requireValidOrigin } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
-import { referralCode, user as userTable } from "@/lib/db/schema";
+import { referralCode } from "@/lib/db/schema";
 
 function generateCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
@@ -18,6 +18,9 @@ function generateCode(): string {
 }
 
 export async function handleReferralGenerateCode(request: Request): Promise<Response> {
+  const originError = requireValidOrigin(request);
+  if (originError) return originError;
+
   const auth = createAuth();
   if (!auth) return jsonResponse({ error: "Auth unavailable" }, 501);
 

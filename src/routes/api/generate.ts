@@ -7,7 +7,7 @@ import {
   generateTextFallback,
   generateVideoFallback,
 } from "@/lib/ai/fallback";
-import { jsonResponse } from "@/lib/api-helpers";
+import { jsonResponse, requireValidOrigin } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getCachedResult, setCachedResult } from "@/lib/cache/prompt-cache";
 import { getD1Binding, getKvBinding } from "@/lib/cloudflare/bindings";
@@ -512,6 +512,9 @@ export const Route = createFileRoute("/api/generate")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const originError = requireValidOrigin(request);
+        if (originError) return originError;
+
         const auth = createAuth();
         if (!auth) return dbUnavailable();
 

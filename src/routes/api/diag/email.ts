@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
-import { sendEmail } from "@/lib/email";
 
 export const Route = createFileRoute("/api/diag/email")({
   server: {

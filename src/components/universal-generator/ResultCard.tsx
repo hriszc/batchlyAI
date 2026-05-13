@@ -1,4 +1,4 @@
-import { DownloadIcon, ImageIcon, AlertCircleIcon, Loader2Icon, FileTextIcon } from "lucide-react";
+import { DownloadIcon, ImageIcon, AlertCircleIcon, Loader2Icon } from "lucide-react";
 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -126,7 +126,7 @@ async function downloadWithWatermark(imageUrl: string, filename: string) {
   canvas.toBlob((blob) => {
     if (!blob) return;
     const url = URL.createObjectURL(blob);
-    downloadUrl(url, filename);
+    void downloadUrl(url, filename);
     URL.revokeObjectURL(url);
   }, "image/png");
 }
@@ -156,9 +156,9 @@ export function ResultCard({ result, showWatermark = false }: ResultCardProps) {
               <button
                 onClick={() => {
                   if (showWatermark) {
-                    downloadWithWatermark(result.imageUrl!, `batchlyai-${result.id}.png`);
+                    void downloadWithWatermark(result.imageUrl!, `batchlyai-${result.id}.png`);
                   } else {
-                    downloadUrl(result.imageUrl!, `batchlyai-${result.id}.png`);
+                    void downloadUrl(result.imageUrl!, `batchlyai-${result.id}.png`);
                   }
                 }}
                 className="absolute top-2 right-2 rounded-lg bg-black/50 p-1.5 text-white/80 opacity-100 backdrop-blur-sm transition-opacity hover:bg-black/70 md:opacity-0 md:group-hover:opacity-100"
@@ -178,7 +178,7 @@ export function ResultCard({ result, showWatermark = false }: ResultCardProps) {
                 onClick={() => {
                   const blob = new Blob([result.textContent!], { type: "text/plain" });
                   const url = URL.createObjectURL(blob);
-                  downloadUrl(url, `batchlyai-${result.id}.txt`);
+                  void downloadUrl(url, `batchlyai-${result.id}.txt`);
                   URL.revokeObjectURL(url);
                 }}
                 className="absolute top-2 right-2 rounded-lg bg-black/50 p-1.5 text-white/80 opacity-100 backdrop-blur-sm transition-opacity hover:bg-black/70 md:opacity-0 md:group-hover:opacity-100"

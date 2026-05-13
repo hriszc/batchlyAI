@@ -36,22 +36,27 @@ export const Route = createFileRoute("/my/generations")({
 
 function GenerationsPage() {
   const { t } = useLanguage();
-  const { data: session } = authClient.useSession();
-  const [generations, setGenerations] = useState<GenRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: session, isPending: sessionPending } = authClient.useSession();
+  const [generations, setGenerations] = useState<GenRecord[] | null>(null);
   const [selected, setSelected] = useState<GenRecord | null>(null);
 
   useEffect(() => {
     if (!session?.user) {
-      setLoading(false);
       return;
     }
     fetch("/api/generations?limit=50")
       .then((r) => r.json() as Promise<{ generations: GenRecord[] }>)
       .then((d) => setGenerations(d.generations || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(() => setGenerations([]));
   }, [session?.user]);
+
+  if (sessionPending) {
+    return (
+      <main className="mx-auto max-w-[980px] px-4 py-16 text-center">
+        <p className="text-muted-foreground">{t("loading")}</p>
+      </main>
+    );
+  }
 
   if (!session?.user) {
     return (
@@ -75,7 +80,7 @@ function GenerationsPage() {
       </Link>
       <h1 className="mb-6 text-2xl font-semibold text-foreground">{t("myGenerations")}</h1>
 
-      {loading ? (
+      {generations === null ? (
         <p className="text-muted-foreground">{t("loading")}</p>
       ) : generations.length === 0 ? (
         <p className="text-muted-foreground">{t("noGenerations")}</p>
@@ -114,13 +119,20 @@ function GenerationsPage() {
       )}
 
       {selected && (
-        <div
+        <button
+          type="button"
+          aria-label={t("close")}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onClick={() => setSelected(null)}
         >
           <div
+            role="dialog"
+            aria-modal="true"
             className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-background p-6"
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") setSelected(null);
+            }}
           >
             <h2 className="mb-4 text-lg font-semibold">{t("generationDetail")}</h2>
             <p className="mb-4 text-sm text-muted-foreground">{selected.promptTemplate}</p>
@@ -141,7 +153,7 @@ function GenerationsPage() {
               {t("close")}
             </button>
           </div>
-        </div>
+        </button>
       )}
     </main>
   );

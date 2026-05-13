@@ -54,7 +54,7 @@ export function ShareScreenshot({
         setLoading(false);
       }
     }
-    loadImages();
+    void loadImages();
     return () => {
       cancelled = true;
     };

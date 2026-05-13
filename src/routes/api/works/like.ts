@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, eq, sql } from "drizzle-orm";
 
-import { jsonResponse } from "@/lib/api-helpers";
+import { jsonResponse, requireValidOrigin } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
@@ -11,6 +11,9 @@ export const Route = createFileRoute("/api/works/like")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const originError = requireValidOrigin(request);
+        if (originError) return originError;
+
         const auth = createAuth();
         if (!auth) return jsonResponse({ error: "Auth unavailable" }, 501);
         const session = await auth.api.getSession({ headers: request.headers });
@@ -22,6 +25,11 @@ export const Route = createFileRoute("/api/works/like")({
         try {
           const { workId } = (await request.json()) as { workId: string };
           if (!workId) return jsonResponse({ error: "Missing workId" }, 400);
+          const [targetWork] = await db
+            .select({ id: work.id })
+            .from(work)
+            .where(and(eq(work.id, workId), eq(work.isPublished, 1)));
+          if (!targetWork) return jsonResponse({ error: "Not found" }, 404);
 
           const [existing] = await db
             .select()
