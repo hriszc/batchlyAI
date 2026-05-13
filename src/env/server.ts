@@ -23,6 +23,9 @@ export const env = createEnv({
     GOOGLE_CLIENT_ID: z.string().optional(),
     GOOGLE_CLIENT_SECRET: z.string().optional(),
 
+    // Cloudflare Turnstile
+    TURNSTILE_SECRET_KEY: z.string().min(1).optional(),
+
     // GA4
     GA4_MEASUREMENT_ID: z.string().optional(),
     GA4_API_SECRET: z.string().optional(),

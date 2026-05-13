@@ -10,6 +10,7 @@ import { getDb } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { processReferralAfterSignup } from "@/lib/referral/process";
+import { verifyTurnstileToken } from "@/lib/turnstile";
 
 type ApiMethod = (ctx: {
   body: unknown;
@@ -36,6 +37,150 @@ function dbUnavailable() {
   return jsonResponse({ error: "Database not available" }, 501);
 }
 
+export async function handleAuthPost(request: Request): Promise<Response> {
+  try {
+    const auth = createAuth();
+    if (!auth) return dbUnavailable();
+
+    // CSRF protection for state-changing operations
+    if (!verifyOrigin(request)) {
+      return jsonResponse({ error: "Invalid origin" }, 403);
+    }
+
+    const url = new URL(request.url);
+    const path = url.pathname.replace("/api/auth/", "");
+
+    // Rate limit sensitive endpoints
+    const SENSITIVE_PATHS = ["sign-in/email", "sign-up/email", "forget-password", "reset-password"];
+    if (SENSITIVE_PATHS.includes(path)) {
+      const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+      const { allowed } = checkRateLimit(`${path}:${ip}`, 10, 60);
+      if (!allowed) {
+        return jsonResponse({ error: "Too many requests" }, 429);
+      }
+    }
+
+    // Direct API call — bypass auth.handler() to avoid CPU timeout
+    const methodName = API_MAP[path];
+    if (methodName) {
+      const apiMethod = (auth.api as Record<string, ApiMethod | undefined>)[methodName];
+      if (apiMethod) {
+        const body = await request
+          .clone()
+          .json()
+          .catch(() => ({}));
+        if (path === "sign-up/email") {
+          const turnstile = await verifyTurnstileToken(
+            (body as Record<string, unknown>)["cf-turnstile-response"],
+            request,
+          );
+          if (!turnstile.ok) {
+            return jsonResponse({ error: turnstile.message }, turnstile.status);
+          }
+        }
+
+        const response = await apiMethod.call(auth.api, {
+          body,
+          headers: request.headers,
+          request,
+          asResponse: true,
+        });
+
+        // Post-signup: send verification email directly
+        // (BA's internal callback is unreliable with direct API calls)
+        if (path === "sign-up/email" && response.ok) {
+          try {
+            const cloned = response.clone();
+            const json = (await cloned.json()) as {
+              user?: { id: string; email: string; name?: string };
+            };
+            const user = json.user;
+            if (user?.email) {
+              const binding = getD1Binding();
+              if (binding && user.id) {
+                await recordCreditGrant({
+                  db: getDb(binding),
+                  userId: user.id,
+                  credits: SIGNUP_FREE_CREDITS,
+                  creditType: "free",
+                  source: "signup_free",
+                  sourceId: user.id,
+                  metadata: { method: "email" },
+                }).catch((err) => console.error("[credit-audit] signup grant error:", err));
+              }
+
+              // BA's internal callback doesn't fire with direct API calls.
+              // Generate verification JWT with Web Crypto and send email ourselves.
+              const encoder = new TextEncoder();
+              const secret = encoder.encode(env.BETTER_AUTH_SECRET);
+              const header = { alg: "HS256", typ: "JWT" };
+              const now = Math.floor(Date.now() / 1000);
+              const payload = { email: user.email.toLowerCase(), iat: now, exp: now + 3600 };
+              const headerB64 = btoa(JSON.stringify(header))
+                .replace(/=/g, "")
+                .replace(/\+/g, "-")
+                .replace(/\//g, "_");
+              const payloadB64 = btoa(JSON.stringify(payload))
+                .replace(/=/g, "")
+                .replace(/\+/g, "-")
+                .replace(/\//g, "_");
+              const toSign = `${headerB64}.${payloadB64}`;
+              const key = await crypto.subtle.importKey(
+                "raw",
+                secret,
+                { name: "HMAC", hash: "SHA-256" },
+                false,
+                ["sign"],
+              );
+              const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(toSign));
+              const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sig)))
+                .replace(/=/g, "")
+                .replace(/\+/g, "-")
+                .replace(/\//g, "_");
+              const token = `${toSign}.${sigB64}`;
+              const verifyUrl = `${env.VITE_BASE_URL}/verify-email?token=${token}&callbackURL=%2F`;
+              sendEmail({
+                to: user.email,
+                subject: "Verify your email — BatchlyAI",
+                html: [
+                  `<h1>Welcome to BatchlyAI${user.name ? `, ${user.name}` : ""}!</h1>`,
+                  "<p>Please verify your email address by clicking the link below:</p>",
+                  `<p><a href="${verifyUrl}">Verify Email</a></p>`,
+                  "<p>This link expires in 1 hour.</p>",
+                  "<p>If you did not create this account, please ignore this email.</p>",
+                ].join(""),
+              }).catch((err) => console.error("[auth] sendEmail failed:", err));
+            }
+            await processReferralAfterSignup(request, json);
+
+            const refCode = (
+              (await request
+                .clone()
+                .json()
+                .catch(() => ({}))) as Record<string, unknown>
+            )?.ref as string | undefined;
+            const { trackServer } = await import("@/lib/analytics/server");
+            await trackServer("signup_completed", json.user?.id || "unknown", {
+              method: "email",
+              referral_code: refCode || "",
+            });
+          } catch {
+            console.error("[auth] Referral processing error");
+          }
+        }
+
+        return response;
+      }
+    }
+
+    // Fallback to handler for unknown paths
+    return auth.handler(request);
+  } catch (err) {
+    console.error("[auth] POST handler error:", err);
+    return jsonResponse({ error: "Internal server error" }, 500);
+  }
+}
+
 export const Route = createFileRoute("/api/auth/$")({
   server: {
     handlers: {
@@ -49,144 +194,7 @@ export const Route = createFileRoute("/api/auth/$")({
           return jsonResponse({ error: "Internal server error" }, 500);
         }
       },
-      POST: async ({ request }) => {
-        try {
-          const auth = createAuth();
-          if (!auth) return dbUnavailable();
-
-          // CSRF protection for state-changing operations
-          if (!verifyOrigin(request)) {
-            return jsonResponse({ error: "Invalid origin" }, 403);
-          }
-
-          const url = new URL(request.url);
-          const path = url.pathname.replace("/api/auth/", "");
-
-          // Rate limit sensitive endpoints
-          const SENSITIVE_PATHS = [
-            "sign-in/email",
-            "sign-up/email",
-            "forget-password",
-            "reset-password",
-          ];
-          if (SENSITIVE_PATHS.includes(path)) {
-            const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-            const { allowed } = checkRateLimit(`${path}:${ip}`, 10, 60);
-            if (!allowed) {
-              return jsonResponse({ error: "Too many requests" }, 429);
-            }
-          }
-
-          // Direct API call — bypass auth.handler() to avoid CPU timeout
-          const methodName = API_MAP[path];
-          if (methodName) {
-            const apiMethod = (auth.api as Record<string, ApiMethod | undefined>)[methodName];
-            if (apiMethod) {
-              const body = await request
-                .clone()
-                .json()
-                .catch(() => ({}));
-              const response = await apiMethod.call(auth.api, {
-                body,
-                headers: request.headers,
-                request,
-                asResponse: true,
-              });
-
-              // Post-signup: send verification email directly
-              // (BA's internal callback is unreliable with direct API calls)
-              if (path === "sign-up/email" && response.ok) {
-                try {
-                  const cloned = response.clone();
-                  const json = (await cloned.json()) as {
-                    user?: { id: string; email: string; name?: string };
-                  };
-                  const user = json.user;
-                  if (user?.email) {
-                    const binding = getD1Binding();
-                    if (binding && user.id) {
-                      await recordCreditGrant({
-                        db: getDb(binding),
-                        userId: user.id,
-                        credits: SIGNUP_FREE_CREDITS,
-                        creditType: "free",
-                        source: "signup_free",
-                        sourceId: user.id,
-                        metadata: { method: "email" },
-                      }).catch((err) => console.error("[credit-audit] signup grant error:", err));
-                    }
-
-                    // BA's internal callback doesn't fire with direct API calls.
-                    // Generate verification JWT with Web Crypto and send email ourselves.
-                    const encoder = new TextEncoder();
-                    const secret = encoder.encode(env.BETTER_AUTH_SECRET);
-                    const header = { alg: "HS256", typ: "JWT" };
-                    const now = Math.floor(Date.now() / 1000);
-                    const payload = { email: user.email.toLowerCase(), iat: now, exp: now + 3600 };
-                    const headerB64 = btoa(JSON.stringify(header))
-                      .replace(/=/g, "")
-                      .replace(/\+/g, "-")
-                      .replace(/\//g, "_");
-                    const payloadB64 = btoa(JSON.stringify(payload))
-                      .replace(/=/g, "")
-                      .replace(/\+/g, "-")
-                      .replace(/\//g, "_");
-                    const toSign = `${headerB64}.${payloadB64}`;
-                    const key = await crypto.subtle.importKey(
-                      "raw",
-                      secret,
-                      { name: "HMAC", hash: "SHA-256" },
-                      false,
-                      ["sign"],
-                    );
-                    const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(toSign));
-                    const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sig)))
-                      .replace(/=/g, "")
-                      .replace(/\+/g, "-")
-                      .replace(/\//g, "_");
-                    const token = `${toSign}.${sigB64}`;
-                    const verifyUrl = `${env.VITE_BASE_URL}/verify-email?token=${token}&callbackURL=%2F`;
-                    sendEmail({
-                      to: user.email,
-                      subject: "Verify your email — BatchlyAI",
-                      html: [
-                        `<h1>Welcome to BatchlyAI${user.name ? `, ${user.name}` : ""}!</h1>`,
-                        "<p>Please verify your email address by clicking the link below:</p>",
-                        `<p><a href="${verifyUrl}">Verify Email</a></p>`,
-                        "<p>This link expires in 1 hour.</p>",
-                        "<p>If you did not create this account, please ignore this email.</p>",
-                      ].join(""),
-                    }).catch((err) => console.error("[auth] sendEmail failed:", err));
-                  }
-                  await processReferralAfterSignup(request, json);
-
-                  const refCode = (
-                    (await request
-                      .clone()
-                      .json()
-                      .catch(() => ({}))) as Record<string, unknown>
-                  )?.ref as string | undefined;
-                  const { trackServer } = await import("@/lib/analytics/server");
-                  await trackServer("signup_completed", json.user?.id || "unknown", {
-                    method: "email",
-                    referral_code: refCode || "",
-                  });
-                } catch {
-                  console.error("[auth] Referral processing error");
-                }
-              }
-
-              return response;
-            }
-          }
-
-          // Fallback to handler for unknown paths
-          return auth.handler(request);
-        } catch (err) {
-          console.error("[auth] POST handler error:", err);
-          return jsonResponse({ error: "Internal server error" }, 500);
-        }
-      },
+      POST: async ({ request }) => handleAuthPost(request),
     },
   },
 });

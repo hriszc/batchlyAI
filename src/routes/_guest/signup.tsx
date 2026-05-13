@@ -2,13 +2,14 @@ import { SiGithub, SiGoogle } from "@icons-pack/react-simple-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { LoaderCircleIcon, MailCheckIcon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { SignInSocialButton } from "@/components/sign-in-social-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { env } from "@/env/client";
 import { authClient } from "@/lib/auth/auth-client";
 import { authQueryOptions } from "@/lib/auth/queries";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -31,6 +32,78 @@ export const Route = createFileRoute("/_guest/signup")({
   component: SignupForm,
 });
 
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (
+        container: HTMLElement,
+        options: {
+          sitekey: string;
+          callback: (token: string) => void;
+          "expired-callback": () => void;
+          "error-callback": () => void;
+          theme?: "auto" | "light" | "dark";
+        },
+      ) => string;
+      reset: (widgetId?: string) => void;
+    };
+  }
+}
+
+const TURNSTILE_SCRIPT_ID = "cloudflare-turnstile-script";
+
+function TurnstileField({
+  disabled,
+  onToken,
+}: {
+  disabled: boolean;
+  onToken: (token: string) => void;
+}) {
+  const siteKey = env.VITE_TURNSTILE_SITE_KEY;
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const widgetIdRef = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (!siteKey || typeof window === "undefined") return;
+
+    const render = () => {
+      if (!containerRef.current || widgetIdRef.current || !window.turnstile) return;
+      widgetIdRef.current = window.turnstile.render(containerRef.current, {
+        sitekey: siteKey,
+        theme: "auto",
+        callback: onToken,
+        "expired-callback": () => onToken(""),
+        "error-callback": () => onToken(""),
+      });
+    };
+
+    const existing = document.getElementById(TURNSTILE_SCRIPT_ID) as HTMLScriptElement | null;
+    if (existing) {
+      render();
+      existing.addEventListener("load", render, { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = TURNSTILE_SCRIPT_ID;
+    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    script.async = true;
+    script.defer = true;
+    script.addEventListener("load", render, { once: true });
+    document.head.appendChild(script);
+  }, [onToken, siteKey]);
+
+  if (!siteKey) return null;
+
+  return (
+    <div
+      ref={containerRef}
+      aria-disabled={disabled}
+      className={disabled ? "pointer-events-none opacity-60" : ""}
+    />
+  );
+}
+
 function SignupForm() {
   const { redirectUrl } = Route.useRouteContext();
   const queryClient = useQueryClient();
@@ -39,6 +112,8 @@ function SignupForm() {
   const [signupEmail, setSignupEmail] = useState<string | null>(null);
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const turnstileRequired = Boolean(env.VITE_TURNSTILE_SITE_KEY);
 
   const refCode = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -46,13 +121,20 @@ function SignupForm() {
   }, []);
 
   const { mutate: signupMutate, isPending } = useMutation({
-    mutationFn: async (data: { name: string; email: string; password: string; ref: string }) => {
+    mutationFn: async (data: {
+      name: string;
+      email: string;
+      password: string;
+      ref: string;
+      turnstileToken: string;
+    }) => {
       const result = await authClient.signUp.email({
         name: data.name,
         email: data.email,
         password: data.password,
         callbackURL: redirectUrl,
         ref: data.ref || undefined,
+        "cf-turnstile-response": data.turnstileToken || undefined,
       } as Record<string, unknown> & {
         name: string;
         email: string;
@@ -76,6 +158,8 @@ function SignupForm() {
       const msg = error.message || "An error occurred while signing up.";
       setErrorMessage(msg);
       toast.error(msg);
+      window.turnstile?.reset();
+      setTurnstileToken("");
     },
   });
 
@@ -111,7 +195,14 @@ function SignupForm() {
       return;
     }
 
-    signupMutate({ name, email, password, ref: refCode });
+    if (turnstileRequired && !turnstileToken) {
+      const msg = "Please complete the human verification.";
+      setErrorMessage(msg);
+      toast.error(msg);
+      return;
+    }
+
+    signupMutate({ name, email, password, ref: refCode, turnstileToken });
   };
 
   if (signupEmail) {
@@ -209,12 +300,18 @@ function SignupForm() {
                 required
               />
             </div>
+            <TurnstileField disabled={isPending} onToken={setTurnstileToken} />
             {errorMessage && (
               <div className="rounded-md bg-destructive/15 px-4 py-2 text-sm text-destructive">
                 {errorMessage}
               </div>
             )}
-            <Button type="submit" className="mt-2 w-full" size="lg" disabled={isPending}>
+            <Button
+              type="submit"
+              className="mt-2 w-full"
+              size="lg"
+              disabled={isPending || (turnstileRequired && !turnstileToken)}
+            >
               {isPending && <LoaderCircleIcon className="animate-spin" />}
               {isPending ? t("signingUp") : t("signupButton")}
             </Button>
