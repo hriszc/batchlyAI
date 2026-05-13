@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { LoginCard } from "@/components/LoginCard";
+import { FaqSection } from "@/components/seo/FaqSection";
 import { GeneratorCard } from "@/components/universal-generator/GeneratorCard";
 import { ResultsGrid } from "@/components/universal-generator/ResultsGrid";
 import { ShareScreenshot } from "@/components/universal-generator/ShareScreenshot";
@@ -10,6 +11,7 @@ import { computePromptCombinations } from "@/components/universal-generator/util
 import { useAuthGate } from "@/components/useAuthGate";
 import { authClient } from "@/lib/auth/auth-client";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { homepageFaq } from "@/lib/seo/geo-content";
 
 export function shouldRedirectToCn(): boolean {
   if (typeof window === "undefined") return false;
@@ -329,6 +331,12 @@ export function HomePage({ forceLanguage }: HomePageProps) {
           onPublish={isLoggedIn ? handlePublish : undefined}
         />
       </div>
+
+      <FaqSection
+        title="Batch AI image and video generation FAQ"
+        description="Clear answers for teams comparing BatchlyAI with single-prompt AI generation tools."
+        items={homepageFaq}
+      />
 
       {shareMode && (
         <ShareScreenshot

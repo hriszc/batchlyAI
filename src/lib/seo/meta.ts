@@ -5,7 +5,7 @@ export interface PageMetaInput {
   locale: "en" | "zh-CN";
   ogImage?: string;
   ogType?: "website" | "article";
-  jsonLd?: Record<string, unknown>;
+  jsonLd?: Record<string, unknown> | Array<Record<string, unknown>>;
   noIndex?: boolean;
 }
 
@@ -32,7 +32,10 @@ export function createPageMeta(input: PageMetaInput) {
     ],
     links: [] as Array<{ rel: string; href?: string; hrefLang?: string }>,
     scripts: input.jsonLd
-      ? [{ type: "application/ld+json", children: JSON.stringify(input.jsonLd) }]
+      ? (Array.isArray(input.jsonLd) ? input.jsonLd : [input.jsonLd]).map((jsonLd) => ({
+          type: "application/ld+json" as const,
+          children: JSON.stringify(jsonLd),
+        }))
       : [],
   };
 }

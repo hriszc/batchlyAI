@@ -5,6 +5,7 @@ import { blogPosts } from "@/content/blog";
 import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
 import { template as templateTable, work } from "@/lib/db/schema";
+import { examplePages } from "@/lib/seo/geo-content";
 import { seoLandingPages } from "@/lib/seo/landing-pages";
 
 interface SitemapUrl {
@@ -47,10 +48,21 @@ async function createSitemapResponse(): Promise<Response> {
     { loc: `${BASE_URL}/cn`, changefreq: "daily", priority: "0.9" },
     { loc: `${BASE_URL}/discover`, changefreq: "daily", priority: "0.8" },
     { loc: `${BASE_URL}/blog`, changefreq: "weekly", priority: "0.7" },
+    { loc: `${BASE_URL}/about`, changefreq: "monthly", priority: "0.6" },
+    {
+      loc: `${BASE_URL}/compare/ai-batch-generator-vs-single-prompt-tools`,
+      changefreq: "monthly",
+      priority: "0.8",
+    },
     ...seoLandingPages.map((page) => ({
       loc: `${BASE_URL}/tools/${page.slug}`,
       changefreq: "weekly" as const,
       priority: "0.8",
+    })),
+    ...examplePages.map((page) => ({
+      loc: `${BASE_URL}/examples/${page.slug}`,
+      changefreq: "monthly" as const,
+      priority: "0.7",
     })),
     ...blogPosts.map((post) => ({
       loc: `${BASE_URL}/blog/${post.slug}`,
@@ -61,21 +73,28 @@ async function createSitemapResponse(): Promise<Response> {
 
   const binding = getD1Binding();
   if (binding) {
-    const db = getDb(binding);
-    const [templates, works] = await Promise.all([
-      db
-        .select({ slug: templateTable.slug })
-        .from(templateTable)
-        .where(eq(templateTable.isPublic, true))
-        .orderBy(desc(templateTable.usageCount), desc(templateTable.createdAt))
-        .limit(500),
-      db
-        .select({ id: work.id })
-        .from(work)
-        .where(eq(work.isPublished, 1))
-        .orderBy(desc(work.publishedAt))
-        .limit(500),
-    ]);
+    let templates: Array<{ slug: string }> = [];
+    let works: Array<{ id: string }> = [];
+
+    try {
+      const db = getDb(binding);
+      [templates, works] = await Promise.all([
+        db
+          .select({ slug: templateTable.slug })
+          .from(templateTable)
+          .where(eq(templateTable.isPublic, true))
+          .orderBy(desc(templateTable.usageCount), desc(templateTable.createdAt))
+          .limit(500),
+        db
+          .select({ id: work.id })
+          .from(work)
+          .where(eq(work.isPublished, 1))
+          .orderBy(desc(work.publishedAt))
+          .limit(500),
+      ]);
+    } catch (error) {
+      console.warn("[sitemap] dynamic URLs unavailable", error);
+    }
 
     urls.push(
       ...templates.map((item) => ({

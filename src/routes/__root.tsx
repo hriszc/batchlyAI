@@ -75,11 +75,20 @@ function FooterLinks() {
   const { t } = useLanguage();
   return (
     <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+      <a href="/about" className="transition-colors hover:text-foreground">
+        About
+      </a>
       <a href="/blog" className="transition-colors hover:text-foreground">
         {t("blog")}
       </a>
       <a href="/discover" className="transition-colors hover:text-foreground">
         {t("discover")}
+      </a>
+      <a
+        href="/compare/ai-batch-generator-vs-single-prompt-tools"
+        className="transition-colors hover:text-foreground"
+      >
+        Compare
       </a>
     </div>
   );
