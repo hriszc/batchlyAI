@@ -1,4 +1,4 @@
-import { createContext, use, useState, useEffect, useCallback } from "react";
+import { createContext, use, useCallback, useState } from "react";
 
 import { getLanguageCookie, parseStoredLanguage } from "./locale-routing";
 import type { Language, TranslationKey } from "./translations";
@@ -47,18 +47,13 @@ function persistLanguage(lang: Language): void {
 }
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  // Start with "en" for SSR hydration consistency
-  const [language, setLanguageState] = useState<Language>("en");
-
-  // Sync to explicit stored preference after hydration (SSR-safe).
-  // Browser language is handled by locale routing so "/" can remain English.
-  useEffect(() => {
+  const [language, setLanguageState] = useState<Language>(() => {
     const stored = getStoredLanguage();
     if (stored !== "en") {
-      // oxlint-disable-next-line react-hooks-js/set-state-in-effect
-      setLanguageState(stored);
+      return stored;
     }
-  }, []);
+    return "en";
+  });
 
   const setLanguage = useCallback((lang: Language, options?: SetLanguageOptions) => {
     if (options?.persist !== false) {

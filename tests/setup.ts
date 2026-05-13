@@ -8,6 +8,15 @@ vi.mock("html2canvas", () => ({
 import { cleanup } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
 
+(globalThis as Record<string, unknown>).__env__ = {
+  FILE_URL_SIGNING_SECRET: "test-file-url-signing-secret-32-chars",
+  BETTER_AUTH_SECRET: "test-better-auth-secret-32-chars",
+  VITE_BASE_URL: "https://batchlyai.com",
+};
+process.env.FILE_URL_SIGNING_SECRET = "test-file-url-signing-secret-32-chars";
+process.env.BETTER_AUTH_SECRET = "test-better-auth-secret-32-chars";
+process.env.VITE_BASE_URL = "https://batchlyai.com";
+
 afterEach(() => {
   cleanup();
 });

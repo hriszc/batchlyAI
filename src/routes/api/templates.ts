@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, desc, eq, like, or, sql, type SQL } from "drizzle-orm";
 
-import { jsonResponse } from "@/lib/api-helpers";
+import { jsonResponse, requireValidOrigin } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
@@ -70,6 +70,9 @@ export async function handleGetTemplates(request: Request): Promise<Response> {
 }
 
 export async function handlePostTemplate(request: Request): Promise<Response> {
+  const originError = requireValidOrigin(request);
+  if (originError) return originError;
+
   const auth = createAuth();
   if (!auth) return jsonResponse({ error: "Auth unavailable" }, 501);
 
@@ -93,6 +96,21 @@ export async function handlePostTemplate(request: Request): Promise<Response> {
 
   if (!body.promptTemplate || !body.variableGroups) {
     return jsonResponse({ error: "Missing required fields: promptTemplate, variableGroups" }, 400);
+  }
+  if (body.promptTemplate.length > 5000) {
+    return jsonResponse({ error: "Prompt template too long" }, 400);
+  }
+  if (body.name && body.name.length > 120) {
+    return jsonResponse({ error: "Name too long" }, 400);
+  }
+  if (body.description && body.description.length > 500) {
+    return jsonResponse({ error: "Description too long" }, 400);
+  }
+  if (typeof body.variableGroups === "string" && body.variableGroups.length > 20_000) {
+    return jsonResponse({ error: "Variable groups too large" }, 400);
+  }
+  if (body.resultUrls && body.resultUrls.length > 20) {
+    return jsonResponse({ error: "Too many result URLs" }, 400);
   }
 
   if (!body.promptTemplate.includes("{{")) {

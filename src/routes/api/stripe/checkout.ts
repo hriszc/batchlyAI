@@ -1,12 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { env } from "@/env/server";
-import { jsonResponse } from "@/lib/api-helpers";
+import { jsonResponse, requireValidOrigin } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getStripe } from "@/lib/stripe";
 
 export async function handleCheckout(request: Request): Promise<Response> {
+  const originError = requireValidOrigin(request);
+  if (originError) return originError;
+
   const auth = createAuth();
   if (!auth) return jsonResponse({ error: "Auth unavailable" }, 501);
 

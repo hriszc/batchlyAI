@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { jsonResponse } from "@/lib/api-helpers";
+import { jsonResponse, requireValidOrigin } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { createSignedFileUrl } from "@/lib/cloudflare/file-url-signing";
 import { uploadToR2 } from "@/lib/cloudflare/r2";
@@ -20,6 +20,9 @@ const ALLOWED_MIME_TYPES = [
 const ALLOWED_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".bmp", ".tiff"];
 
 export async function handleUpload(request: Request): Promise<Response> {
+  const originError = requireValidOrigin(request);
+  if (originError) return originError;
+
   const auth = createAuth();
   if (!auth) {
     return jsonResponse({ error: "Auth unavailable" }, 501);

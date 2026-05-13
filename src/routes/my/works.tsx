@@ -35,20 +35,17 @@ export const Route = createFileRoute("/my/works")({
 
 function WorksPage() {
   const { t } = useLanguage();
-  const { data: session } = authClient.useSession();
-  const [works, setWorks] = useState<WorkRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: session, isPending: sessionPending } = authClient.useSession();
+  const [works, setWorks] = useState<WorkRecord[] | null>(null);
 
   useEffect(() => {
     if (!session?.user) {
-      setLoading(false);
       return;
     }
     fetch(`/api/works?userId=${session.user.id}`)
       .then((r) => r.json() as Promise<{ works: WorkRecord[] }>)
       .then((d) => setWorks(d.works || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(() => setWorks([]));
   }, [session?.user]);
 
   if (!session?.user) {
@@ -72,7 +69,7 @@ function WorksPage() {
       </Link>
       <h1 className="mb-6 text-2xl font-semibold text-foreground">{t("myWorks")}</h1>
 
-      {loading ? (
+      {sessionPending || works === null ? (
         <p className="text-muted-foreground">{t("loading")}</p>
       ) : works.length === 0 ? (
         <p className="text-muted-foreground">{t("noWorksYet")}</p>

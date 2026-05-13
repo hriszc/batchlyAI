@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { desc, eq, gte, and } from "drizzle-orm";
+import { and, desc, eq, gte } from "drizzle-orm";
 
-import { jsonResponse } from "@/lib/api-helpers";
+import { jsonResponse, requireValidOrigin } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { mirrorImageToR2 } from "@/lib/cloudflare/r2";
@@ -25,7 +25,10 @@ export async function handleGetWorks(request: Request): Promise<Response> {
   try {
     // Single work for remix
     if (remixId) {
-      const [w] = await db.select().from(work).where(eq(work.id, remixId));
+      const [w] = await db
+        .select()
+        .from(work)
+        .where(and(eq(work.id, remixId), eq(work.isPublished, 1)));
       if (!w) return jsonResponse({ error: "Not found" }, 404);
       return jsonResponse(
         {
@@ -69,6 +72,9 @@ export async function handleGetWorks(request: Request): Promise<Response> {
 }
 
 export async function handlePostWork(request: Request): Promise<Response> {
+  const originError = requireValidOrigin(request);
+  if (originError) return originError;
+
   const auth = createAuth();
   if (!auth) return jsonResponse({ error: "Auth unavailable" }, 501);
   const session = await auth.api.getSession({ headers: request.headers });
@@ -93,6 +99,15 @@ export async function handlePostWork(request: Request): Promise<Response> {
     };
     if (!body.coverUrl) {
       return jsonResponse({ error: "Cover image is required" }, 400);
+    }
+    if (!body.promptTemplate?.trim() || !body.model?.trim()) {
+      return jsonResponse({ error: "Missing required fields" }, 400);
+    }
+    if (body.promptTemplate.length > 5000) {
+      return jsonResponse({ error: "Prompt template too long" }, 400);
+    }
+    if (body.resultUrls && body.resultUrls.length > 20) {
+      return jsonResponse({ error: "Too many result URLs" }, 400);
     }
 
     const now = Math.floor(Date.now() / 1000);

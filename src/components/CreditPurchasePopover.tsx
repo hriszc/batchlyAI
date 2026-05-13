@@ -16,7 +16,7 @@ interface CreditPurchasePopoverProps {
 }
 
 export function CreditPurchasePopover({ onClose }: CreditPurchasePopoverProps) {
-  const { language, t } = useLanguage();
+  const { t } = useLanguage();
   const [quantity, setQuantity] = useState(1);
   const [customValue, setCustomValue] = useState("");
   const [isCustom, setIsCustom] = useState(false);
@@ -89,7 +89,9 @@ export function CreditPurchasePopover({ onClose }: CreditPurchasePopoverProps) {
   return (
     <>
       {/* Backdrop — mobile only */}
-      <div
+      <button
+        type="button"
+        aria-label="Close checkout"
         className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm sm:hidden"
         onClick={onClose}
       />

@@ -8,11 +8,14 @@ describe("cn", () => {
   });
 
   it("filters falsy values", () => {
-    expect(cn("foo", false && "bar", undefined, "baz")).toBe("foo baz");
+    const enabled = false;
+    expect(cn("foo", enabled && "bar", undefined, "baz")).toBe("foo baz");
   });
 
   it("handles conditional classes", () => {
-    expect(cn("base", true && "active", false && "hidden")).toBe("base active");
+    const active = true;
+    const hidden = false;
+    expect(cn("base", active && "active", hidden && "hidden")).toBe("base active");
   });
 
   it("resolves tailwind conflicts (later wins)", () => {

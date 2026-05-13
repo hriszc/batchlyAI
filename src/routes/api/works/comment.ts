@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 
-import { jsonResponse } from "@/lib/api-helpers";
+import { jsonResponse, requireValidOrigin } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
@@ -42,6 +42,9 @@ export const Route = createFileRoute("/api/works/comment")({
       },
 
       POST: async ({ request }) => {
+        const originError = requireValidOrigin(request);
+        if (originError) return originError;
+
         const auth = createAuth();
         if (!auth) return jsonResponse({ error: "Auth unavailable" }, 501);
         const session = await auth.api.getSession({ headers: request.headers });
@@ -53,12 +56,20 @@ export const Route = createFileRoute("/api/works/comment")({
         try {
           const { workId, content } = (await request.json()) as { workId: string; content: string };
           if (!workId || !content?.trim()) return jsonResponse({ error: "Missing fields" }, 400);
+          const trimmed = content.trim();
+          if (trimmed.length > 1000) return jsonResponse({ error: "Comment too long" }, 400);
+
+          const [targetWork] = await db
+            .select({ id: work.id })
+            .from(work)
+            .where(and(eq(work.id, workId), eq(work.isPublished, 1)));
+          if (!targetWork) return jsonResponse({ error: "Not found" }, 404);
 
           await db.insert(workComment).values({
             id: crypto.randomUUID(),
             workId,
             userId: session.user.id,
-            content: content.trim(),
+            content: trimmed,
             createdAt: Math.floor(Date.now() / 1000),
           });
 

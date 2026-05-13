@@ -1,4 +1,5 @@
 import { LogInIcon, Loader2Icon } from "lucide-react";
+import type { SyntheticEvent } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -18,7 +19,7 @@ export function LoginCard({ onSuccess, onClose }: LoginCardProps) {
   const [isPending, setIsPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (isPending) return;
     setErrorMessage(null);
@@ -60,8 +61,10 @@ export function LoginCard({ onSuccess, onClose }: LoginCardProps) {
   return (
     <>
       {/* Backdrop */}
-      <div
+      <button
+        type="button"
         data-testid="login-card-backdrop"
+        aria-label="Close"
         className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
         onClick={(e) => {
           if (e.target === e.currentTarget) onClose();
