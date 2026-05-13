@@ -221,4 +221,29 @@ describe("handleGenerationFile", () => {
     expect(resp.status).toBe(401);
     expect(querySpy).not.toHaveBeenCalled();
   });
+
+  it("reads generation file keys from Nitro splat params", async () => {
+    mocks.mockGetSession.mockResolvedValue({ user: { id: "u1" } });
+    const mockGet = vi.fn().mockResolvedValue({
+      body: new ReadableStream(),
+      writeHttpMetadata: vi.fn(),
+    });
+    (globalThis as Record<string, unknown>).__env__ = {
+      batchlyai_db: db,
+      batchlyai_r2: {
+        get: mockGet,
+      },
+    };
+
+    const resp = await handleGenerationFile(
+      {
+        headers: new Headers(),
+        url: "https://batchlyai.com/api/generation-files/generations/u1/gen-1/0.png",
+      } as unknown as Request,
+      { _: "generations/u1/gen-1/0.png" } as unknown as { _splat: string },
+    );
+
+    expect(resp.status).toBe(200);
+    expect(mockGet).toHaveBeenCalledWith("generations/u1/gen-1/0.png");
+  });
 });

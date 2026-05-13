@@ -37,7 +37,7 @@ async function isPublishedWorkFile(fileUrl: string): Promise<boolean> {
 
 export async function handleGenerationFile(
   request: Request,
-  params: { _splat: string },
+  params: { _splat?: string; _?: string; "*"?: string },
 ): Promise<Response> {
   const env = (globalThis as Record<string, unknown>).__env__ as
     | Record<string, unknown>
@@ -45,7 +45,7 @@ export async function handleGenerationFile(
   const r2 = env?.batchlyai_r2 as R2Binding | undefined;
   if (!r2) return new Response("R2 not available", { status: 501 });
 
-  const key = params._splat;
+  const key = params._splat ?? params._ ?? params["*"];
   if (!key) return new Response("Not found", { status: 404 });
 
   const publicWorkFile =
@@ -99,7 +99,7 @@ export const Route = createFileRoute("/api/generation-files/$")({
   server: {
     handlers: {
       GET: async ({ request, params }) =>
-        handleGenerationFile(request, params as { _splat: string }),
+        handleGenerationFile(request, params as { _splat?: string; _?: string; "*"?: string }),
     },
   },
 });
