@@ -2,16 +2,20 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 
 import { blogPosts } from "@/content/blog";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { createPageMeta } from "@/lib/seo/meta";
+
+const blogIndexSeo = createPageMeta({
+  title: "Blog — BatchlyAI",
+  description: "Tips, guides, and best practices for AI batch generation",
+  path: "/blog",
+  locale: "en",
+});
 
 export const Route = createFileRoute("/blog/")({
   head: () => ({
-    meta: [
-      { title: "Blog — BatchlyAI" },
-      {
-        name: "description",
-        content: "Tips, guides, and best practices for AI batch generation",
-      },
-    ],
+    htmlAttrs: { lang: "en" },
+    meta: blogIndexSeo.meta,
+    links: [{ rel: "canonical", href: "https://batchlyai.com/blog" }],
   }),
   component: BlogIndexPage,
 });

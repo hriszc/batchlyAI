@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
 import { getSeoLandingPage, seoLandingPages, type SeoLandingPage } from "@/lib/seo/landing-pages";
 import { createPageMeta } from "@/lib/seo/meta";
-import { webPageLd } from "@/lib/seo/structured-data";
+import { faqPageLd, webPageLd } from "@/lib/seo/structured-data";
 
 export const Route = createFileRoute("/tools/$slug")({
   loader: async ({ params }) => {
@@ -29,7 +29,10 @@ export const Route = createFileRoute("/tools/$slug")({
       htmlAttrs: { lang: "en" },
       meta: seo.meta,
       links: [{ rel: "canonical", href: `https://batchlyai.com/tools/${page.slug}` }],
-      scripts: seo.scripts,
+      scripts: [
+        ...seo.scripts,
+        { type: "application/ld+json", children: JSON.stringify(faqPageLd(page.faqs)) },
+      ],
     };
   },
   component: ToolLandingPage,
@@ -102,6 +105,18 @@ function ToolLandingPage() {
             >
               {item.h1}
             </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10 border-t pt-8">
+        <h2 className="text-xl font-semibold text-foreground">Frequently asked questions</h2>
+        <div className="mt-4 space-y-4">
+          {page.faqs.map((item) => (
+            <div key={item.question}>
+              <h3 className="text-base font-semibold text-foreground">{item.question}</h3>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">{item.answer}</p>
+            </div>
           ))}
         </div>
       </section>

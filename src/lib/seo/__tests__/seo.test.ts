@@ -4,7 +4,7 @@ import { hreflangLinks } from "@/lib/seo/hreflang";
 import { seoLandingPages } from "@/lib/seo/landing-pages";
 import { mediaTypeFromModel } from "@/lib/seo/media";
 import { createPageMeta } from "@/lib/seo/meta";
-import { templateHowToLd } from "@/lib/seo/structured-data";
+import { faqPageLd, templateHowToLd } from "@/lib/seo/structured-data";
 
 describe("hreflangLinks", () => {
   it("generates en + zh-CN + x-default links for root", () => {
@@ -37,8 +37,8 @@ describe("createPageMeta", () => {
   });
   it("uses default ogImage when not provided", () => {
     const meta = createPageMeta({ title: "T", description: "D", path: "/", locale: "en" });
-    expect(meta.meta.find((m: any) => m.property === "og:image")?.content).toContain(
-      "og-default.png",
+    expect(meta.meta.find((m: any) => m.property === "og:image")?.content).toBe(
+      "https://batchlyai.com/og-default.png",
     );
   });
   it("sets noindex when requested", () => {
@@ -78,6 +78,16 @@ describe("seoLandingPages", () => {
     expect(seoLandingPages.some((page) => page.slug === "ai-product-visual-generator")).toBe(true);
     expect(seoLandingPages.every((page) => page.title.includes("BatchlyAI"))).toBe(true);
     expect(seoLandingPages.every((page) => page.mediaType === "both")).toBe(true);
+    expect(seoLandingPages.every((page) => page.faqs.length >= 3)).toBe(true);
+  });
+});
+
+describe("faqPageLd", () => {
+  it("creates FAQPage structured data", () => {
+    const ld = faqPageLd([{ question: "Can I batch prompts?", answer: "Yes." }]);
+
+    expect(ld["@type"]).toBe("FAQPage");
+    expect(JSON.stringify(ld)).toContain("Can I batch prompts?");
   });
 });
 

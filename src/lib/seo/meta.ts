@@ -10,7 +10,7 @@ export interface PageMetaInput {
 }
 
 export function createPageMeta(input: PageMetaInput) {
-  const image = input.ogImage ?? `https://batchlyai.com/og-default.png`;
+  const image = input.ogImage ?? "https://batchlyai.com/og-default.png";
 
   return {
     meta: [

@@ -51,6 +51,21 @@ export function webPageLd(input: {
   };
 }
 
+export function faqPageLd(items: { question: string; answer: string }[]): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+    })),
+  };
+}
+
 export function creativeWorkLd(input: {
   title: string;
   description: string;
