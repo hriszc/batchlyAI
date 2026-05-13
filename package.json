@@ -99,6 +99,11 @@
   "lint-staged": {
     "*": "oxfmt --no-error-on-unmatched-pattern"
   },
+  "engines": {
+    "node": ">=22.12.0",
+    "pnpm": ">=10.0.0"
+  },
+  "packageManager": "pnpm@10.33.4",
   "pnpm": {
     "onlyBuiltDependencies": [
       "better-sqlite3",
