@@ -13,21 +13,26 @@ interface R2Binding {
 }
 
 async function isPublishedWorkFile(fileUrl: string): Promise<boolean> {
-  const binding = getD1Binding();
-  if (!binding) return false;
+  try {
+    const binding = getD1Binding();
+    if (!binding) return false;
 
-  const db = getDb(binding);
-  const [row] = await db
-    .select({ id: work.id })
-    .from(work)
-    .where(
-      and(
-        eq(work.isPublished, 1),
-        or(eq(work.coverUrl, fileUrl), like(work.resultUrls, `%${fileUrl}%`)),
-      ),
-    )
-    .limit(1);
-  return !!row;
+    const db = getDb(binding);
+    const [row] = await db
+      .select({ id: work.id })
+      .from(work)
+      .where(
+        and(
+          eq(work.isPublished, 1),
+          or(eq(work.coverUrl, fileUrl), like(work.resultUrls, `%${fileUrl}%`)),
+        ),
+      )
+      .limit(1);
+    return !!row;
+  } catch (err) {
+    console.error("[generation-files] published work lookup failed:", err);
+    return false;
+  }
 }
 
 export async function handleGenerationFile(
@@ -44,14 +49,22 @@ export async function handleGenerationFile(
   if (!key) return new Response("Not found", { status: 404 });
 
   const publicWorkFile =
-    key.startsWith("works/") || (await isPublishedWorkFile(`/api/generation-files/${key}`));
+    key.startsWith("works/") ||
+    (!key.startsWith("generations/") &&
+      (await isPublishedWorkFile(`/api/generation-files/${key}`)));
 
   if (!publicWorkFile) {
     // Require authentication for private generation history files.
     const auth = createAuth();
     if (!auth) return new Response("Auth unavailable", { status: 501 });
 
-    const session = await auth.api.getSession({ headers: request.headers });
+    let session: { user?: { id?: string } } | null;
+    try {
+      session = await auth.api.getSession({ headers: request.headers });
+    } catch (err) {
+      console.error("[generation-files] session lookup failed:", err);
+      return new Response("Unauthorized", { status: 401 });
+    }
     if (!session?.user?.id) {
       return new Response("Unauthorized", { status: 401 });
     }
