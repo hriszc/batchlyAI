@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 import { pollReplicatePrediction } from "@/lib/ai";
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getD1Binding, getKvBinding } from "@/lib/cloudflare/bindings";
 import { mirrorImageToR2 } from "@/lib/cloudflare/r2";
+import { recordAiCreditSpend } from "@/lib/credits/audit";
 import { getDb } from "@/lib/db";
+import { user as userTable } from "@/lib/db/schema/auth.schema";
 import { generation } from "@/lib/db/schema/data-flywheel.schema";
 import { checkRateLimit } from "@/lib/rate-limit";
 
@@ -15,6 +17,21 @@ interface GrsTaskData {
   status: string;
   urls?: string[];
   error?: string;
+}
+
+interface GenerationTaskData {
+  generationId?: string;
+  userId?: string;
+  creditsUsed?: number;
+  predictionIds?: string[];
+}
+
+interface StatusResult {
+  id: string;
+  status: string;
+  urls: string[] | null;
+  error: string | null;
+  creditsRemaining?: number;
 }
 
 function mergeUniqueUrls(existing: string[], incoming: string[]): string[] {
@@ -37,13 +54,7 @@ function safePathSegment(value: string): string {
 }
 
 function parseOwnerId(raw: string | null): string | null {
-  if (!raw) return null;
-  try {
-    const data = JSON.parse(raw) as { userId?: string };
-    return typeof data.userId === "string" ? data.userId : null;
-  } catch {
-    return null;
-  }
+  return parseGenerationTaskData(raw)?.userId ?? null;
 }
 
 function parseGuestToken(raw: string | null): string | null {
@@ -54,6 +65,105 @@ function parseGuestToken(raw: string | null): string | null {
   } catch {
     return null;
   }
+}
+
+function parseGenerationTaskData(raw: string | null): GenerationTaskData | null {
+  if (!raw) return null;
+  try {
+    const data = JSON.parse(raw) as GenerationTaskData;
+    return data && typeof data === "object" ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+function isRefundableStatus(status: string): boolean {
+  return status === "failed" || status === "canceled" || status === "error";
+}
+
+async function refundFailedPrediction(
+  kv: KVNamespace | undefined,
+  predictionId: string,
+  sessionUserId: string | null,
+): Promise<number | undefined> {
+  if (!kv || !sessionUserId) return undefined;
+
+  const genData = parseGenerationTaskData(await kv.get(`gen:${predictionId}`));
+  if (!genData?.generationId) return undefined;
+  if (genData.userId && genData.userId !== sessionUserId) return undefined;
+
+  const refundKey = `refund:${predictionId}`;
+  if (await kv.get(refundKey)) return undefined;
+
+  const binding = getD1Binding();
+  if (!binding) return undefined;
+  const db = getDb(binding);
+
+  const [row] = await db
+    .select({
+      userId: generation.userId,
+      creditsUsed: generation.creditsUsed,
+      model: generation.model,
+    })
+    .from(generation)
+    .where(eq(generation.id, genData.generationId))
+    .limit(1);
+  if (!row || row.userId !== sessionUserId) return undefined;
+
+  const totalCredits = genData.creditsUsed ?? row.creditsUsed;
+  const totalPredictions = genData.predictionIds?.length || 1;
+  const creditsToRefund = Math.max(1, Math.round(totalCredits / totalPredictions));
+
+  const [updated] = await db
+    .update(userTable)
+    .set({ credits: sql`${userTable.credits} + ${creditsToRefund}` })
+    .where(eq(userTable.id, sessionUserId))
+    .returning({ credits: userTable.credits });
+
+  await kv.put(
+    refundKey,
+    JSON.stringify({
+      userId: sessionUserId,
+      generationId: genData.generationId,
+      creditsRefunded: creditsToRefund,
+      createdAt: Date.now(),
+    }),
+    { expirationTtl: 7 * 24 * 60 * 60 },
+  );
+
+  try {
+    await recordAiCreditSpend({
+      db,
+      userId: sessionUserId,
+      credits: creditsToRefund,
+      provider:
+        row.model.startsWith("z-video") || row.model === "z-image-fast" ? "replicate" : "grsai",
+      model: row.model,
+      apiCallCount: 1,
+      status: "refunded",
+      sourceId: genData.generationId,
+      metadata: { predictionId, reason: "async_generation_failed" },
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "unknown error";
+    console.error("[credit-audit] Failed to record async refund:", message);
+  }
+
+  return updated?.credits;
+}
+
+async function attachRefundsToFailedResults(
+  kv: KVNamespace | undefined,
+  results: StatusResult[],
+  userId: string | null,
+): Promise<StatusResult[]> {
+  return Promise.all(
+    results.map(async (result) => {
+      if (!isRefundableStatus(result.status)) return result;
+      const creditsRemaining = await refundFailedPrediction(kv, result.id, userId);
+      return creditsRemaining == null ? result : { ...result, creditsRemaining };
+    }),
+  );
 }
 
 async function tryUpdateGeneration(kv: KVNamespace, predictionId: string, urls: string[]) {
@@ -187,7 +297,8 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
       );
 
       await flushMirrorTasks();
-      return jsonResponse({ results }, 200);
+      const refundedResults = await attachRefundsToFailedResults(kv, results, userId);
+      return jsonResponse({ results: refundedResults }, 200);
     }
 
     // Replicate type (default)
@@ -226,7 +337,9 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
     }
 
     await flushMirrorTasks();
-    return jsonResponse({ results: results.map((r, i) => ({ id: ids[i], ...r })) }, 200);
+    const resultsWithIds = results.map((r, i) => ({ id: ids[i], ...r }));
+    const refundedResults = await attachRefundsToFailedResults(kv, resultsWithIds, userId);
+    return jsonResponse({ results: refundedResults }, 200);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return jsonResponse({ error: message }, 500);

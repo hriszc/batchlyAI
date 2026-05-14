@@ -115,7 +115,15 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
       .returning({ credits: userTable.credits });
 
     if (!deducted) {
-      return jsonResponse({ error: "Insufficient credits", required: maxCost }, 402);
+      const [currentUser] = await db
+        .select({ credits: userTable.credits })
+        .from(userTable)
+        .where(eq(userTable.id, userId))
+        .limit(1);
+      return jsonResponse(
+        { error: "Insufficient credits", required: maxCost, available: currentUser?.credits ?? 0 },
+        402,
+      );
     }
 
     // Text generation via DeepSeek (synchronous)
@@ -464,9 +472,13 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
       if (kv) {
         await Promise.all(
           predictionIds.map((pid) =>
-            kv.put(`gen:${pid}`, JSON.stringify({ generationId, userId }), {
-              expirationTtl: 3600,
-            }),
+            kv.put(
+              `gen:${pid}`,
+              JSON.stringify({ generationId, userId, creditsUsed: maxCost, predictionIds }),
+              {
+                expirationTtl: 3600,
+              },
+            ),
           ),
         );
         console.log(

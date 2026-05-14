@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
 import { createTestDb, applyMigrations, seedUser } from "#test/db-setup";
+import { savedPrompt } from "@/lib/db/schema/data-flywheel.schema";
 
 const mocks = vi.hoisted(() => ({
   mockGetSession: vi.fn(),
@@ -67,6 +68,36 @@ describe("handleGetPrompts", () => {
     const body = (await resp.json()) as { prompts: unknown[] };
     expect(body.prompts).toEqual([]);
   });
+
+  it("hides duplicate prompt templates from existing data", async () => {
+    seedUser(db, { id: "u1" });
+    const now = Math.floor(Date.now() / 1000);
+    db.insert(savedPrompt)
+      .values([
+        {
+          id: "old",
+          userId: "u1",
+          name: "Old",
+          promptTemplate: "A {{cat, dog}} in a forest",
+          createdAt: now - 10,
+          updatedAt: now - 10,
+        },
+        {
+          id: "new",
+          userId: "u1",
+          name: "New",
+          promptTemplate: "A {{cat, dog}} in a forest",
+          createdAt: now,
+          updatedAt: now,
+        },
+      ])
+      .run();
+
+    const resp = await handleGetPrompts(makeGetReq());
+    expect(resp.status).toBe(200);
+    const body = (await resp.json()) as { prompts: Array<{ id: string }> };
+    expect(body.prompts.map((prompt) => prompt.id)).toEqual(["new"]);
+  });
 });
 
 describe("handleSavePrompt", () => {
@@ -93,6 +124,36 @@ describe("handleSavePrompt", () => {
   it("returns 400 when name is missing", async () => {
     const resp = await handleSavePrompt(makePostReq({}));
     expect(resp.status).toBe(400);
+  });
+
+  it("updates an existing prompt instead of inserting a duplicate", async () => {
+    const firstResp = await handleSavePrompt(
+      makePostReq({
+        name: "First",
+        promptTemplate: "  A {{cat, dog}} in a forest  ",
+        model: "z-image-fast",
+      }),
+    );
+    expect(firstResp.status).toBe(201);
+
+    const secondResp = await handleSavePrompt(
+      makePostReq({
+        name: "Second",
+        promptTemplate: "A {{cat, dog}} in a forest",
+        model: "z-image-pro",
+        tags: JSON.stringify(["favorite"]),
+      }),
+    );
+    expect(secondResp.status).toBe(200);
+
+    const prompts = db.select().from(savedPrompt).all();
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0]).toMatchObject({
+      name: "Second",
+      promptTemplate: "A {{cat, dog}} in a forest",
+      model: "z-image-pro",
+      tags: JSON.stringify(["favorite"]),
+    });
   });
 });
 
