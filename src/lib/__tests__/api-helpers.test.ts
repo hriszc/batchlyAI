@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { jsonResponse } from "@/lib/api-helpers";
+import { jsonResponse, verifyOrigin } from "@/lib/api-helpers";
 import { applySecurityHeaders } from "@/lib/security-headers";
 
 describe("jsonResponse", () => {
@@ -30,6 +30,35 @@ describe("jsonResponse", () => {
     const r = jsonResponse({ hello: "world" }, 200);
     const body = await r.json();
     expect(body).toEqual({ hello: "world" });
+  });
+});
+
+describe("verifyOrigin", () => {
+  it("accepts the apex production domain", () => {
+    const request = new Request("https://batchlyai.com/api/auth/sign-in/email", {
+      method: "POST",
+      headers: { Origin: "https://batchlyai.com" },
+    });
+
+    expect(verifyOrigin(request)).toBe(true);
+  });
+
+  it("accepts the www production domain", () => {
+    const request = new Request("https://www.batchlyai.com/api/auth/sign-in/email", {
+      method: "POST",
+      headers: { Origin: "https://www.batchlyai.com" },
+    });
+
+    expect(verifyOrigin(request)).toBe(true);
+  });
+
+  it("rejects unknown origins", () => {
+    const request = new Request("https://batchlyai.com/api/auth/sign-in/email", {
+      method: "POST",
+      headers: { Origin: "https://example.com" },
+    });
+
+    expect(verifyOrigin(request)).toBe(false);
   });
 });
 

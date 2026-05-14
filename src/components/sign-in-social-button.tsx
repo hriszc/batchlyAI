@@ -3,6 +3,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth/auth-client";
+import { getAuthErrorMessage } from "@/lib/auth/error-message";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 interface SocialLoginButtonProps {
@@ -32,7 +33,9 @@ export function SignInSocialButton(props: SocialLoginButtonProps) {
         },
         {
           onError: ({ error }) => {
-            toast.error(error.message || `An error occurred during ${providerLabel} sign-in.`);
+            toast.error(
+              getAuthErrorMessage(error, `An error occurred during ${providerLabel} sign-in.`),
+            );
           },
         },
       ),

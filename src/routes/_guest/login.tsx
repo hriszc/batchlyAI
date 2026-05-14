@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth/auth-client";
+import { getAuthErrorMessage } from "@/lib/auth/error-message";
 import { authQueryOptions } from "@/lib/auth/queries";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { createPageMeta } from "@/lib/seo/meta";
@@ -50,15 +51,16 @@ function LoginForm() {
         "error" in result &&
         (result as { error: unknown }).error
       ) {
-        const err = (result as { error: { message?: string } }).error;
-        throw new Error(err.message || "Sign in failed");
+        throw new Error(
+          getAuthErrorMessage((result as { error: unknown }).error, "Sign in failed"),
+        );
       }
       void queryClient.invalidateQueries({ queryKey: authQueryOptions().queryKey });
       void router.invalidate();
       return result;
     },
     onError: (error) => {
-      const msg = error.message || "An error occurred while signing in.";
+      const msg = getAuthErrorMessage(error, "An error occurred while signing in.");
       setErrorMessage(msg);
       if (msg.toLowerCase().includes("verify") || msg.toLowerCase().includes("email")) {
         setErrorMessage(`${msg} Click "Resend verification email" to receive a new link.`);

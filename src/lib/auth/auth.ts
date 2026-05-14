@@ -35,6 +35,7 @@ export function createAuth(d1Binding?: D1Database) {
       telemetry: { enabled: false },
       trustedOrigins: [
         env.VITE_BASE_URL,
+        "https://www.batchlyai.com",
         "http://localhost:3000",
         "https://*.workers.dev",
         "https://*.*.workers.dev",
