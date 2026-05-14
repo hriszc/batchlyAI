@@ -48,8 +48,7 @@ export async function handleGenerationFile(
   const key = params._splat ?? params._ ?? params["*"];
   if (!key) return new Response("Not found", { status: 404 });
 
-  const publicWorkFile =
-    !key.startsWith("generations/") && (await isPublishedWorkFile(`/api/generation-files/${key}`));
+  const publicWorkFile = await isPublishedWorkFile(`/api/generation-files/${key}`);
 
   if (!publicWorkFile) {
     // Require authentication for private generation history files.

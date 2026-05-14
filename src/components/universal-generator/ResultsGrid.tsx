@@ -1,4 +1,4 @@
-import { Share2Icon, DownloadIcon } from "lucide-react";
+import { Share2Icon, DownloadIcon, Loader2Icon } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -13,6 +13,7 @@ interface ResultsGridProps {
   showWatermark?: boolean;
   onShare?: () => void;
   onPublish?: () => void;
+  isPublishing?: boolean;
 }
 
 function SkeletonCard() {
@@ -64,6 +65,7 @@ export function ResultsGrid({
   totalExpected,
   onShare,
   onPublish,
+  isPublishing = false,
 }: ResultsGridProps) {
   const { t } = useLanguage();
   const [showAll, setShowAll] = useState(false);
@@ -145,10 +147,12 @@ export function ResultsGrid({
               <button
                 type="button"
                 onClick={onPublish}
-                className="inline-flex h-8 items-center gap-1 rounded-lg border bg-muted/30 px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                disabled={isPublishing}
+                className="inline-flex h-8 items-center gap-1 rounded-lg border bg-muted/30 px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60"
                 title={t("publishWork")}
               >
-                {t("publish")}
+                {isPublishing && <Loader2Icon className="size-3 animate-spin" />}
+                {isPublishing ? t("publishing") : t("publish")}
               </button>
             )}
             {downloadableCount >= 2 && (

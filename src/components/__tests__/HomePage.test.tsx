@@ -78,6 +78,15 @@ describe("HomePage", () => {
     expect(screen.getByText(/Universal AI Generator/)).toBeInTheDocument();
   });
 
+  it("renders the Image Pro homepage example", () => {
+    renderWithProviders(<HomePage />);
+    expect(screen.getByText("One short prompt. Five cinematic results.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Make the person in the image cosplay as {*One Piece characters*}"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Image Pro")).toBeInTheDocument();
+  });
+
   it("keeps the root homepage in English for Chinese browsers before redirect completes", () => {
     vi.stubGlobal("navigator", { language: "zh-CN" });
     renderWithProviders(<HomePage forceLanguage="en" />);

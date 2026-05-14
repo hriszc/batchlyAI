@@ -16,6 +16,7 @@ import {
   isChineseLanguageTag,
   parseStoredLanguage,
 } from "@/lib/i18n/locale-routing";
+import type { TranslationKey } from "@/lib/i18n/translations";
 import { getHomepageFaq } from "@/lib/seo/geo-content";
 
 export function shouldRedirectToCn(): boolean {
@@ -49,6 +50,110 @@ const STARTER_TEMPLATES = [
   },
 ];
 
+const HOMEPAGE_EXAMPLE_MODEL = "Image Pro";
+const HOMEPAGE_EXAMPLE_RESULTS = [
+  "/examples/one-piece-cosplay/result-1.webp",
+  "/examples/one-piece-cosplay/result-2.webp",
+  "/examples/one-piece-cosplay/result-3.webp",
+  "/examples/one-piece-cosplay/result-4.webp",
+  "/examples/one-piece-cosplay/result-5.webp",
+];
+
+function HomepageExample({ t }: { t: (key: TranslationKey) => string }) {
+  return (
+    <section
+      className="mx-auto w-full max-w-[1180px] px-4 pt-6 pb-14 sm:pt-10 sm:pb-20"
+      aria-labelledby="homepage-example-title"
+    >
+      <div className="border-y border-border/70 py-8 sm:py-10 lg:py-12">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_440px] lg:items-end">
+          <div className="space-y-4">
+            <div className="text-xs font-semibold tracking-[0.18em] text-accent-blue uppercase">
+              {t("homepageExampleEyebrow")}
+            </div>
+            <h2
+              id="homepage-example-title"
+              className="max-w-2xl text-3xl leading-tight font-semibold tracking-[-0.02em] text-foreground sm:text-4xl"
+            >
+              {t("homepageExampleTitle")}
+            </h2>
+            <p className="max-w-2xl text-base leading-7 text-muted-foreground">
+              {t("homepageExampleDescription")}
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-[1fr_140px]">
+            <div className="rounded-lg border bg-background p-4">
+              <div className="mb-2 text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase">
+                {t("homepageExamplePromptLabel")}
+              </div>
+              <div className="font-mono text-sm leading-6 break-words text-foreground">
+                {t("homepageExamplePromptValue")}
+              </div>
+            </div>
+            <div className="rounded-lg border bg-background p-4">
+              <div className="mb-2 text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase">
+                {t("homepageExampleModelLabel")}
+              </div>
+              <div className="text-sm font-semibold text-foreground">{HOMEPAGE_EXAMPLE_MODEL}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8 grid grid-cols-2 items-start gap-4 lg:grid-cols-12">
+          <figure className="relative col-span-2 overflow-hidden rounded-lg border bg-muted lg:col-span-4">
+            <img
+              src="/examples/one-piece-cosplay/input.webp"
+              alt={t("homepageExampleInputAlt")}
+              width={640}
+              height={640}
+              loading="lazy"
+              decoding="async"
+              sizes="(min-width: 1024px) 380px, 100vw"
+              className="aspect-square w-full object-cover"
+            />
+            <figcaption className="absolute bottom-3 left-3 rounded-md bg-background/90 px-2.5 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur">
+              {t("homepageExampleInputLabel")}
+            </figcaption>
+          </figure>
+
+          {HOMEPAGE_EXAMPLE_RESULTS.map((src, index) => {
+            const isFeatured = index === 0;
+            return (
+              <figure
+                key={src}
+                className={`relative overflow-hidden rounded-lg border bg-muted ${
+                  isFeatured ? "col-span-2 lg:col-span-8" : "col-span-1 lg:col-span-3"
+                }`}
+              >
+                <img
+                  src={src}
+                  alt={t("homepageExampleOutputAlt")}
+                  width={960}
+                  height={540}
+                  loading="lazy"
+                  decoding="async"
+                  sizes={
+                    isFeatured
+                      ? "(min-width: 1024px) 760px, 100vw"
+                      : "(min-width: 1024px) 280px, 50vw"
+                  }
+                  className="aspect-[16/9] w-full object-cover"
+                />
+                {isFeatured && (
+                  <figcaption className="absolute bottom-3 left-3 rounded-md bg-background/90 px-2.5 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur">
+                    {t("homepageExampleOutputLabel")}
+                  </figcaption>
+                )}
+              </figure>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function HomePage({ forceLanguage }: HomePageProps) {
   const { state, actions } = useGeneratorState();
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -66,6 +171,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
       return;
     }
     setPublishing(true);
+    const publishToastId = toast.loading(t("publishing"));
     try {
       const body = {
         coverUrl,
@@ -101,10 +207,20 @@ export function HomePage({ forceLanguage }: HomePageProps) {
             resultUrls: publicResultUrls,
           }),
         }).catch(() => {});
-        toast.success(t("savedSuccessfully"));
+        toast.success(t("publishSuccess"), {
+          id: publishToastId,
+          action: {
+            label: t("discover"),
+            onClick: () => {
+              window.location.href = "/discover?tab=new";
+            },
+          },
+        });
+      } else {
+        toast.error(t("publishFailed"), { id: publishToastId });
       }
     } catch {
-      // non-fatal
+      toast.error(t("publishFailed"), { id: publishToastId });
     } finally {
       setPublishing(false);
     }
@@ -273,77 +389,86 @@ export function HomePage({ forceLanguage }: HomePageProps) {
   const hasResults = state.results.length > 0;
 
   return (
-    <main
-      className={`mx-auto max-w-[980px] px-4 ${
-        hasResults ? "pt-8 pb-16" : "flex min-h-[100svh] flex-col justify-center py-10 sm:py-14"
-      }`}
-    >
-      <div className="mb-2 flex justify-center">
-        <img
-          src="/logo-light.png"
-          alt="BatchlyAI"
-          className="block h-12 w-auto sm:h-14 md:h-16 dark:hidden"
-        />
-        <img
-          src="/logo-dark.png"
-          alt="BatchlyAI"
-          className="hidden h-12 w-auto sm:h-14 md:h-16 dark:block"
-        />
-      </div>
-      <h1 className="sr-only">{t("siteTitle")}</h1>
-      <p className="mb-8 text-center text-[17px] leading-[1.19] tracking-[-0.022em] text-muted-foreground sm:text-[21px]">
-        {t("siteDescription")}
-      </p>
-
-      <GeneratorCard
-        state={state}
-        actions={actions}
-        onRequireAuth={authGate.checkAuth}
-        canGuestGenerate={canGuestGenerate}
-        canExpandVars={isLoggedIn}
-        isGuest={canGuestGenerate}
-        availableCredits={userCredits}
-        isSessionReady={sessionReady}
-      />
-
-      {!state.promptTemplate.trim() && state.results.length === 0 && (
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-          <span className="text-xs font-medium text-muted-foreground">{t("promptTemplates")}</span>
-          {STARTER_TEMPLATES.map((starter) => (
-            <button
-              key={starter.label}
-              type="button"
-              onClick={() => setPromptTemplate(starter.prompt)}
-              className="rounded-full border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-accent-blue/40 hover:text-accent-blue"
-            >
-              {starter.label}
-            </button>
-          ))}
+    <main>
+      <section
+        className={`mx-auto max-w-[980px] px-4 ${
+          hasResults ? "pt-8 pb-8" : "flex min-h-[100svh] flex-col justify-center py-10 sm:py-14"
+        }`}
+      >
+        <div className="mb-2 flex justify-center">
+          <img
+            src="/logo-light.png"
+            alt="BatchlyAI"
+            className="block h-12 w-auto sm:h-14 md:h-16 dark:hidden"
+          />
+          <img
+            src="/logo-dark.png"
+            alt="BatchlyAI"
+            className="hidden h-12 w-auto sm:h-14 md:h-16 dark:block"
+          />
         </div>
-      )}
+        <h1 className="sr-only">{t("siteTitle")}</h1>
+        <p className="mb-8 text-center text-[17px] leading-[1.19] tracking-[-0.022em] text-muted-foreground sm:text-[21px]">
+          {t("siteDescription")}
+        </p>
 
-      <div ref={resultsRef}>
-        <ResultsGrid
-          results={state.results}
-          isGenerating={state.isGenerating}
-          totalExpected={
-            computePromptCombinations(state.promptTemplate, state.variableGroups).length *
-            state.quantity
-          }
-          showWatermark={showWatermark}
-          onShare={() => {
-            if (state.results.length === 0) return;
-            setShareMode(true);
-          }}
-          onPublish={isLoggedIn ? handlePublish : undefined}
+        <GeneratorCard
+          state={state}
+          actions={actions}
+          onRequireAuth={authGate.checkAuth}
+          canGuestGenerate={canGuestGenerate}
+          canExpandVars={isLoggedIn}
+          isGuest={canGuestGenerate}
+          availableCredits={userCredits}
+          isSessionReady={sessionReady}
         />
-      </div>
 
-      <FaqSection
-        title={t("homepageFaqTitle")}
-        description={t("homepageFaqDescription")}
-        items={homepageFaq}
-      />
+        {!state.promptTemplate.trim() && state.results.length === 0 && (
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">
+              {t("promptTemplates")}
+            </span>
+            {STARTER_TEMPLATES.map((starter) => (
+              <button
+                key={starter.label}
+                type="button"
+                onClick={() => setPromptTemplate(starter.prompt)}
+                className="rounded-full border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-accent-blue/40 hover:text-accent-blue"
+              >
+                {starter.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div ref={resultsRef}>
+          <ResultsGrid
+            results={state.results}
+            isGenerating={state.isGenerating}
+            totalExpected={
+              computePromptCombinations(state.promptTemplate, state.variableGroups).length *
+              state.quantity
+            }
+            showWatermark={showWatermark}
+            onShare={() => {
+              if (state.results.length === 0) return;
+              setShareMode(true);
+            }}
+            onPublish={isLoggedIn ? handlePublish : undefined}
+            isPublishing={publishing}
+          />
+        </div>
+      </section>
+
+      <HomepageExample t={t} />
+
+      <section className="mx-auto max-w-[980px] px-4 pb-16">
+        <FaqSection
+          title={t("homepageFaqTitle")}
+          description={t("homepageFaqDescription")}
+          items={homepageFaq}
+        />
+      </section>
 
       {shareMode && (
         <ShareScreenshot

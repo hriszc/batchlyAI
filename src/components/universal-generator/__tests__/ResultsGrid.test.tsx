@@ -162,6 +162,21 @@ describe("ResultsGrid", () => {
     expect(onPublish).toHaveBeenCalledOnce();
   });
 
+  it("shows publishing state and disables publish button", () => {
+    const onPublish = vi.fn();
+    renderWithProviders(
+      <ResultsGrid
+        results={[imageResult]}
+        isGenerating={false}
+        onPublish={onPublish}
+        isPublishing={true}
+      />,
+    );
+    const btn = screen.getByTitle("Publish as Work");
+    expect(btn).toBeDisabled();
+    expect(screen.getByText("Publishing...")).toBeInTheDocument();
+  });
+
   it("hides publish button during generation", () => {
     renderWithProviders(<ResultsGrid results={[]} isGenerating={true} onPublish={() => {}} />);
     expect(screen.queryByTitle("Publish as Work")).not.toBeInTheDocument();
