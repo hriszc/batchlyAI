@@ -115,6 +115,17 @@ describe("seoLandingPages", () => {
     expect(slugs.has("seasonal-color-palette-generator")).toBe(true);
     expect(slugs.has("ai-coloring-page-generator")).toBe(true);
     expect(slugs.has("ai-video-creative-ideas")).toBe(true);
+    expect(slugs.has("french-tip-nails-generator")).toBe(true);
+    expect(slugs.has("short-nail-designs-generator")).toBe(true);
+    expect(slugs.has("builder-gel-nails-generator")).toBe(true);
+    expect(slugs.has("blonde-hair-colors-generator")).toBe(true);
+    expect(slugs.has("semi-permanent-hair-color-generator")).toBe(true);
+    expect(slugs.has("soft-autumn-color-palette-generator")).toBe(true);
+    expect(slugs.has("soft-summer-color-palette-generator")).toBe(true);
+    expect(slugs.has("adult-coloring-book-generator")).toBe(true);
+    expect(slugs.has("zentangle-pattern-generator")).toBe(true);
+    expect(slugs.has("video-editing-tips-generator")).toBe(true);
+    expect(slugs.has("cursive-tattoo-font-generator")).toBe(true);
   });
 });
 
