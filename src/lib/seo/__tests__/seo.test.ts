@@ -92,8 +92,40 @@ describe("seoLandingPages", () => {
   it("provides indexable image and video entry points", () => {
     expect(seoLandingPages.some((page) => page.slug === "ai-product-visual-generator")).toBe(true);
     expect(seoLandingPages.every((page) => page.title.includes("BatchlyAI"))).toBe(true);
-    expect(seoLandingPages.every((page) => page.mediaType === "both")).toBe(true);
+    expect(seoLandingPages.some((page) => page.mediaType === "image")).toBe(true);
+    expect(seoLandingPages.some((page) => page.mediaType === "video")).toBe(true);
+    expect(seoLandingPages.some((page) => page.mediaType === "both")).toBe(true);
+    expect(seoLandingPages.every((page) => page.primaryUseCases.length >= 3)).toBe(true);
+    expect(
+      seoLandingPages.every((page) =>
+        page.primaryUseCases.every((useCase) => useCase.title && useCase.description),
+      ),
+    ).toBe(true);
+    expect(seoLandingPages.every((page) => page.promptAngles.length >= 6)).toBe(true);
     expect(seoLandingPages.every((page) => page.faq.length >= 3)).toBe(true);
+  });
+
+  it("includes the first keyword-driven acquisition pages", () => {
+    const slugs = new Set(seoLandingPages.map((page) => page.slug));
+
+    expect(slugs.has("ai-anniversary-image-generator")).toBe(true);
+    expect(slugs.has("ai-engagement-photo-ideas")).toBe(true);
+    expect(slugs.has("ai-nail-design-generator")).toBe(true);
+    expect(slugs.has("ai-hair-color-ideas")).toBe(true);
+    expect(slugs.has("seasonal-color-palette-generator")).toBe(true);
+    expect(slugs.has("ai-coloring-page-generator")).toBe(true);
+    expect(slugs.has("ai-video-creative-ideas")).toBe(true);
+    expect(slugs.has("french-tip-nails-generator")).toBe(true);
+    expect(slugs.has("short-nail-designs-generator")).toBe(true);
+    expect(slugs.has("builder-gel-nails-generator")).toBe(true);
+    expect(slugs.has("blonde-hair-colors-generator")).toBe(true);
+    expect(slugs.has("semi-permanent-hair-color-generator")).toBe(true);
+    expect(slugs.has("soft-autumn-color-palette-generator")).toBe(true);
+    expect(slugs.has("soft-summer-color-palette-generator")).toBe(true);
+    expect(slugs.has("adult-coloring-book-generator")).toBe(true);
+    expect(slugs.has("zentangle-pattern-generator")).toBe(true);
+    expect(slugs.has("video-editing-tips-generator")).toBe(true);
+    expect(slugs.has("cursive-tattoo-font-generator")).toBe(true);
   });
 });
 

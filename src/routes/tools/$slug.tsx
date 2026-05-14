@@ -70,14 +70,26 @@ function ToolLandingPage() {
       </div>
 
       <section className="mt-10 grid gap-4 md:grid-cols-3">
-        {page.primaryUseCases.map((useCase: string) => (
-          <div key={useCase} className="rounded-lg border bg-card p-4">
-            <h2 className="text-sm font-semibold text-foreground">{useCase}</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Use prompt variables to compare directions without rebuilding every prompt by hand.
-            </p>
+        {page.primaryUseCases.map((useCase) => (
+          <div key={useCase.title} className="rounded-lg border bg-card p-4">
+            <h2 className="text-sm font-semibold text-foreground">{useCase.title}</h2>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">{useCase.description}</p>
           </div>
         ))}
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-xl font-semibold text-foreground">Prompt variables to test</h2>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {page.promptAngles.map((angle) => (
+            <span
+              key={angle}
+              className="rounded-full bg-muted px-3 py-1.5 text-sm text-muted-foreground"
+            >
+              {angle}
+            </span>
+          ))}
+        </div>
       </section>
 
       <section className="mt-10">
