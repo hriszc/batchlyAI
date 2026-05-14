@@ -8,6 +8,13 @@ async function setupBaseMocks(page: import("@playwright/test").Page) {
       body: JSON.stringify({ user: { id: "e2e", name: "E2E", email: "e2e@t.com", credits: 100 } }),
     });
   });
+  await page.route("**/api/credits", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ credits: 100, creditsRemaining: 100 }),
+    });
+  });
 }
 
 test.describe("Blog pages", () => {

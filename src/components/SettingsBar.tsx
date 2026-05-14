@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
   SunIcon,
@@ -9,12 +10,13 @@ import {
   GiftIcon,
   ChevronDownIcon,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { CreditPurchasePopover } from "@/components/CreditPurchasePopover";
 import { useTheme } from "@/components/theme-provider";
 import { authClient } from "@/lib/auth/auth-client";
+import { useCreditSync } from "@/lib/credits/client-sync";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { buildCnRedirectHref } from "@/lib/i18n/locale-routing";
 
@@ -23,13 +25,31 @@ export function SettingsBar() {
   const { language, setLanguage, t } = useLanguage();
   const { data: session, isPending: sessionLoading } = authClient.useSession();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const syncCredits = useCreditSync(queryClient, !!session?.user?.id);
+  const pendingPurchaseCreditSyncRef = useRef(false);
+
+  const schedulePurchaseCreditSync = useCallback(() => {
+    const retryDelays = [0, 1000, 3000, 7000, 12_000];
+    return retryDelays.map((delay) =>
+      window.setTimeout(() => {
+        void syncCredits();
+      }, delay),
+    );
+  }, [syncCredits]);
 
   // Handle Stripe redirects
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
+    let timers: number[] = [];
     if (params.get("purchase") === "success") {
       toast.success(t("purchaseSuccess"));
+      pendingPurchaseCreditSyncRef.current = true;
+      if (session?.user?.id) {
+        pendingPurchaseCreditSyncRef.current = false;
+        timers = schedulePurchaseCreditSync();
+      }
       const url = new URL(window.location.href);
       url.searchParams.delete("purchase");
       window.history.replaceState({}, "", url.toString());
@@ -39,7 +59,24 @@ export function SettingsBar() {
       url.searchParams.delete("purchase");
       window.history.replaceState({}, "", url.toString());
     }
-  }, [t]);
+
+    return () => {
+      for (const timer of timers) {
+        window.clearTimeout(timer);
+      }
+    };
+  }, [schedulePurchaseCreditSync, session?.user?.id, t]);
+
+  useEffect(() => {
+    if (!pendingPurchaseCreditSyncRef.current || !session?.user?.id) return;
+    pendingPurchaseCreditSyncRef.current = false;
+    const timers = schedulePurchaseCreditSync();
+    return () => {
+      for (const timer of timers) {
+        window.clearTimeout(timer);
+      }
+    };
+  }, [schedulePurchaseCreditSync, session?.user?.id]);
 
   const resolved =
     theme === "system"

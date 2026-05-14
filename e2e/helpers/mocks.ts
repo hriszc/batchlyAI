@@ -54,6 +54,23 @@ export async function mockAuth(page: Page, opts?: { authenticated?: boolean }) {
       ),
     });
   });
+
+  await page.route("**/api/credits", async (route) => {
+    if (!userId) {
+      await route.fulfill({
+        status: 401,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Unauthorized" }),
+      });
+      return;
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ credits: 100, creditsRemaining: 100 }),
+    });
+  });
 }
 
 /** Mock generation flow: generate → poll → complete */
