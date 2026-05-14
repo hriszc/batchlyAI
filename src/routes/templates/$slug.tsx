@@ -61,6 +61,7 @@ export const Route = createFileRoute("/templates/$slug")({
       locale: "en",
       ogImage: loaderData?.previewImageUrl || undefined,
       ogType: "article",
+      noIndex: !loaderData,
       jsonLd: loaderData
         ? templateHowToLd({
             name: loaderData.name,
@@ -75,7 +76,7 @@ export const Route = createFileRoute("/templates/$slug")({
       ...seo,
       links: loaderData
         ? [{ rel: "canonical", href: `https://batchlyai.com/templates/${loaderData.slug}` }]
-        : [{ rel: "canonical", href: "https://batchlyai.com/templates" }],
+        : [{ rel: "canonical", href: "https://batchlyai.com/discover" }],
     };
   },
   component: TemplateDetailPage,

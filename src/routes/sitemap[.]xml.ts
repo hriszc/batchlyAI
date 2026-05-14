@@ -16,6 +16,14 @@ interface SitemapUrl {
 
 const BASE_URL = "https://batchlyai.com";
 
+function canonicalPathSegment(value: string | null | undefined): string | null {
+  const segment = value?.trim();
+  if (!segment || segment.includes("/") || segment.includes("?") || segment.includes("#")) {
+    return null;
+  }
+  return encodeURIComponent(segment);
+}
+
 function escapeXml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -26,7 +34,13 @@ function escapeXml(value: string): string {
 }
 
 function renderSitemap(urls: SitemapUrl[]): string {
+  const seen = new Set<string>();
   const items = urls
+    .filter((url) => {
+      if (seen.has(url.loc)) return false;
+      seen.add(url.loc);
+      return true;
+    })
     .map(
       (url) => `  <url>
     <loc>${escapeXml(url.loc)}</loc>
@@ -97,16 +111,30 @@ async function createSitemapResponse(): Promise<Response> {
     }
 
     urls.push(
-      ...templates.map((item) => ({
-        loc: `${BASE_URL}/templates/${item.slug}`,
-        changefreq: "weekly" as const,
-        priority: "0.7",
-      })),
-      ...works.map((item) => ({
-        loc: `${BASE_URL}/works/${item.id}`,
-        changefreq: "weekly" as const,
-        priority: "0.6",
-      })),
+      ...templates.flatMap((item) => {
+        const slug = canonicalPathSegment(item.slug);
+        return slug
+          ? [
+              {
+                loc: `${BASE_URL}/templates/${slug}`,
+                changefreq: "weekly" as const,
+                priority: "0.7",
+              },
+            ]
+          : [];
+      }),
+      ...works.flatMap((item) => {
+        const id = canonicalPathSegment(item.id);
+        return id
+          ? [
+              {
+                loc: `${BASE_URL}/works/${id}`,
+                changefreq: "weekly" as const,
+                priority: "0.6",
+              },
+            ]
+          : [];
+      }),
     );
   }
 

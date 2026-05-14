@@ -5,6 +5,7 @@ import {
   getLanguageCookie,
   getPrimaryAcceptLanguage,
   isChineseLanguageTag,
+  isSearchCrawler,
   shouldRedirectRootToCn,
 } from "../locale-routing";
 
@@ -25,6 +26,11 @@ describe("locale routing", () => {
   it("uses primary Accept-Language tag", () => {
     expect(getPrimaryAcceptLanguage("zh-CN,zh;q=0.9,en;q=0.8")).toBe("zh-CN");
     expect(getPrimaryAcceptLanguage("en-US,en;q=0.9")).toBe("en-US");
+  });
+
+  it("detects search crawler user agents", () => {
+    expect(isSearchCrawler("Googlebot/2.1 (+http://www.google.com/bot.html)")).toBe(true);
+    expect(isSearchCrawler("Mozilla/5.0 AppleWebKit/537.36")).toBe(false);
   });
 
   it("redirects root Chinese browsers to /cn", () => {
@@ -61,6 +67,16 @@ describe("locale routing", () => {
       shouldRedirectRootToCn({
         pathname: "/cn",
         acceptLanguage: "zh-CN,zh;q=0.9",
+      }),
+    ).toBe(false);
+  });
+
+  it("does not redirect crawlers even with Chinese Accept-Language", () => {
+    expect(
+      shouldRedirectRootToCn({
+        pathname: "/",
+        acceptLanguage: "zh-CN,zh;q=0.9",
+        userAgent: "Googlebot/2.1 (+http://www.google.com/bot.html)",
       }),
     ).toBe(false);
   });

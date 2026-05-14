@@ -41,7 +41,20 @@ const loadWork = createServerFn({ method: "GET" }).handler(async ({ data: workId
 export const Route = createFileRoute("/works/$workId")({
   loader: async ({ params }) => loadWork({ data: params.workId }),
   head: ({ loaderData }) => {
-    if (!loaderData) return {};
+    if (!loaderData) {
+      const seo = createPageMeta({
+        title: "Work not found — BatchlyAI",
+        description: "This shared work is not available.",
+        path: "/discover",
+        locale: "en",
+        noIndex: true,
+      });
+      return {
+        htmlAttrs: { lang: "en" },
+        meta: seo.meta,
+        links: [{ rel: "canonical", href: "https://batchlyai.com/discover" }],
+      };
+    }
     const seo = createPageMeta({
       title: `${loaderData.title} — BatchlyAI`,
       description: loaderData.description || loaderData.title,
