@@ -217,12 +217,12 @@ describe("GeneratorCard", () => {
       <GeneratorCard state={videoState} actions={mockActions} />,
     );
 
-    expect(screen.getByText(/800\s+credits/i)).toBeInTheDocument();
+    expect(screen.getByText(/600\s+credits/i)).toBeInTheDocument();
 
     rerender(
       <GeneratorCard state={{ ...videoState, videoDuration: "10s" }} actions={mockActions} />,
     );
-    expect(screen.getByText(/1600\s+credits/i)).toBeInTheDocument();
+    expect(screen.getByText(/1200\s+credits/i)).toBeInTheDocument();
   });
 
   it("shows variable groups when prompt has variables", async () => {

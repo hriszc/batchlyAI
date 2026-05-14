@@ -1,10 +1,10 @@
 export const CREDIT_COST: Record<string, number> = {
-  "z-image-fast": 10,
+  "z-image-fast": 5,
   "z-image-pro": 20,
-  "z-text-fast": 5,
-  "z-text-pro": 10,
-  "z-video-fast": 40,
-  "z-video-pro": 80,
+  "z-text-fast": 2,
+  "z-text-pro": 4,
+  "z-video-fast": 30,
+  "z-video-pro": 60,
 };
 
 export const DEFAULT_GENERATION_CREDIT_COST = 20;

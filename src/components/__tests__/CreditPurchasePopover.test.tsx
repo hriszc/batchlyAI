@@ -8,10 +8,10 @@ import { CreditPurchasePopover } from "../CreditPurchasePopover";
 describe("CreditPurchasePopover", () => {
   it("shows credit equivalence for default 1 pack (1000 credits)", () => {
     renderWithProviders(<CreditPurchasePopover onClose={() => {}} />);
-    // 1000 credits: ~100 images (10 credits), ~200 texts (5 credits), ~25s video (40 credits)
-    expect(screen.getByText(/~100 images/)).toBeInTheDocument();
-    expect(screen.getByText(/~200 texts/)).toBeInTheDocument();
-    expect(screen.getByText(/~25s video/)).toBeInTheDocument();
+    // 1000 credits: ~200 images (5 credits), ~500 texts (2 credits), ~33s video (30 credits)
+    expect(screen.getByText(/~200 images/)).toBeInTheDocument();
+    expect(screen.getByText(/~500 texts/)).toBeInTheDocument();
+    expect(screen.getByText(/~33s video/)).toBeInTheDocument();
   });
 
   it("shows scaled equivalence for 5 pack (5000 credits)", () => {

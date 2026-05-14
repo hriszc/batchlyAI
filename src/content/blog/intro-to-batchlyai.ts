@@ -30,7 +30,7 @@ For example, the prompt:
 
 **Quantity Control**: Need multiple versions of each combination? Set quantity to 2, 4, or more, and each combination gets multiple generations.
 
-**Credit System**: Start with 10 free credits. Each model has a credit cost (5-80 credits per generation). Buy more credits anytime.
+**Credit System**: Start with 10 free credits. Each model has a credit cost (2-60 credits per generation unit). Buy more credits anytime.
 
 ## Getting Started
 

@@ -105,7 +105,7 @@ test.describe("Real Environment Smoke Tests (no mocking)", () => {
     expect(body.token).toBeTruthy();
   });
 
-  test("text generation API consumes 5 credits (z-text-fast)", async ({ request }) => {
+  test("text generation API consumes 2 credits (z-text-fast)", async ({ request }) => {
     test.skip(!!process.env.CI, "Requires D1");
     const signup = await request.post("/api/auth/sign-up/email", {
       data: {
@@ -129,6 +129,6 @@ test.describe("Real Environment Smoke Tests (no mocking)", () => {
     expect(body.isText).toBe(true);
     expect(body.texts).toBeTruthy();
     expect(body.texts!.length).toBeGreaterThan(0);
-    expect(body.creditsRemaining).toBe(5);
+    expect(body.creditsRemaining).toBe(8);
   });
 });

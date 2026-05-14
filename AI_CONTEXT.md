@@ -275,12 +275,12 @@ template (id, user_id, slug UNIQUE, name, description, category,
 
 | id             | Label       | Category | Tier | Provider                     | Credit |
 | -------------- | ----------- | -------- | ---- | ---------------------------- | ------ |
-| `z-image-fast` | Image Turbo | image    | fast | replicate                    | 10     |
+| `z-image-fast` | Image Turbo | image    | fast | replicate                    | 5      |
 | `z-image-pro`  | Image Pro   | image    | pro  | grsai                        | 20     |
-| `z-video-fast` | Video Turbo | video    | fast | simulated                    | 40     |
-| `z-video-pro`  | Video Pro   | video    | pro  | simulated                    | 80     |
-| `z-text-fast`  | Text Turbo  | text     | fast | deepseek (deepseek-chat)     | 5      |
-| `z-text-pro`   | Text Pro    | text     | pro  | deepseek (deepseek-reasoner) | 10     |
+| `z-video-fast` | Video Turbo | video    | fast | simulated                    | 30     |
+| `z-video-pro`  | Video Pro   | video    | pro  | simulated                    | 60     |
+| `z-text-fast`  | Text Turbo  | text     | fast | deepseek (deepseek-chat)     | 2      |
+| `z-text-pro`   | Text Pro    | text     | pro  | deepseek (deepseek-reasoner) | 4      |
 
 默认: `z-image-pro`。video 仍为模拟占位。
 
