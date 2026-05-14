@@ -3,6 +3,7 @@ import { useReducer, useCallback, useRef, useEffect } from "react";
 
 import { authClient, setAuthClientSessionCredits } from "@/lib/auth/auth-client";
 import { authQueryOptions } from "@/lib/auth/queries";
+import { calculateGenerationCredits } from "@/lib/generator-credits";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 import { MODELS } from "./models";
@@ -14,6 +15,14 @@ import { computePromptCombinations } from "./utils";
 
 function generateResultId(): string {
   return `result_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function getSessionCredits(session: unknown): number | null {
+  if (!session || typeof session !== "object" || !("user" in session)) return null;
+  const user = (session as { user?: unknown }).user;
+  if (!user || typeof user !== "object" || !("credits" in user)) return null;
+  const credits = (user as { credits?: unknown }).credits;
+  return typeof credits === "number" ? credits : null;
 }
 
 interface AsyncPending {
@@ -98,7 +107,7 @@ export function useGeneratorState() {
   }, []);
 
   const syncCreditsRemaining = useCallback(
-    (creditsRemaining: number) => {
+    (creditsRemaining: number, options?: { refetch?: boolean }) => {
       dispatch({ type: "SET_CREDITS_REMAINING", payload: creditsRemaining });
       setAuthClientSessionCredits(creditsRemaining);
       queryClient.setQueryData(authQueryOptions().queryKey, (user: unknown) => {
@@ -106,7 +115,9 @@ export function useGeneratorState() {
         return { ...user, credits: creditsRemaining };
       });
       void queryClient.invalidateQueries({ queryKey: authQueryOptions().queryKey });
-      void refetchSession();
+      if (options?.refetch !== false) {
+        void refetchSession();
+      }
     },
     [queryClient, refetchSession],
   );
@@ -136,6 +147,22 @@ export function useGeneratorState() {
     const model = MODELS.find((m) => m.id === currentState.model);
     const isTextModel = model?.category === "text";
     const guestToken = isLoggedIn ? null : getGuestToken();
+    const unitsPerCombination = isTextModel ? 1 : currentState.quantity;
+    const optimisticCost = calculateGenerationCredits({
+      model: currentState.model,
+      quantity: combinations.length * unitsPerCombination,
+      durationSeconds: currentState.model.startsWith("z-video")
+        ? VIDEO_DURATION_SECONDS[currentState.videoDuration]
+        : undefined,
+    });
+    const startingCredits = currentState.creditsRemaining ?? getSessionCredits(session);
+    const optimisticStartingCredits = isLoggedIn ? startingCredits : null;
+
+    if (optimisticStartingCredits != null && optimisticCost > 0) {
+      syncCreditsRemaining(Math.max(0, optimisticStartingCredits - optimisticCost), {
+        refetch: false,
+      });
+    }
 
     if (!isTextModel) {
       let globalError: string | null = null;
@@ -175,6 +202,10 @@ export function useGeneratorState() {
               watermark?: boolean;
             };
 
+            if (json.creditsRemaining != null) {
+              creditsRemaining = json.creditsRemaining;
+            }
+
             if (resp.status === 401) {
               globalError = t("loginRequiredToGenerate");
               return [];
@@ -200,9 +231,6 @@ export function useGeneratorState() {
               };
             }
 
-            if (json.creditsRemaining != null) {
-              creditsRemaining = json.creditsRemaining;
-            }
             if (json.watermark) {
               isWatermarked = true;
             }
@@ -276,6 +304,13 @@ export function useGeneratorState() {
           }
           if (creditsRemaining != null) {
             syncCreditsRemaining(creditsRemaining);
+          } else if (
+            optimisticStartingCredits != null &&
+            asyncPendings.length === 0 &&
+            results.length > 0 &&
+            results.every((result) => result.status === "error")
+          ) {
+            syncCreditsRemaining(optimisticStartingCredits);
           }
         })
         .catch((err) => {
@@ -286,6 +321,7 @@ export function useGeneratorState() {
         });
     } else {
       // Text generation via DeepSeek
+      let textCreditsRemaining: number | null = null;
       void Promise.all(
         combinations.map(async (combination) => {
           try {
@@ -312,6 +348,11 @@ export function useGeneratorState() {
 
             const textWatermark = json.watermark ?? false;
 
+            if (json.creditsRemaining != null) {
+              textCreditsRemaining = json.creditsRemaining;
+              syncCreditsRemaining(json.creditsRemaining);
+            }
+
             if (!resp.ok || json.error) {
               return {
                 id: generateResultId(),
@@ -321,10 +362,6 @@ export function useGeneratorState() {
                 watermark: textWatermark,
                 status: "error" as const,
               };
-            }
-
-            if (json.creditsRemaining != null) {
-              syncCreditsRemaining(json.creditsRemaining);
             }
 
             return (json.texts || json.urls || []).map((text) => ({
@@ -350,9 +387,18 @@ export function useGeneratorState() {
         }),
       )
         .then((resultGroups) => {
+          const results = resultGroups.flat();
+          if (
+            textCreditsRemaining == null &&
+            optimisticStartingCredits != null &&
+            results.length > 0 &&
+            results.every((result) => result.status === "error")
+          ) {
+            syncCreditsRemaining(optimisticStartingCredits);
+          }
           dispatch({
             type: "FINISH_GENERATING",
-            payload: resultGroups.flat(),
+            payload: results,
           });
         })
         .catch((err) => {
@@ -362,7 +408,7 @@ export function useGeneratorState() {
           generationInFlightRef.current = false;
         });
     }
-  }, [getGuestToken, isLoggedIn, syncCreditsRemaining, t]);
+  }, [getGuestToken, isLoggedIn, session, syncCreditsRemaining, t]);
 
   const setError = useCallback((value: string | null) => {
     dispatch({ type: "SET_ERROR", payload: value });

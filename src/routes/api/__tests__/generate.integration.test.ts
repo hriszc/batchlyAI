@@ -107,6 +107,8 @@ describe("handleGenerate", () => {
       grsaiFn: mockGrsai,
     } as any);
     expect(resp.status).toBe(500);
+    const body = (await resp.json()) as { creditsRemaining: number };
+    expect(body.creditsRemaining).toBe(100);
 
     // Credits should be fully restored
     expect(getCredits()).toBe(100);
@@ -176,6 +178,8 @@ describe("handleGenerate", () => {
       replicateFn: mockReplicate,
     } as any);
     expect(resp.status).toBe(500);
+    const body = (await resp.json()) as { creditsRemaining: number };
+    expect(body.creditsRemaining).toBe(100);
     expect(getCredits()).toBe(100);
   });
 
@@ -260,6 +264,8 @@ describe("handleGenerate", () => {
       replicateFn: mockReplicate,
     } as any);
     expect(resp.status).toBe(500);
+    const body = (await resp.json()) as { creditsRemaining: number };
+    expect(body.creditsRemaining).toBe(100);
     expect(getCredits()).toBe(100);
   });
 

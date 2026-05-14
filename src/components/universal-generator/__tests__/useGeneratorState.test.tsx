@@ -17,6 +17,12 @@ function createWrapper() {
 
 beforeEach(() => {
   vi.restoreAllMocks();
+  const sessionAtom = authClient.$store.atoms.session;
+  sessionAtom.set({
+    ...sessionAtom.get(),
+    data: null,
+    isPending: false,
+  });
 });
 
 describe("useGeneratorState", () => {
@@ -266,6 +272,54 @@ describe("useGeneratorState", () => {
 
     const session = sessionAtom.get().data as { user: { credits: number } };
     expect(session.user.credits).toBe(90);
+    vi.unstubAllGlobals();
+  });
+
+  it("optimistically deducts credits as soon as generation starts", async () => {
+    const sessionAtom = authClient.$store.atoms.session;
+    sessionAtom.set({
+      ...sessionAtom.get(),
+      data: { user: { id: "u1", credits: 100 } },
+      isPending: false,
+    });
+
+    let resolveFetch: (value: unknown) => void = () => {};
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        () =>
+          new Promise((resolve) => {
+            resolveFetch = resolve;
+          }),
+      ),
+    );
+
+    const { result } = renderHook(() => useGeneratorState(), {
+      wrapper: createWrapper(),
+    });
+
+    act(() => {
+      result.current.actions.setModel("z-text-fast");
+      result.current.actions.setPromptTemplate("{{hello}}");
+    });
+
+    act(() => {
+      result.current.actions.startGenerating();
+    });
+
+    expect(result.current.state.creditsRemaining).toBe(95);
+    expect((sessionAtom.get().data as { user: { credits: number } }).user.credits).toBe(95);
+
+    await act(async () => {
+      resolveFetch({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ texts: ["Hello"], creditsRemaining: 90 }),
+      });
+      await new Promise((r) => setTimeout(r, 100));
+    });
+
+    expect(result.current.state.creditsRemaining).toBe(90);
     vi.unstubAllGlobals();
   });
 

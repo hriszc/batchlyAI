@@ -239,10 +239,11 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
         } catch (fbErr) {
           console.error("[generate] Workers AI fallback also failed:", fbErr);
         }
-        await db
+        const [refunded] = await db
           .update(userTable)
           .set({ credits: sql`${userTable.credits} + ${maxCost}` })
-          .where(eq(userTable.id, userId));
+          .where(eq(userTable.id, userId))
+          .returning({ credits: userTable.credits });
         const message = err instanceof Error ? err.message : "Text generation failed";
         await auditAiSpend({
           db,
@@ -254,7 +255,10 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
           status: "refunded",
           metadata: { error: message },
         });
-        return jsonResponse({ error: message }, 500);
+        return jsonResponse(
+          { error: message, creditsRemaining: refunded?.credits ?? deducted.credits + maxCost },
+          500,
+        );
       }
     }
 
@@ -393,10 +397,11 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
         console.error("[generate] Workers AI fallback also failed:", fbErr);
       }
       // Refund credits on creation failure
-      await db
+      const [refunded] = await db
         .update(userTable)
         .set({ credits: sql`${userTable.credits} + ${maxCost}` })
-        .where(eq(userTable.id, userId));
+        .where(eq(userTable.id, userId))
+        .returning({ credits: userTable.credits });
       const message = err instanceof Error ? err.message : "Generation failed";
       await auditAiSpend({
         db,
@@ -408,7 +413,10 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
         status: "refunded",
         metadata: { error: message },
       });
-      return jsonResponse({ error: message }, 500);
+      return jsonResponse(
+        { error: message, creditsRemaining: refunded?.credits ?? deducted.credits + maxCost },
+        500,
+      );
     }
 
     const predictionIds = predictions.map((p) => p.id);

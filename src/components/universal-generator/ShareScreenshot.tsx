@@ -14,12 +14,73 @@ interface ShareScreenshotProps {
 
 async function imageUrlToDataUri(url: string): Promise<string> {
   const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`Image request failed: ${resp.status}`);
   const blob = await resp.blob();
   return new Promise((resolve) => {
     const reader = new FileReader();
     reader.onloadend = () => resolve(reader.result as string);
     reader.readAsDataURL(blob);
   });
+}
+
+function isMobileViewport(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(max-width: 767px)").matches;
+}
+
+function getCanvasScale(element: HTMLElement): number {
+  const rect = element.getBoundingClientRect();
+  const baseScale = isMobileViewport() ? 1 : 2;
+  const maxPixels = isMobileViewport() ? 8_000_000 : 24_000_000;
+  const estimatedPixels = rect.width * rect.height * baseScale * baseScale;
+  if (estimatedPixels <= maxPixels) return baseScale;
+  return Math.max(0.5, Math.sqrt(maxPixels / (rect.width * rect.height)));
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) {
+        resolve(blob);
+        return;
+      }
+      try {
+        const dataUrl = canvas.toDataURL("image/png");
+        const [meta, data] = dataUrl.split(",");
+        const mime = meta.match(/data:(.*);base64/)?.[1] || "image/png";
+        const binary = atob(data);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
+          bytes[i] = binary.charCodeAt(i);
+        }
+        resolve(new Blob([bytes], { type: mime }));
+      } catch (err) {
+        reject(err instanceof Error ? err : new Error("Canvas export failed"));
+      }
+    }, "image/png");
+  });
+}
+
+async function saveOrShareBlob(blob: Blob, filename: string): Promise<void> {
+  const file = new File([blob], filename, { type: "image/png" });
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({
+        files: [file],
+        title: "BatchlyAI",
+      });
+      return;
+    } catch {
+      // Fall back to downloading the file.
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
 
 export function ShareScreenshot({
@@ -85,8 +146,9 @@ export function ShareScreenshot({
 
       try {
         const { default: html2canvas } = await import("html2canvas");
+        const scale = getCanvasScale(cardRef.current);
         const canvas = await html2canvas(cardRef.current, {
-          scale: 2,
+          scale,
           backgroundColor: "#ffffff",
           useCORS: true,
           allowTaint: false,
@@ -109,17 +171,11 @@ export function ShareScreenshot({
           },
         });
 
-        canvas.toBlob((blob: Blob | null) => {
-          if (!blob || cancelled) return;
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `batchlyai-${Date.now()}.png`;
-          a.click();
-          URL.revokeObjectURL(url);
-          setCaptured(true);
-          onComplete();
-        }, "image/png");
+        const blob = await canvasToBlob(canvas);
+        if (cancelled) return;
+        await saveOrShareBlob(blob, `batchlyai-${Date.now()}.png`);
+        setCaptured(true);
+        onComplete();
       } catch (err) {
         if (!cancelled) {
           const message = err instanceof Error ? err.message : "Screenshot failed";
@@ -146,8 +202,18 @@ export function ShareScreenshot({
   }
 
   return (
-    <div className="pointer-events-none fixed top-0 left-0 z-[-1] opacity-0">
-      <div ref={cardRef} style={{ width: 820 }} className="bg-white font-sans">
+    <div className="pointer-events-none fixed inset-0 z-[9999] overflow-hidden bg-black/40 backdrop-blur-sm">
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="rounded-2xl bg-card p-8 text-center shadow-lg">
+          <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-accent-blue border-t-transparent" />
+          <p className="text-sm text-foreground">{t("shareLoading")}</p>
+        </div>
+      </div>
+      <div
+        ref={cardRef}
+        style={{ width: 820, position: "absolute", top: 0, left: 0 }}
+        className="bg-white font-sans"
+      >
         {/* Header */}
         <div className="flex items-center gap-3 border-b px-10 py-6">
           <img src="/logo-light.png" alt="BatchlyAI" className="h-10 w-auto" />
@@ -193,6 +259,7 @@ export function ShareScreenshot({
                     <img
                       src={dataUris[result.id]}
                       alt={result.combination.prompt}
+                      crossOrigin="anonymous"
                       className="w-full"
                     />
                   ) : (
