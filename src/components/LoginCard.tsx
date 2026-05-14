@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth/auth-client";
+import { getAuthErrorMessage } from "@/lib/auth/error-message";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 interface LoginCardProps {
@@ -45,13 +46,14 @@ export function LoginCard({ onSuccess, onClose }: LoginCardProps) {
         "error" in result &&
         (result as { error: unknown }).error
       ) {
-        const err = (result as { error: { message?: string } }).error;
-        throw new Error(err.message || "Sign in failed");
+        throw new Error(
+          getAuthErrorMessage((result as { error: unknown }).error, "Sign in failed"),
+        );
       }
       toast.success("Logged in successfully");
       onSuccess();
     } catch (err) {
-      const message = err instanceof Error ? err.message : "An error occurred";
+      const message = getAuthErrorMessage(err, "An error occurred");
       setErrorMessage(message);
     } finally {
       setIsPending(false);

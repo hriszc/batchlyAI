@@ -15,7 +15,11 @@ export function jsonResponse(
   return new Response(JSON.stringify(data), { status, headers });
 }
 
-const ALLOWED_ORIGINS = ["https://batchlyai.com", "http://localhost:3000"];
+const ALLOWED_ORIGINS = [
+  "https://batchlyai.com",
+  "https://www.batchlyai.com",
+  "http://localhost:3000",
+];
 
 export function verifyOrigin(request: Request): boolean {
   const origin = request.headers?.get("Origin");
