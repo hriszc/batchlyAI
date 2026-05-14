@@ -68,6 +68,23 @@ describe("auth signup Turnstile protection", () => {
     );
   });
 
+  it("rejects signup before creating an account when Turnstile token is missing", async () => {
+    mocks.mockVerifyTurnstileToken.mockResolvedValue({
+      ok: false,
+      status: 403,
+      message: "Human verification required",
+    });
+
+    const resp = await handleAuthPost(makeSignupRequest({ email: "u@test.com" }));
+
+    expect(resp.status).toBe(403);
+    expect(mocks.mockVerifyTurnstileToken).toHaveBeenCalledWith(
+      undefined,
+      expect.objectContaining({ url: "https://batchlyai.com/api/auth/sign-up/email" }),
+    );
+    expect(mocks.mockSignUpEmail).not.toHaveBeenCalled();
+  });
+
   it("rejects signup before creating an account when Turnstile fails", async () => {
     mocks.mockVerifyTurnstileToken.mockResolvedValue({
       ok: false,
@@ -75,9 +92,17 @@ describe("auth signup Turnstile protection", () => {
       message: "Human verification failed",
     });
 
-    const resp = await handleAuthPost(makeSignupRequest({ email: "u@test.com" }));
+    const resp = await handleAuthPost(
+      makeSignupRequest({
+        email: "u@test.com",
+        password: "password123",
+        name: "U",
+        "cf-turnstile-response": "bad-token",
+      }),
+    );
 
     expect(resp.status).toBe(403);
+    expect(mocks.mockVerifyTurnstileToken).toHaveBeenCalled();
     expect(mocks.mockSignUpEmail).not.toHaveBeenCalled();
   });
 

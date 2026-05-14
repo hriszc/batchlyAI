@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 
@@ -60,11 +60,11 @@ describe("ResultsGrid", () => {
     expect(skeletonImages.length).toBe(6);
   });
 
-  it("renders with Chinese heading", () => {
+  it("renders with Chinese heading after hydration", async () => {
     renderWithProviders(<ResultsGrid results={[imageResult]} isGenerating={false} />, {
       language: "zh",
     });
-    expect(screen.getByText("生成结果")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("生成结果")).toBeInTheDocument());
   });
 
   it("shows result cards when not generating", () => {

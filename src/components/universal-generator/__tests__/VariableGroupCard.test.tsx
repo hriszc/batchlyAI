@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 
@@ -118,7 +118,7 @@ describe("VariableGroupCard", () => {
     expect(onAdd).toHaveBeenCalledOnce();
   });
 
-  it("renders with Chinese translations", () => {
+  it("renders with Chinese translations after hydration", async () => {
     renderWithProviders(
       <VariableGroupCard
         group={baseGroup}
@@ -129,7 +129,7 @@ describe("VariableGroupCard", () => {
       />,
       { language: "zh" },
     );
-    expect(screen.getByText("变量组 2")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("变量组 2")).toBeInTheDocument());
     expect(screen.getByText("添加值")).toBeInTheDocument();
   });
 });

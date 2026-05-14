@@ -253,11 +253,11 @@ describe("GeneratorCard", () => {
     expect(creditsTexts.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("renders in Chinese", () => {
+  it("renders in Chinese after hydration", async () => {
     renderWithProviders(<GeneratorCard state={baseState} actions={mockActions} />, {
       language: "zh",
     });
-    expect(screen.getByText("开始生成")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("开始生成")).toBeInTheDocument());
   });
 
   // --- Prompt hint ---
@@ -285,7 +285,7 @@ describe("GeneratorCard", () => {
     expect(screen.getByText("Buy 1000 Credits for $10")).toBeInTheDocument();
   });
 
-  it("shows Buy Credits button when localized error is insufficient credits", () => {
+  it("shows Buy Credits button when localized error is insufficient credits", async () => {
     const creditErrorState: GeneratorState = {
       ...baseState,
       error: "积分不足：需要 20，当前只有 5",
@@ -293,7 +293,7 @@ describe("GeneratorCard", () => {
     renderWithProviders(<GeneratorCard state={creditErrorState} actions={mockActions} />, {
       language: "zh",
     });
-    expect(screen.getByText("购买 1000 积分 $10")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("购买 1000 积分 $10")).toBeInTheDocument());
   });
 
   it("does not show Buy Credits button for other errors", () => {

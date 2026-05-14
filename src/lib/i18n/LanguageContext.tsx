@@ -1,4 +1,4 @@
-import { createContext, use, useCallback, useState } from "react";
+import { createContext, use, useCallback, useEffect, useState } from "react";
 
 import { getLanguageCookie, parseStoredLanguage } from "./locale-routing";
 import type { Language, TranslationKey } from "./translations";
@@ -47,13 +47,18 @@ function persistLanguage(lang: Language): void {
 }
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<Language>(() => {
-    const stored = getStoredLanguage();
-    if (stored !== "en") {
-      return stored;
-    }
-    return "en";
-  });
+  const [language, setLanguageState] = useState<Language>("en");
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      const stored = getStoredLanguage();
+      if (stored !== "en") {
+        setLanguageState(stored);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
+  }, []);
 
   const setLanguage = useCallback((lang: Language, options?: SetLanguageOptions) => {
     if (options?.persist !== false) {
