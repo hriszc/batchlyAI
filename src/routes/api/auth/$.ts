@@ -10,6 +10,7 @@ import { getDb } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { processReferralAfterSignup } from "@/lib/referral/process";
+import { verifySignupProof } from "@/lib/signup-proof";
 import { verifyTurnstileToken } from "@/lib/turnstile";
 
 type ApiMethod = (ctx: {
@@ -35,6 +36,33 @@ const API_MAP: Record<string, string> = {
 
 function dbUnavailable() {
   return jsonResponse({ error: "Database not available" }, 501);
+}
+
+type SignupHumanResult = { ok: true } | { ok: false; message: string; status: number };
+
+async function verifySignupHuman(
+  body: Record<string, unknown>,
+  request: Request,
+): Promise<SignupHumanResult> {
+  const turnstile = await verifyTurnstileToken(body["cf-turnstile-response"], request);
+  if (turnstile.ok) return { ok: true };
+  if (turnstile.status !== 403) return turnstile;
+
+  const proof = await verifySignupProof({
+    email: body.email,
+    rawProof: body.signupProof,
+  });
+  if (!proof.ok) {
+    return { ok: false, status: turnstile.status, message: turnstile.message };
+  }
+
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const { allowed } = checkRateLimit(`sign-up/email:pow:${ip}`, 3, 300);
+  if (!allowed) {
+    return { ok: false, status: 429, message: "Too many requests" };
+  }
+
+  return { ok: true };
 }
 
 export async function handleAuthPost(request: Request): Promise<Response> {
@@ -70,12 +98,9 @@ export async function handleAuthPost(request: Request): Promise<Response> {
           .json()
           .catch(() => ({}));
         if (path === "sign-up/email") {
-          const turnstile = await verifyTurnstileToken(
-            (body as Record<string, unknown>)["cf-turnstile-response"],
-            request,
-          );
-          if (!turnstile.ok) {
-            return jsonResponse({ error: turnstile.message }, turnstile.status);
+          const human = await verifySignupHuman(body as Record<string, unknown>, request);
+          if (!human.ok) {
+            return jsonResponse({ error: human.message }, human.status);
           }
         }
 
