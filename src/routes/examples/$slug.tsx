@@ -53,6 +53,19 @@ function ExamplePageView() {
         <p className="mt-3 text-sm text-muted-foreground">
           <span className="font-medium text-foreground">Best for:</span> {page.audience}
         </p>
+        {page.sourceUrl ? (
+          <p className="mt-4 text-sm leading-6 text-muted-foreground">
+            {page.sourceNote} Source:{" "}
+            <a
+              href={page.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-accent-blue underline-offset-4 hover:underline"
+            >
+              {page.sourceLabel ?? page.sourceUrl}
+            </a>
+          </p>
+        ) : null}
       </section>
 
       <section className="mt-10 rounded-lg border bg-card p-5">
