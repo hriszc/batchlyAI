@@ -183,6 +183,20 @@ describe("handleGenerationFile", () => {
     expect(resp.status).toBe(200);
   });
 
+  it("allows anonymous access to mirrored work files even when DB lookup misses", async () => {
+    db.__state.publishedWork = null;
+
+    const resp = await handleGenerationFile(
+      {
+        headers: new Headers(),
+        url: "https://batchlyai.com/api/generation-files/works/work-1/0.png",
+      } as unknown as Request,
+      { _splat: "works/work-1/0.png" },
+    );
+
+    expect(resp.status).toBe(200);
+  });
+
   it("returns 401 for anonymous private generation files", async () => {
     const resp = await handleGenerationFile(
       {
