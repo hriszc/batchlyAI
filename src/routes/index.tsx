@@ -25,17 +25,19 @@ const meta = createPageMeta({
 const getRootLocaleRequest = createServerFn({ method: "GET" }).handler(async () => ({
   acceptLanguage: getRequestHeader("accept-language") || "",
   cookie: getRequestHeader("cookie") || "",
+  userAgent: getRequestHeader("user-agent") || "",
 }));
 
 export const Route = createFileRoute("/")({
   beforeLoad: async ({ location }) => {
-    const { acceptLanguage, cookie } = await getRootLocaleRequest();
+    const { acceptLanguage, cookie, userAgent } = await getRootLocaleRequest();
     const storedLanguage = getLanguageCookie(cookie);
     if (
       shouldRedirectRootToCn({
         pathname: location.pathname,
         storedLanguage,
         acceptLanguage,
+        userAgent,
       })
     ) {
       throw redirect({

@@ -5,6 +5,7 @@ import { drizzle } from "drizzle-orm/d1";
 import { getD1Binding } from "@/lib/cloudflare/bindings";
 import * as schema from "@/lib/db/schema";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { createPageMeta } from "@/lib/seo/meta";
 
 export const Route = createFileRoute("/g/$shareId")({
   loader: async ({ params }) => {
@@ -26,23 +27,28 @@ export const Route = createFileRoute("/g/$shareId")({
       resultImageUrls: JSON.parse(row.resultImageUrls) as string[],
     };
   },
-  head: ({ loaderData }) => ({
-    meta: [
-      { title: "Shared Batch — BatchlyAI" },
-      {
-        name: "description",
-        content: loaderData
-          ? `AI-generated batch: ${loaderData.promptTemplate.slice(0, 120)}`
-          : "BatchlyAI shared batch",
-      },
-      { property: "og:title", content: "Shared Batch — BatchlyAI" },
-      {
-        property: "og:image",
-        content: loaderData?.resultImageUrls?.[0] || "",
-      },
-      { name: "twitter:card", content: "summary_large_image" },
-    ],
-  }),
+  head: ({ loaderData }) => {
+    const seo = createPageMeta({
+      title: "Shared Batch — BatchlyAI",
+      description: loaderData
+        ? `AI-generated batch: ${loaderData.promptTemplate.slice(0, 120)}`
+        : "BatchlyAI shared batch",
+      path: loaderData ? `/g/${loaderData.id}` : "/",
+      locale: "en",
+      ogImage: loaderData?.resultImageUrls?.[0] || undefined,
+      noIndex: true,
+    });
+
+    return {
+      meta: seo.meta,
+      links: [
+        {
+          rel: "canonical",
+          href: loaderData ? `https://batchlyai.com/g/${loaderData.id}` : "https://batchlyai.com/",
+        },
+      ],
+    };
+  },
   component: SharedBatchPage,
 });
 

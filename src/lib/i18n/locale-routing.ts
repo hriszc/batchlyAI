@@ -30,16 +30,26 @@ export function getPrimaryAcceptLanguage(acceptLanguage: string | null | undefin
   return tag || null;
 }
 
+export function isSearchCrawler(userAgent: string | null | undefined): boolean {
+  if (!userAgent) return false;
+  return /\b(googlebot|google-inspectiontool|bingbot|slurp|duckduckbot|baiduspider|yandexbot|sogou|bytespider)\b/i.test(
+    userAgent,
+  );
+}
+
 export function shouldRedirectRootToCn({
   pathname,
   storedLanguage,
   acceptLanguage,
+  userAgent,
 }: {
   pathname: string;
   storedLanguage?: Language | null;
   acceptLanguage?: string | null;
+  userAgent?: string | null;
 }): boolean {
   if (pathname.startsWith("/cn")) return false;
+  if (isSearchCrawler(userAgent)) return false;
   if (storedLanguage === "en") return false;
   if (storedLanguage === "zh") return true;
   return isChineseLanguageTag(getPrimaryAcceptLanguage(acceptLanguage));
