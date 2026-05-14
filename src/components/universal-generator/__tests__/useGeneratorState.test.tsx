@@ -2,6 +2,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+import { authClient } from "@/lib/auth/auth-client";
+
 import { useGeneratorState } from "../useGeneratorState";
 
 function createWrapper() {
@@ -217,6 +219,53 @@ describe("useGeneratorState", () => {
     expect(result.current.state.results.length).toBe(1);
     expect(result.current.state.results[0].textContent).toBe("Hello generated text");
 
+    vi.unstubAllGlobals();
+  });
+
+  it("updates the shared auth session credits after generation", async () => {
+    const sessionAtom = authClient.$store.atoms.session;
+    sessionAtom.set({
+      ...sessionAtom.get(),
+      data: { user: { id: "u1", credits: 100 } },
+      isPending: false,
+    });
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo | URL) => {
+        const url =
+          typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+        if (url.includes("/get-session")) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ user: { id: "u1", credits: 90 } }),
+          });
+        }
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ texts: ["Hello"], creditsRemaining: 90 }),
+        });
+      }),
+    );
+
+    const { result } = renderHook(() => useGeneratorState(), {
+      wrapper: createWrapper(),
+    });
+
+    act(() => {
+      result.current.actions.setModel("z-text-fast");
+      result.current.actions.setPromptTemplate("{{hello}}");
+    });
+
+    await act(async () => {
+      result.current.actions.startGenerating();
+      await new Promise((r) => setTimeout(r, 100));
+    });
+
+    const session = sessionAtom.get().data as { user: { credits: number } };
+    expect(session.user.credits).toBe(90);
     vi.unstubAllGlobals();
   });
 

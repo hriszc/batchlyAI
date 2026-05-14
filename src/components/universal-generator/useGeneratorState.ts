@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useReducer, useCallback, useRef, useEffect } from "react";
 
-import { authClient } from "@/lib/auth/auth-client";
+import { authClient, setAuthClientSessionCredits } from "@/lib/auth/auth-client";
 import { authQueryOptions } from "@/lib/auth/queries";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -29,7 +29,7 @@ export function useGeneratorState() {
   const guestTokenRef = useRef<string | null>(null);
   const generationInFlightRef = useRef(false);
   const { t } = useLanguage();
-  const { data: session } = authClient.useSession();
+  const { data: session, refetch: refetchSession } = authClient.useSession();
   const queryClient = useQueryClient();
   const isLoggedIn = !!session?.user?.id;
   useEffect(() => {
@@ -100,13 +100,15 @@ export function useGeneratorState() {
   const syncCreditsRemaining = useCallback(
     (creditsRemaining: number) => {
       dispatch({ type: "SET_CREDITS_REMAINING", payload: creditsRemaining });
+      setAuthClientSessionCredits(creditsRemaining);
       queryClient.setQueryData(authQueryOptions().queryKey, (user: unknown) => {
         if (!user || typeof user !== "object") return user;
         return { ...user, credits: creditsRemaining };
       });
       void queryClient.invalidateQueries({ queryKey: authQueryOptions().queryKey });
+      void refetchSession();
     },
-    [queryClient],
+    [queryClient, refetchSession],
   );
 
   const startGenerating = useCallback(() => {

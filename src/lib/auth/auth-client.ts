@@ -12,3 +12,33 @@ export const authClient = createAuthClient({
   // Use same origin - works on both custom domain and workers.dev
   baseURL: typeof window !== "undefined" ? window.location.origin : "",
 });
+
+interface AuthSessionStoreValue {
+  data: {
+    user?: Record<string, unknown>;
+    [key: string]: unknown;
+  } | null;
+  [key: string]: unknown;
+}
+
+interface WritableAtomLike<T> {
+  get: () => T;
+  set: (value: T) => void;
+}
+
+export function setAuthClientSessionCredits(credits: number): void {
+  const sessionAtom = authClient.$store.atoms.session as WritableAtomLike<AuthSessionStoreValue>;
+  const current = sessionAtom.get();
+  if (!current.data?.user) return;
+
+  sessionAtom.set({
+    ...current,
+    data: {
+      ...current.data,
+      user: {
+        ...current.data.user,
+        credits,
+      },
+    },
+  });
+}
