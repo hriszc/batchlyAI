@@ -307,8 +307,8 @@ describe("useGeneratorState", () => {
       result.current.actions.startGenerating();
     });
 
-    expect(result.current.state.creditsRemaining).toBe(95);
-    expect((sessionAtom.get().data as { user: { credits: number } }).user.credits).toBe(95);
+    expect(result.current.state.creditsRemaining).toBe(98);
+    expect((sessionAtom.get().data as { user: { credits: number } }).user.credits).toBe(98);
 
     await act(async () => {
       resolveFetch({

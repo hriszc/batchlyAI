@@ -41,9 +41,9 @@ describe("handleGenerate — text model path", () => {
       userId,
       textFn: mockTextFn,
     } as any);
-    // z-text-fast = 5 credits per unit
+    // z-text-fast = 2 credits per unit
     const row = db.get(`SELECT credits FROM user WHERE id = '${userId}'`) as any;
-    expect(row?.credits).toBe(95);
+    expect(row?.credits).toBe(98);
   });
 
   it("text model refunds credits on failure", async () => {

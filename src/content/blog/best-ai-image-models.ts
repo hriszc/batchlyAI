@@ -12,7 +12,7 @@ export const bestAiImageModels: BlogPost = {
 
 ## Image Models Available in BatchlyAI
 
-### z-image-fast (10 credits)
+### z-image-fast (5 credits)
 
 Best for: Rapid prototyping, exploration, and high-volume batch generation.
 

@@ -163,7 +163,7 @@ describe("handleGenerate", () => {
         provider: "replicate",
         model: "z-image-fast",
         apiCallCount: 1,
-        creditsDelta: -10,
+        creditsDelta: -5,
       }),
     );
   });
@@ -204,12 +204,12 @@ describe("handleGenerate", () => {
 
   // --- Credit cost mapping ---
   it("CREDIT_COST covers all model tiers", () => {
-    expect(CREDIT_COST["z-image-fast"]).toBe(10);
+    expect(CREDIT_COST["z-image-fast"]).toBe(5);
     expect(CREDIT_COST["z-image-pro"]).toBe(20);
-    expect(CREDIT_COST["z-text-fast"]).toBe(5);
-    expect(CREDIT_COST["z-text-pro"]).toBe(10);
-    expect(CREDIT_COST["z-video-fast"]).toBe(40);
-    expect(CREDIT_COST["z-video-pro"]).toBe(80);
+    expect(CREDIT_COST["z-text-fast"]).toBe(2);
+    expect(CREDIT_COST["z-text-pro"]).toBe(4);
+    expect(CREDIT_COST["z-video-fast"]).toBe(30);
+    expect(CREDIT_COST["z-video-pro"]).toBe(60);
   });
 
   it("rejects unknown model with validation error", async () => {
@@ -301,7 +301,7 @@ describe("handleGenerate", () => {
       replicateFn: mockReplicate,
     } as any);
 
-    expect(getCreditsForUser(db, videoUserId)).toBe(200);
+    expect(getCreditsForUser(db, videoUserId)).toBe(400);
   });
 
   it("preserves credits when n=1 with pro model", async () => {
