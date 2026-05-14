@@ -55,6 +55,8 @@ describe("handleGenerate — text model path", () => {
       textFn: mockTextFn,
     } as any);
     expect(resp.status).toBe(500);
+    const body = (await resp.json()) as { creditsRemaining: number };
+    expect(body.creditsRemaining).toBe(100);
     const row = db.get(`SELECT credits FROM user WHERE id = '${userId}'`) as any;
     expect(row?.credits).toBe(100); // fully refunded
   });
