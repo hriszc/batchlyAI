@@ -6,7 +6,7 @@ vi.mock("@/lib/cloudflare/r2", async () => {
   return actual;
 });
 
-import { uploadToR2, getR2PublicUrl } from "@/lib/cloudflare/r2";
+import { uploadToR2, getR2PublicUrl, mirrorImageToR2 } from "@/lib/cloudflare/r2";
 
 describe("uploadToR2", () => {
   beforeEach(() => {
@@ -52,5 +52,36 @@ describe("getR2PublicUrl", () => {
     };
     const url = getR2PublicUrl("uploads/u1/file.png");
     expect(url).toBe("https://cdn.example.com/my-bucket/uploads/u1/file.png");
+  });
+});
+
+describe("mirrorImageToR2", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    delete (globalThis as Record<string, unknown>).__env__;
+  });
+
+  it("copies local generation file URLs to the target R2 key", async () => {
+    const mockGet = vi.fn().mockResolvedValue({
+      body: new ReadableStream(),
+      writeHttpMetadata: (headers: Headers) => headers.set("Content-Type", "image/png"),
+    });
+    const mockPut = vi.fn().mockResolvedValue(undefined);
+    (globalThis as Record<string, unknown>).__env__ = {
+      batchlyai_r2: { get: mockGet, put: mockPut },
+    };
+
+    const url = await mirrorImageToR2(
+      "/api/generation-files/generations/u1/gen-1/0.png",
+      "works/work-1/0.png",
+    );
+
+    expect(mockGet).toHaveBeenCalledWith("generations/u1/gen-1/0.png");
+    expect(mockPut).toHaveBeenCalledWith(
+      "works/work-1/0.png",
+      expect.any(ReadableStream),
+      expect.objectContaining({ httpMetadata: { contentType: "image/png" } }),
+    );
+    expect(url).toBe("/api/generation-files/works/work-1/0.png");
   });
 });

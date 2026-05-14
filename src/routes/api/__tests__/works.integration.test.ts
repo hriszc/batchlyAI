@@ -195,19 +195,25 @@ describe("handleGenerationFile", () => {
     expect(resp.status).toBe(401);
   });
 
-  it("does not check published works before authenticating private generation files", async () => {
-    const querySpy = vi.fn();
-    const dbWithFailingLookup = {
-      select: () => {
-        querySpy();
-        throw new Error("work lookup should not run");
-      },
-    };
-    (globalThis as Record<string, unknown>).__env__ = {
-      batchlyai_db: dbWithFailingLookup,
-      batchlyai_r2: {
-        get: vi.fn(),
-      },
+  it("allows anonymous access to generation files referenced by published works", async () => {
+    db.__state.publishedWork = {
+      id: "work-1",
+      userId: "u1",
+      title: "Published from generation",
+      description: null,
+      category: "general",
+      promptTemplate: "A {{cat}}",
+      variableGroups: "[]",
+      coverUrl: "/api/generation-files/generations/u1/gen-1/0.png",
+      resultUrls: JSON.stringify(["/api/generation-files/generations/u1/gen-1/0.png"]),
+      model: "z-image-fast",
+      parentWorkId: null,
+      isPublished: 1,
+      likeCount: 0,
+      commentCount: 0,
+      remixCount: 0,
+      createdAt: Math.floor(Date.now() / 1000),
+      publishedAt: Math.floor(Date.now() / 1000),
     };
 
     const resp = await handleGenerationFile(
@@ -218,8 +224,7 @@ describe("handleGenerationFile", () => {
       { _splat: "generations/u1/gen-1/0.png" },
     );
 
-    expect(resp.status).toBe(401);
-    expect(querySpy).not.toHaveBeenCalled();
+    expect(resp.status).toBe(200);
   });
 
   it("reads generation file keys from Nitro splat params", async () => {

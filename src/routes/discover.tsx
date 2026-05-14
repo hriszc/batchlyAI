@@ -67,13 +67,14 @@ export const Route = createFileRoute("/discover")({
   component: DiscoverPage,
 });
 
-function DiscoverPage() {
+export function DiscoverPage() {
   const { t } = useLanguage();
   const navigate = Route.useNavigate();
   const { tab } = Route.useSearch();
   const activeTab = tab ?? "hot";
   const [works, setWorks] = useState<WorkCard[]>([]);
   const [templates, setTemplates] = useState<TemplateCard[]>([]);
+  const [hiddenWorkIds, setHiddenWorkIds] = useState<Set<string>>(() => new Set());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -96,10 +97,15 @@ function DiscoverPage() {
     const params = new URLSearchParams({ type, ...(category && { category }) });
     fetch(`/api/works?${params}`)
       .then((r) => r.json() as Promise<{ works: WorkCard[] }>)
-      .then((d) => setWorks(d.works || []))
+      .then((d) => {
+        setHiddenWorkIds(new Set());
+        setWorks(d.works || []);
+      })
       .catch(() => setWorks([]))
       .finally(() => setLoading(false));
   }, [activeTab]);
+
+  const visibleWorks = works.filter((w) => !hiddenWorkIds.has(w.id));
 
   return (
     <main className="mx-auto max-w-[980px] px-4 py-8">
@@ -164,7 +170,7 @@ function DiscoverPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-          {works.map((w) => (
+          {visibleWorks.map((w) => (
             <a
               key={w.id}
               href={`/works/${w.id}`}
@@ -174,6 +180,15 @@ function DiscoverPage() {
                 <img
                   src={w.coverUrl}
                   alt={w.title}
+                  loading="lazy"
+                  decoding="async"
+                  onError={() =>
+                    setHiddenWorkIds((ids) => {
+                      const next = new Set(ids);
+                      next.add(w.id);
+                      return next;
+                    })
+                  }
                   className="h-full w-full object-cover transition-transform group-hover:scale-105"
                 />
               </div>

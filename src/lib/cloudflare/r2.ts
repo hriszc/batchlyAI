@@ -1,4 +1,10 @@
 interface R2Binding {
+  get?(key: string): Promise<{
+    body: ReadableStream;
+    arrayBuffer?: () => Promise<ArrayBuffer>;
+    httpMetadata?: { contentType?: string };
+    writeHttpMetadata?: (headers: Headers) => void;
+  } | null>;
   put(
     key: string,
     value: ArrayBuffer | ReadableStream | string,
@@ -46,6 +52,21 @@ function validateMirrorUrl(imageUrl: string): URL | null {
   }
 }
 
+function getLocalGenerationFileKey(imageUrl: string): string | null {
+  try {
+    const url = imageUrl.startsWith("/")
+      ? new URL(imageUrl, "https://batchlyai.com")
+      : new URL(imageUrl);
+    if (url.origin !== "https://batchlyai.com") return null;
+    const prefix = "/api/generation-files/";
+    if (!url.pathname.startsWith(prefix)) return null;
+    const key = decodeURIComponent(url.pathname.slice(prefix.length));
+    return key ? key : null;
+  } catch {
+    return null;
+  }
+}
+
 async function readLimitedArrayBuffer(resp: Response): Promise<ArrayBuffer | null> {
   const contentLength = Number(resp.headers.get("Content-Length") || "0");
   if (contentLength > MAX_MIRROR_BYTES) return null;
@@ -88,6 +109,28 @@ export async function mirrorImageToR2(imageUrl: string, r2Key: string): Promise<
       imageUrl?.slice(0, 80),
     );
     return imageUrl;
+  }
+
+  const localKey = getLocalGenerationFileKey(imageUrl);
+  if (localKey && r2.get) {
+    try {
+      const obj = await r2.get(localKey);
+      if (!obj) return imageUrl;
+      const headers = new Headers();
+      obj.writeHttpMetadata?.(headers);
+      const contentType =
+        obj.httpMetadata?.contentType || headers.get("Content-Type") || "image/png";
+      if (!ALLOWED_MIRROR_CONTENT_TYPES.some((type) => contentType.startsWith(type))) {
+        console.warn("[r2] blocked local mirrored content type:", contentType);
+        return imageUrl;
+      }
+      const body = obj.arrayBuffer ? await obj.arrayBuffer() : obj.body;
+      await r2.put(r2Key, body, { httpMetadata: { contentType } });
+      return getR2PublicUrl(r2Key);
+    } catch (err) {
+      console.error("[r2] local mirrorImageToR2 error:", err);
+      return imageUrl;
+    }
   }
 
   const validatedUrl = validateMirrorUrl(imageUrl);
