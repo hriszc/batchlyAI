@@ -40,6 +40,7 @@ import { Route as ApiGenerationsRouteImport } from './routes/api/generations'
 import { Route as ApiGenerateStatusRouteImport } from './routes/api/generate-status'
 import { Route as ApiGenerateRouteImport } from './routes/api/generate'
 import { Route as ApiExpandVarsRouteImport } from './routes/api/expand-vars'
+import { Route as ApiCreditsRouteImport } from './routes/api/credits'
 import { Route as GuestSignupRouteImport } from './routes/_guest/signup'
 import { Route as GuestResetPasswordRouteImport } from './routes/_guest/reset-password'
 import { Route as GuestLoginRouteImport } from './routes/_guest/login'
@@ -213,6 +214,11 @@ const ApiExpandVarsRoute = ApiExpandVarsRouteImport.update({
   path: '/api/expand-vars',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCreditsRoute = ApiCreditsRouteImport.update({
+  id: '/api/credits',
+  path: '/api/credits',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GuestSignupRoute = GuestSignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -309,6 +315,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof GuestLoginRoute
   '/reset-password': typeof GuestResetPasswordRoute
   '/signup': typeof GuestSignupRoute
+  '/api/credits': typeof ApiCreditsRoute
   '/api/expand-vars': typeof ApiExpandVarsRoute
   '/api/generate': typeof ApiGenerateRoute
   '/api/generate-status': typeof ApiGenerateStatusRoute
@@ -358,6 +365,7 @@ export interface FileRoutesByTo {
   '/login': typeof GuestLoginRoute
   '/reset-password': typeof GuestResetPasswordRoute
   '/signup': typeof GuestSignupRoute
+  '/api/credits': typeof ApiCreditsRoute
   '/api/expand-vars': typeof ApiExpandVarsRoute
   '/api/generate': typeof ApiGenerateRoute
   '/api/generate-status': typeof ApiGenerateStatusRoute
@@ -409,6 +417,7 @@ export interface FileRoutesById {
   '/_guest/login': typeof GuestLoginRoute
   '/_guest/reset-password': typeof GuestResetPasswordRoute
   '/_guest/signup': typeof GuestSignupRoute
+  '/api/credits': typeof ApiCreditsRoute
   '/api/expand-vars': typeof ApiExpandVarsRoute
   '/api/generate': typeof ApiGenerateRoute
   '/api/generate-status': typeof ApiGenerateStatusRoute
@@ -460,6 +469,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/api/credits'
     | '/api/expand-vars'
     | '/api/generate'
     | '/api/generate-status'
@@ -509,6 +519,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/reset-password'
     | '/signup'
+    | '/api/credits'
     | '/api/expand-vars'
     | '/api/generate'
     | '/api/generate-status'
@@ -559,6 +570,7 @@ export interface FileRouteTypes {
     | '/_guest/login'
     | '/_guest/reset-password'
     | '/_guest/signup'
+    | '/api/credits'
     | '/api/expand-vars'
     | '/api/generate'
     | '/api/generate-status'
@@ -606,6 +618,7 @@ export interface RootRouteChildren {
   DiscoverRoute: typeof DiscoverRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  ApiCreditsRoute: typeof ApiCreditsRoute
   ApiExpandVarsRoute: typeof ApiExpandVarsRoute
   ApiGenerateRoute: typeof ApiGenerateRoute
   ApiGenerateStatusRoute: typeof ApiGenerateStatusRoute
@@ -862,6 +875,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiExpandVarsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/credits': {
+      id: '/api/credits'
+      path: '/api/credits'
+      fullPath: '/api/credits'
+      preLoaderRoute: typeof ApiCreditsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_guest/signup': {
       id: '/_guest/signup'
       path: '/signup'
@@ -1035,6 +1055,7 @@ const rootRouteChildren: RootRouteChildren = {
   DiscoverRoute: DiscoverRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  ApiCreditsRoute: ApiCreditsRoute,
   ApiExpandVarsRoute: ApiExpandVarsRoute,
   ApiGenerateRoute: ApiGenerateRoute,
   ApiGenerateStatusRoute: ApiGenerateStatusRoute,

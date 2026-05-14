@@ -20,6 +20,13 @@ async function setupMocks(page: import("@playwright/test").Page) {
       }),
     });
   });
+  await page.route("**/api/credits", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ credits: 100, creditsRemaining: 100 }),
+    });
+  });
   await page.route("**/api/generate", async (route) => {
     await route.fulfill({
       status: 200,

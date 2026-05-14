@@ -1,8 +1,8 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useReducer, useCallback, useRef, useEffect } from "react";
 
-import { authClient, setAuthClientSessionCredits } from "@/lib/auth/auth-client";
-import { authQueryOptions } from "@/lib/auth/queries";
+import { authClient } from "@/lib/auth/auth-client";
+import { applyCreditsToClientCaches, CREDIT_UPDATED_EVENT } from "@/lib/credits/client-sync";
 import { calculateGenerationCredits } from "@/lib/generator-credits";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -38,12 +38,35 @@ export function useGeneratorState() {
   const guestTokenRef = useRef<string | null>(null);
   const generationInFlightRef = useRef(false);
   const { t } = useLanguage();
-  const { data: session, refetch: refetchSession } = authClient.useSession();
+  const { data: session } = authClient.useSession();
   const queryClient = useQueryClient();
   const isLoggedIn = !!session?.user?.id;
   useEffect(() => {
     stateRef.current = state;
   });
+
+  useEffect(() => {
+    const credits = getSessionCredits(session);
+    if (credits != null) {
+      dispatch({ type: "SET_CREDITS_REMAINING", payload: credits });
+    }
+  }, [session]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleCreditUpdate = (event: Event) => {
+      const credits = (event as CustomEvent<{ credits?: unknown }>).detail?.credits;
+      if (typeof credits === "number") {
+        dispatch({ type: "SET_CREDITS_REMAINING", payload: credits });
+      }
+    };
+
+    window.addEventListener(CREDIT_UPDATED_EVENT, handleCreditUpdate);
+    return () => {
+      window.removeEventListener(CREDIT_UPDATED_EVENT, handleCreditUpdate);
+    };
+  }, []);
 
   const getGuestToken = useCallback(() => {
     if (isLoggedIn) return null;
@@ -107,19 +130,11 @@ export function useGeneratorState() {
   }, []);
 
   const syncCreditsRemaining = useCallback(
-    (creditsRemaining: number, options?: { refetch?: boolean }) => {
+    (creditsRemaining: number) => {
       dispatch({ type: "SET_CREDITS_REMAINING", payload: creditsRemaining });
-      setAuthClientSessionCredits(creditsRemaining);
-      queryClient.setQueryData(authQueryOptions().queryKey, (user: unknown) => {
-        if (!user || typeof user !== "object") return user;
-        return { ...user, credits: creditsRemaining };
-      });
-      void queryClient.invalidateQueries({ queryKey: authQueryOptions().queryKey });
-      if (options?.refetch !== false) {
-        void refetchSession();
-      }
+      applyCreditsToClientCaches(creditsRemaining, queryClient);
     },
-    [queryClient, refetchSession],
+    [queryClient],
   );
 
   const startGenerating = useCallback(() => {
@@ -159,9 +174,7 @@ export function useGeneratorState() {
     const optimisticStartingCredits = isLoggedIn ? startingCredits : null;
 
     if (optimisticStartingCredits != null && optimisticCost > 0) {
-      syncCreditsRemaining(Math.max(0, optimisticStartingCredits - optimisticCost), {
-        refetch: false,
-      });
+      syncCreditsRemaining(Math.max(0, optimisticStartingCredits - optimisticCost));
     }
 
     if (!isTextModel) {

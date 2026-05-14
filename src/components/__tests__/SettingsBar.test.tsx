@@ -6,11 +6,16 @@ import { renderWithProviders } from "#test/test-utils";
 import { SettingsBar } from "@/components/SettingsBar";
 
 const mockUseSession = vi.fn();
+const mockSyncCredits = vi.fn();
 
 vi.mock("@/lib/auth/auth-client", () => ({
   authClient: {
     useSession: () => mockUseSession(),
   },
+}));
+
+vi.mock("@/lib/credits/client-sync", () => ({
+  useCreditSync: () => mockSyncCredits,
 }));
 
 vi.mock("@tanstack/react-router", () => ({
@@ -24,6 +29,7 @@ vi.mock("@tanstack/react-router", () => ({
 describe("SettingsBar", () => {
   beforeEach(() => {
     mockUseSession.mockReturnValue({ data: null });
+    mockSyncCredits.mockResolvedValue(null);
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({

@@ -10,6 +10,13 @@ async function setupMocks(page: import("@playwright/test").Page) {
       }),
     });
   });
+  await page.route("**/api/credits", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ credits: 5, creditsRemaining: 5 }),
+    });
+  });
   await page.route("**/api/stripe/checkout", async (route) => {
     await route.fulfill({
       status: 200,

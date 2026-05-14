@@ -7,6 +7,11 @@ import * as schema from "@/lib/db/schema";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { createPageMeta } from "@/lib/seo/meta";
 
+interface SharedVariableGroup {
+  name?: string;
+  values: string[];
+}
+
 export const Route = createFileRoute("/g/$shareId")({
   loader: async ({ params }) => {
     const shareId = (params as { shareId: string }).shareId;
@@ -20,10 +25,7 @@ export const Route = createFileRoute("/g/$shareId")({
     if (!row) return null;
     return {
       ...row,
-      variableGroups: JSON.parse(row.variableGroups) as Array<{
-        name?: string;
-        values: string[];
-      }>,
+      variableGroups: JSON.parse(row.variableGroups) as SharedVariableGroup[],
       resultImageUrls: JSON.parse(row.resultImageUrls) as string[],
     };
   },
@@ -80,7 +82,7 @@ function SharedBatchPage() {
           <h1 className="text-xl font-semibold">{t("sharedBatch")}</h1>
           <p className="mt-1 font-mono text-sm text-muted-foreground">{data.promptTemplate}</p>
           <div className="mt-2 flex flex-wrap gap-2">
-            {data.variableGroups.map((group, i) => (
+            {data.variableGroups.map((group: SharedVariableGroup, i: number) => (
               <span
                 key={i}
                 className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
