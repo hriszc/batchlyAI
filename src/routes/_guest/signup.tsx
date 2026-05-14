@@ -2,7 +2,7 @@ import { SiGithub, SiGoogle } from "@icons-pack/react-simple-icons";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { LoaderCircleIcon, MailCheckIcon } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { SignInSocialButton } from "@/components/sign-in-social-button";
@@ -45,6 +45,7 @@ declare global {
           theme?: "auto" | "light" | "dark";
         },
       ) => string;
+      remove?: (widgetId?: string) => void;
       reset: (widgetId?: string) => void;
     };
   }
@@ -59,9 +60,11 @@ function getTurnstileSiteKey(): string {
 
 function TurnstileField({
   disabled,
+  onError,
   onToken,
 }: {
   disabled: boolean;
+  onError: () => void;
   onToken: (token: string) => void;
 }) {
   const siteKey = getTurnstileSiteKey();
@@ -78,25 +81,46 @@ function TurnstileField({
         theme: "auto",
         callback: onToken,
         "expired-callback": () => onToken(""),
-        "error-callback": () => onToken(""),
+        "error-callback": () => {
+          onToken("");
+          onError();
+        },
       });
     };
 
+    const handleScriptError = () => {
+      onToken("");
+      onError();
+    };
+
     const existing = document.getElementById(TURNSTILE_SCRIPT_ID) as HTMLScriptElement | null;
-    if (existing) {
+    const script =
+      existing ??
+      Object.assign(document.createElement("script"), {
+        id: TURNSTILE_SCRIPT_ID,
+        src: "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit",
+        async: true,
+        defer: true,
+      });
+
+    script.addEventListener("load", render);
+    script.addEventListener("error", handleScriptError);
+
+    if (!existing) {
+      document.head.appendChild(script);
+    } else {
       render();
-      existing.addEventListener("load", render, { once: true });
-      return;
     }
 
-    const script = document.createElement("script");
-    script.id = TURNSTILE_SCRIPT_ID;
-    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
-    script.async = true;
-    script.defer = true;
-    script.addEventListener("load", render, { once: true });
-    document.head.appendChild(script);
-  }, [onToken, siteKey]);
+    return () => {
+      script.removeEventListener("load", render);
+      script.removeEventListener("error", handleScriptError);
+      if (widgetIdRef.current) {
+        window.turnstile?.remove?.(widgetIdRef.current);
+        widgetIdRef.current = undefined;
+      }
+    };
+  }, [onError, onToken, siteKey]);
 
   if (!siteKey) return null;
 
@@ -119,6 +143,12 @@ function SignupForm() {
   const [resent, setResent] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState("");
   const turnstileRequired = Boolean(getTurnstileSiteKey());
+  const handleTurnstileError = useCallback(() => {
+    const msg =
+      "Human verification could not load. Please disable conflicting browser extensions or try another browser.";
+    setErrorMessage(msg);
+    toast.error(msg);
+  }, []);
 
   const refCode = useMemo(() => {
     if (typeof window === "undefined") return "";
@@ -305,7 +335,11 @@ function SignupForm() {
                 required
               />
             </div>
-            <TurnstileField disabled={isPending} onToken={setTurnstileToken} />
+            <TurnstileField
+              disabled={isPending}
+              onError={handleTurnstileError}
+              onToken={setTurnstileToken}
+            />
             {errorMessage && (
               <div className="rounded-md bg-destructive/15 px-4 py-2 text-sm text-destructive">
                 {errorMessage}

@@ -1,4 +1,4 @@
-import { renderHook, act } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { LanguageProvider, useLanguage } from "../LanguageContext";
@@ -13,6 +13,7 @@ describe("LanguageContext", () => {
   beforeEach(() => {
     localStorage.clear();
     window.history.replaceState({}, "", "/");
+    document.cookie = "language=; Max-Age=0; Path=/";
     vi.restoreAllMocks();
   });
 
@@ -42,11 +43,12 @@ describe("LanguageContext", () => {
   });
 
   // --- localStorage preference overrides browser ---
-  it("uses localStorage 'zh' even when browser is English", () => {
+  it("uses localStorage 'zh' after hydration even when browser is English", async () => {
     localStorage.setItem("language", "zh");
     vi.stubGlobal("navigator", { language: "en-US" });
     const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });
-    expect(result.current.language).toBe("zh");
+    expect(result.current.language).toBe("en");
+    await waitFor(() => expect(result.current.language).toBe("zh"));
   });
 
   it("uses localStorage 'en' even when browser is Chinese", () => {
@@ -56,11 +58,12 @@ describe("LanguageContext", () => {
     expect(result.current.language).toBe("en");
   });
 
-  it("uses language cookie when localStorage has no preference", () => {
+  it("uses language cookie after hydration when localStorage has no preference", async () => {
     document.cookie = "language=zh; Path=/";
     vi.stubGlobal("navigator", { language: "en-US" });
     const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });
-    expect(result.current.language).toBe("zh");
+    expect(result.current.language).toBe("en");
+    await waitFor(() => expect(result.current.language).toBe("zh"));
   });
 
   // --- setLanguage persists ---
@@ -87,12 +90,13 @@ describe("LanguageContext", () => {
   });
 
   // --- Translation function ---
-  it("t() returns translated string", () => {
+  it("t() returns translated string after hydration", async () => {
     window.history.replaceState({}, "", "/discover");
     localStorage.setItem("language", "zh");
     vi.stubGlobal("navigator", { language: "en-US" });
     const { result } = renderHook(() => useLanguage(), { wrapper: createWrapper() });
-    expect(result.current.language).toBe("zh");
+    expect(result.current.language).toBe("en");
+    await waitFor(() => expect(result.current.language).toBe("zh"));
     // "generate" → "开始生成" in zh
     expect(result.current.t("generate")).toBe("开始生成");
   });
