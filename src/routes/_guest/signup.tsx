@@ -51,6 +51,11 @@ declare global {
 }
 
 const TURNSTILE_SCRIPT_ID = "cloudflare-turnstile-script";
+const PRODUCTION_TURNSTILE_SITE_KEY = "0x4AAAAAADOeomQ9BGuE2XWx";
+
+function getTurnstileSiteKey(): string {
+  return env.VITE_TURNSTILE_SITE_KEY || (import.meta.env.PROD ? PRODUCTION_TURNSTILE_SITE_KEY : "");
+}
 
 function TurnstileField({
   disabled,
@@ -59,7 +64,7 @@ function TurnstileField({
   disabled: boolean;
   onToken: (token: string) => void;
 }) {
-  const siteKey = env.VITE_TURNSTILE_SITE_KEY;
+  const siteKey = getTurnstileSiteKey();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<string | undefined>(undefined);
 
@@ -113,7 +118,7 @@ function SignupForm() {
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState("");
-  const turnstileRequired = Boolean(env.VITE_TURNSTILE_SITE_KEY);
+  const turnstileRequired = Boolean(getTurnstileSiteKey());
 
   const refCode = useMemo(() => {
     if (typeof window === "undefined") return "";
