@@ -14,6 +14,13 @@ import { authClient } from "@/lib/auth/auth-client";
 import { authQueryOptions } from "@/lib/auth/queries";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { createPageMeta } from "@/lib/seo/meta";
+import {
+  getSignupProofInput,
+  normalizeSignupProofEmail,
+  sha256Hex,
+  SIGNUP_PROOF_DIFFICULTY,
+  type SignupProof,
+} from "@/lib/signup-proof";
 
 const signupSeo = createPageMeta({
   title: "Sign Up — BatchlyAI",
@@ -56,6 +63,49 @@ const PRODUCTION_TURNSTILE_SITE_KEY = "0x4AAAAAADOeomQ9BGuE2XWx";
 
 function getTurnstileSiteKey(): string {
   return env.VITE_TURNSTILE_SITE_KEY || (import.meta.env.PROD ? PRODUCTION_TURNSTILE_SITE_KEY : "");
+}
+
+function randomHex(bytes: number): string {
+  const values = new Uint8Array(bytes);
+  crypto.getRandomValues(values);
+  return Array.from(values, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function hasLeadingZeroBits(hex: string, bits: number): boolean {
+  let remaining = bits;
+  for (const char of hex) {
+    const nibble = Number.parseInt(char, 16);
+    if (!Number.isFinite(nibble)) return false;
+
+    const zeroBits = nibble === 0 ? 4 : Math.clz32(nibble) - 28;
+    if (zeroBits >= remaining) return true;
+    if (zeroBits < 4) return false;
+    remaining -= 4;
+  }
+  return remaining <= 0;
+}
+
+async function createSignupProof(email: string): Promise<SignupProof> {
+  const proofBase = {
+    difficulty: SIGNUP_PROOF_DIFFICULTY,
+    email: normalizeSignupProofEmail(email),
+    timestamp: Date.now(),
+  };
+  const randomPrefix = randomHex(12);
+  let counter = 0;
+
+  while (true) {
+    const proof = {
+      ...proofBase,
+      hash: "",
+      nonce: `${randomPrefix}${counter.toString(16).padStart(8, "0")}`,
+    };
+    const hash = await sha256Hex(getSignupProofInput(proof));
+    if (hasLeadingZeroBits(hash, proof.difficulty)) {
+      return { ...proof, hash };
+    }
+    counter++;
+  }
 }
 
 function TurnstileField({
@@ -142,12 +192,18 @@ function SignupForm() {
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileFallback, setTurnstileFallback] = useState(false);
+  const [solvingProof, setSolvingProof] = useState(false);
   const turnstileRequired = Boolean(getTurnstileSiteKey());
   const handleTurnstileError = useCallback(() => {
-    const msg =
-      "Human verification could not load. Please disable conflicting browser extensions or try another browser.";
+    const msg = "Human verification could not load. An alternate check will run when you sign up.";
+    setTurnstileFallback(true);
     setErrorMessage(msg);
-    toast.error(msg);
+    toast.warning(msg);
+  }, []);
+  const handleTurnstileToken = useCallback((token: string) => {
+    setTurnstileToken(token);
+    if (token) setTurnstileFallback(false);
   }, []);
 
   const refCode = useMemo(() => {
@@ -161,6 +217,7 @@ function SignupForm() {
       email: string;
       password: string;
       ref: string;
+      signupProof?: SignupProof;
       turnstileToken: string;
     }) => {
       const result = await authClient.signUp.email({
@@ -169,6 +226,7 @@ function SignupForm() {
         password: data.password,
         callbackURL: redirectUrl,
         ref: data.ref || undefined,
+        signupProof: data.signupProof,
         "cf-turnstile-response": data.turnstileToken || undefined,
       } as Record<string, unknown> & {
         name: string;
@@ -197,6 +255,7 @@ function SignupForm() {
       setTurnstileToken("");
     },
   });
+  const busy = isPending || solvingProof;
 
   const handleResend = async () => {
     if (!signupEmail) return;
@@ -212,9 +271,9 @@ function SignupForm() {
     }
   };
 
-  const handleSubmit = (e: React.SubmitEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isPending) return;
+    if (busy) return;
     setErrorMessage(null);
 
     const formData = new FormData(e.currentTarget);
@@ -230,14 +289,24 @@ function SignupForm() {
       return;
     }
 
-    if (turnstileRequired && !turnstileToken) {
+    if (turnstileRequired && !turnstileToken && !turnstileFallback) {
       const msg = "Please complete the human verification.";
       setErrorMessage(msg);
       toast.error(msg);
       return;
     }
 
-    signupMutate({ name, email, password, ref: refCode, turnstileToken });
+    let signupProof: SignupProof | undefined;
+    if (turnstileRequired && !turnstileToken && turnstileFallback) {
+      setSolvingProof(true);
+      try {
+        signupProof = await createSignupProof(email);
+      } finally {
+        setSolvingProof(false);
+      }
+    }
+
+    signupMutate({ name, email, password, ref: refCode, signupProof, turnstileToken });
   };
 
   if (signupEmail) {
@@ -298,7 +367,7 @@ function SignupForm() {
                 name="name"
                 type="text"
                 placeholder={t("namePlaceholder")}
-                readOnly={isPending}
+                readOnly={busy}
                 required
               />
             </div>
@@ -309,7 +378,7 @@ function SignupForm() {
                 name="email"
                 type="email"
                 placeholder={t("emailPlaceholder")}
-                readOnly={isPending}
+                readOnly={busy}
                 required
               />
             </div>
@@ -320,7 +389,7 @@ function SignupForm() {
                 name="password"
                 type="password"
                 placeholder={t("passwordPlaceholder")}
-                readOnly={isPending}
+                readOnly={busy}
                 required
               />
             </div>
@@ -331,14 +400,14 @@ function SignupForm() {
                 name="confirm_password"
                 type="password"
                 placeholder={t("confirmPasswordPlaceholder")}
-                readOnly={isPending}
+                readOnly={busy}
                 required
               />
             </div>
             <TurnstileField
-              disabled={isPending}
+              disabled={busy}
               onError={handleTurnstileError}
-              onToken={setTurnstileToken}
+              onToken={handleTurnstileToken}
             />
             {errorMessage && (
               <div className="rounded-md bg-destructive/15 px-4 py-2 text-sm text-destructive">
@@ -349,10 +418,10 @@ function SignupForm() {
               type="submit"
               className="mt-2 w-full"
               size="lg"
-              disabled={isPending || (turnstileRequired && !turnstileToken)}
+              disabled={busy || (turnstileRequired && !turnstileToken && !turnstileFallback)}
             >
-              {isPending && <LoaderCircleIcon className="animate-spin" />}
-              {isPending ? t("signingUp") : t("signupButton")}
+              {busy && <LoaderCircleIcon className="animate-spin" />}
+              {busy ? t("signingUp") : t("signupButton")}
             </Button>
           </div>
           <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
