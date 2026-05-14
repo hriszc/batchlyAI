@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
 import { createTestDb, applyMigrations, seedUser } from "#test/db-setup";
+import { user as userTable } from "@/lib/db/schema/auth.schema";
 
 const mocks = vi.hoisted(() => {
   const mockGetSession = vi.fn();
@@ -178,6 +179,75 @@ describe("handleGenerateStatus", () => {
     };
     expect(body.results[0].status).toBe("error");
     expect(body.results[0].error).toBe("Network error");
+  });
+
+  it("refunds credits once when a Replicate prediction fails after task creation", async () => {
+    const db = createTestDb();
+    applyMigrations(db);
+    seedUser(db, { id: "u1", credits: 60 });
+
+    const genId = "gen-refund-replicate";
+    db.insert(generation)
+      .values({
+        id: genId,
+        userId: "u1",
+        promptTemplate: "test prompt",
+        resolvedPrompts: JSON.stringify(["test prompt"]),
+        variableGroups: JSON.stringify([]),
+        resultUrls: JSON.stringify([]),
+        model: "z-image-pro",
+        creditsUsed: 40,
+        createdAt: Math.floor(Date.now() / 1000),
+      })
+      .run();
+
+    const kvStore = new Map<string, string>();
+    kvStore.set(
+      "gen:pred-fail",
+      JSON.stringify({
+        generationId: genId,
+        userId: "u1",
+        creditsUsed: 40,
+        predictionIds: ["pred-fail", "pred-ok"],
+      }),
+    );
+    const mockKv = {
+      get: vi.fn((key: string) => Promise.resolve(kvStore.get(key) ?? null)),
+      put: vi.fn((key: string, value: string) => {
+        kvStore.set(key, value);
+        return Promise.resolve();
+      }),
+    };
+    (globalThis as Record<string, unknown>).__env__ = {
+      batchlyai_kv: mockKv,
+      batchlyai_db: db,
+    };
+
+    mocks.mockPollReplicate.mockResolvedValue({
+      id: "pred-fail",
+      status: "failed",
+      urls: null,
+      error: "provider failed",
+    });
+
+    const firstResp = await handleGenerateStatus(makeRequest("ids=pred-fail&type=replicate"));
+    expect(firstResp.status).toBe(200);
+    const firstBody = (await firstResp.json()) as {
+      results: { status: string; creditsRemaining?: number }[];
+    };
+    expect(firstBody.results[0].status).toBe("failed");
+    expect(firstBody.results[0].creditsRemaining).toBe(80);
+    expect(
+      db.select({ credits: userTable.credits }).from(userTable).where(eq(userTable.id, "u1")).get()
+        ?.credits,
+    ).toBe(80);
+
+    const secondResp = await handleGenerateStatus(makeRequest("ids=pred-fail&type=replicate"));
+    expect(secondResp.status).toBe(200);
+    expect(
+      db.select({ credits: userTable.credits }).from(userTable).where(eq(userTable.id, "u1")).get()
+        ?.credits,
+    ).toBe(80);
   });
 
   // --- GRS Polling (KV-based) ---

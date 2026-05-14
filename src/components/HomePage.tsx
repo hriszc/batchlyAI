@@ -238,7 +238,8 @@ export function HomePage({ forceLanguage }: HomePageProps) {
   const visibleSession = sessionReady ? session : null;
   const visibleUser = visibleSession?.user;
   const userCredits = ((visibleUser as Record<string, unknown>)?.credits as number) ?? 0;
-  const showWatermark = userCredits <= 10;
+  const effectiveCredits = state.creditsRemaining ?? userCredits;
+  const showWatermark = effectiveCredits <= 10;
   const authGate = useAuthGate();
   const isLoggedIn = !!visibleUser;
   const canGuestGenerate = !isLoggedIn;
@@ -419,7 +420,7 @@ export function HomePage({ forceLanguage }: HomePageProps) {
           canGuestGenerate={canGuestGenerate}
           canExpandVars={isLoggedIn}
           isGuest={canGuestGenerate}
-          availableCredits={userCredits}
+          availableCredits={effectiveCredits}
           isSessionReady={sessionReady}
         />
 

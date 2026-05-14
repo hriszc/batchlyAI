@@ -9,6 +9,7 @@ interface PollResult {
   status: string;
   urls: string[] | null;
   error: string | null;
+  creditsRemaining?: number;
 }
 
 interface AsyncPending {
@@ -29,6 +30,7 @@ export async function unifiedPoll(
   estimatedMs?: number,
   onProgress?: (progress: PollProgress) => void,
   pollIntervalMs = 2000,
+  onCreditsRemaining?: (creditsRemaining: number) => void,
 ): Promise<GeneratedResult[]> {
   const maxAttempts = 60;
 
@@ -67,6 +69,9 @@ export async function unifiedPoll(
       if (!json.results) continue;
 
       for (const r of json.results) {
+        if (r.creditsRemaining != null) {
+          onCreditsRemaining?.(r.creditsRemaining);
+        }
         if (
           r.status === "succeeded" ||
           r.status === "failed" ||

@@ -1,11 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { and, desc, eq, like } from "drizzle-orm";
+import { and, desc, eq, inArray, like } from "drizzle-orm";
 
 import { jsonResponse, requireValidOrigin } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
 import { savedPrompt } from "@/lib/db/schema/data-flywheel.schema";
+
+function normalizePromptTemplate(promptTemplate: string): string {
+  return promptTemplate.trim();
+}
+
+function dedupePromptRows<T extends { promptTemplate: string }>(rows: T[]): T[] {
+  const seen = new Set<string>();
+  const result: T[] = [];
+  for (const row of rows) {
+    const key = normalizePromptTemplate(row.promptTemplate);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(row);
+  }
+  return result;
+}
 
 export async function handleGetPrompts(request: Request): Promise<Response> {
   const auth = createAuth();
@@ -33,7 +49,7 @@ export async function handleGetPrompts(request: Request): Promise<Response> {
       .where(and(...conditions))
       .orderBy(desc(savedPrompt.updatedAt));
 
-    let result = rows;
+    let result = dedupePromptRows(rows);
     if (tag) {
       result = result.filter((r) => {
         try {
@@ -77,11 +93,50 @@ export async function handleSavePrompt(request: Request): Promise<Response> {
     }
 
     const now = Math.floor(Date.now() / 1000);
+    const promptTemplate = normalizePromptTemplate(body.promptTemplate);
+    const name = body.name.trim();
+    const matchingPrompts = await db
+      .select({ id: savedPrompt.id })
+      .from(savedPrompt)
+      .where(
+        and(
+          eq(savedPrompt.userId, session.user.id),
+          eq(savedPrompt.promptTemplate, promptTemplate),
+        ),
+      )
+      .orderBy(desc(savedPrompt.updatedAt));
+
+    if (matchingPrompts.length > 0) {
+      const [primary, ...duplicates] = matchingPrompts;
+      await db
+        .update(savedPrompt)
+        .set({
+          name,
+          promptTemplate,
+          variableGroups: body.variableGroups || null,
+          model: body.model || null,
+          tags: body.tags || "[]",
+          updatedAt: now,
+        })
+        .where(and(eq(savedPrompt.id, primary.id), eq(savedPrompt.userId, session.user.id)));
+
+      const duplicateIds = duplicates.map((prompt) => prompt.id);
+      if (duplicateIds.length > 0) {
+        await db
+          .delete(savedPrompt)
+          .where(
+            and(eq(savedPrompt.userId, session.user.id), inArray(savedPrompt.id, duplicateIds)),
+          );
+      }
+
+      return jsonResponse({ success: true, id: primary.id, updated: true }, 200);
+    }
+
     await db.insert(savedPrompt).values({
       id: crypto.randomUUID(),
       userId: session.user.id,
-      name: body.name.trim(),
-      promptTemplate: body.promptTemplate.trim(),
+      name,
+      promptTemplate,
       variableGroups: body.variableGroups || null,
       model: body.model || null,
       tags: body.tags || "[]",

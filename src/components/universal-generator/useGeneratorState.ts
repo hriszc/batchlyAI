@@ -1,6 +1,8 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useReducer, useCallback, useRef, useEffect } from "react";
 
 import { authClient } from "@/lib/auth/auth-client";
+import { authQueryOptions } from "@/lib/auth/queries";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 import { MODELS } from "./models";
@@ -28,6 +30,7 @@ export function useGeneratorState() {
   const generationInFlightRef = useRef(false);
   const { t } = useLanguage();
   const { data: session } = authClient.useSession();
+  const queryClient = useQueryClient();
   const isLoggedIn = !!session?.user?.id;
   useEffect(() => {
     stateRef.current = state;
@@ -93,6 +96,18 @@ export function useGeneratorState() {
   const removeValue = useCallback((groupId: GroupId, index: number) => {
     dispatch({ type: "REMOVE_VALUE", payload: { groupId, index } });
   }, []);
+
+  const syncCreditsRemaining = useCallback(
+    (creditsRemaining: number) => {
+      dispatch({ type: "SET_CREDITS_REMAINING", payload: creditsRemaining });
+      queryClient.setQueryData(authQueryOptions().queryKey, (user: unknown) => {
+        if (!user || typeof user !== "object") return user;
+        return { ...user, credits: creditsRemaining };
+      });
+      void queryClient.invalidateQueries({ queryKey: authQueryOptions().queryKey });
+    },
+    [queryClient],
+  );
 
   const startGenerating = useCallback(() => {
     if (generationInFlightRef.current) return;
@@ -244,6 +259,7 @@ export function useGeneratorState() {
                 dispatch({ type: "SET_PROGRESS", payload: p });
               },
               pollIntervalMs,
+              syncCreditsRemaining,
             )) as typeof results;
             results = [...results, ...polled];
           }
@@ -257,9 +273,7 @@ export function useGeneratorState() {
             dispatch({ type: "SET_ERROR", payload: globalError });
           }
           if (creditsRemaining != null) {
-            dispatch({ type: "SET_CREDITS_REMAINING", payload: creditsRemaining });
-            // Refresh the session so SettingsBar shows updated credits
-            authClient.$fetch("/get-session").catch(() => {});
+            syncCreditsRemaining(creditsRemaining);
           }
         })
         .catch((err) => {
@@ -308,8 +322,7 @@ export function useGeneratorState() {
             }
 
             if (json.creditsRemaining != null) {
-              dispatch({ type: "SET_CREDITS_REMAINING", payload: json.creditsRemaining });
-              authClient.$fetch("/get-session").catch(() => {});
+              syncCreditsRemaining(json.creditsRemaining);
             }
 
             return (json.texts || json.urls || []).map((text) => ({
@@ -347,7 +360,7 @@ export function useGeneratorState() {
           generationInFlightRef.current = false;
         });
     }
-  }, [getGuestToken, isLoggedIn, t]);
+  }, [getGuestToken, isLoggedIn, syncCreditsRemaining, t]);
 
   const setError = useCallback((value: string | null) => {
     dispatch({ type: "SET_ERROR", payload: value });
