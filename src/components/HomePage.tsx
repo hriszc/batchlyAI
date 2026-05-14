@@ -274,8 +274,8 @@ export function HomePage({ forceLanguage }: HomePageProps) {
 
   return (
     <main
-      className={`mx-auto max-w-[980px] px-4 pb-16 ${
-        hasResults ? "pt-8" : "flex min-h-[90vh] flex-col justify-center"
+      className={`mx-auto max-w-[980px] px-4 ${
+        hasResults ? "pt-8 pb-16" : "flex min-h-[100svh] flex-col justify-center py-10 sm:py-14"
       }`}
     >
       <div className="mb-2 flex justify-center">
