@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import { examplePages, getHomepageFaq, homepageFaq } from "@/lib/seo/geo-content";
 import { hreflangLinks } from "@/lib/seo/hreflang";
 import { seoLandingPages } from "@/lib/seo/landing-pages";
 import { mediaTypeFromModel } from "@/lib/seo/media";
@@ -63,20 +62,6 @@ describe("createPageMeta", () => {
     expect(meta.scripts).toHaveLength(1);
     expect(meta.scripts[0].type).toBe("application/ld+json");
   });
-  it("includes multiple jsonLd scripts when provided", () => {
-    const meta = createPageMeta({
-      title: "T",
-      description: "D",
-      path: "/",
-      locale: "en",
-      jsonLd: [{ "@type": "WebPage" }, { "@type": "FAQPage" }],
-    });
-    expect(meta.scripts).toHaveLength(2);
-    expect(meta.scripts.map((script) => JSON.parse(script.children)["@type"])).toEqual([
-      "WebPage",
-      "FAQPage",
-    ]);
-  });
 });
 
 describe("mediaTypeFromModel", () => {
@@ -102,7 +87,7 @@ describe("seoLandingPages", () => {
       ),
     ).toBe(true);
     expect(seoLandingPages.every((page) => page.promptAngles.length >= 6)).toBe(true);
-    expect(seoLandingPages.every((page) => page.faq.length >= 3)).toBe(true);
+    expect(seoLandingPages.every((page) => page.faqs.length >= 3)).toBe(true);
   });
 
   it("includes the first keyword-driven acquisition pages", () => {
@@ -115,74 +100,15 @@ describe("seoLandingPages", () => {
     expect(slugs.has("seasonal-color-palette-generator")).toBe(true);
     expect(slugs.has("ai-coloring-page-generator")).toBe(true);
     expect(slugs.has("ai-video-creative-ideas")).toBe(true);
-    expect(slugs.has("french-tip-nails-generator")).toBe(true);
-    expect(slugs.has("short-nail-designs-generator")).toBe(true);
-    expect(slugs.has("builder-gel-nails-generator")).toBe(true);
-    expect(slugs.has("blonde-hair-colors-generator")).toBe(true);
-    expect(slugs.has("semi-permanent-hair-color-generator")).toBe(true);
-    expect(slugs.has("soft-autumn-color-palette-generator")).toBe(true);
-    expect(slugs.has("soft-summer-color-palette-generator")).toBe(true);
-    expect(slugs.has("adult-coloring-book-generator")).toBe(true);
-    expect(slugs.has("zentangle-pattern-generator")).toBe(true);
-    expect(slugs.has("video-editing-tips-generator")).toBe(true);
-    expect(slugs.has("cursive-tattoo-font-generator")).toBe(true);
-  });
-});
-
-describe("examplePages", () => {
-  it("includes GitHub-inspired GPT image SEO example categories", () => {
-    expect(examplePages.map((page) => page.slug)).toEqual(
-      expect.arrayContaining([
-        "gpt-image-case-gallery-prompts",
-        "gpt-image-ui-interface-prompts",
-        "gpt-image-infographic-prompts",
-        "gpt-image-poster-typography-prompts",
-        "gpt-image-product-ecommerce-prompts",
-        "gpt-image-brand-logo-prompts",
-        "gpt-image-architecture-interior-prompts",
-        "gpt-image-realistic-photo-prompts",
-        "gpt-image-illustration-art-prompts",
-        "gpt-image-character-design-prompts",
-        "gpt-image-storyboard-scene-prompts",
-        "gpt-image-chinese-history-style-prompts",
-        "gpt-image-document-publication-prompts",
-      ]),
-    );
-  });
-
-  it("keeps example pages useful for indexable SEO routes", () => {
-    expect(examplePages.every((page) => page.title.includes("BatchlyAI"))).toBe(true);
-    expect(examplePages.every((page) => page.variables.length >= 5)).toBe(true);
-    expect(examplePages.every((page) => page.outcomes.length >= 3)).toBe(true);
-    expect(examplePages.every((page) => page.faq.length >= 2)).toBe(true);
-  });
-
-  it("attributes GitHub-inspired pages without copying source prompts", () => {
-    const githubInspiredPages = examplePages.filter((page) => page.slug.startsWith("gpt-image-"));
-
-    expect(githubInspiredPages.length).toBeGreaterThanOrEqual(10);
-    expect(
-      githubInspiredPages.every((page) =>
-        page.sourceUrl?.includes("github.com/freestylefly/awesome-gpt-image-2"),
-      ),
-    ).toBe(true);
-    expect(githubInspiredPages.every((page) => page.sourceNote?.includes("original"))).toBe(true);
   });
 });
 
 describe("faqPageLd", () => {
-  it("maps visible FAQ content into FAQPage JSON-LD", () => {
-    const ld = faqPageLd(homepageFaq);
-    expect(ld["@type"]).toBe("FAQPage");
-    expect(JSON.stringify(ld)).toContain("What is BatchlyAI?");
-    expect(JSON.stringify(ld)).toContain("batch AI image and video generator");
-  });
+  it("creates FAQPage structured data", () => {
+    const ld = faqPageLd([{ question: "Can I batch prompts?", answer: "Yes." }]);
 
-  it("provides Chinese homepage FAQ content", () => {
-    const faq = getHomepageFaq("zh");
-    expect(faq).toHaveLength(homepageFaq.length);
-    expect(faq[0].question).toContain("BatchlyAI 是什么");
-    expect(faq[3].answer).toContain("视频工作流");
+    expect(ld["@type"]).toBe("FAQPage");
+    expect(JSON.stringify(ld)).toContain("Can I batch prompts?");
   });
 });
 

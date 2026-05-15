@@ -5,7 +5,6 @@ import { blogPosts } from "@/content/blog";
 import { getD1Binding } from "@/lib/cloudflare/bindings";
 import { getDb } from "@/lib/db";
 import { template as templateTable, work } from "@/lib/db/schema";
-import { examplePages } from "@/lib/seo/geo-content";
 import { seoLandingPages } from "@/lib/seo/landing-pages";
 
 interface SitemapUrl {
@@ -15,14 +14,6 @@ interface SitemapUrl {
 }
 
 const BASE_URL = "https://batchlyai.com";
-
-function canonicalPathSegment(value: string | null | undefined): string | null {
-  const segment = value?.trim();
-  if (!segment || segment.includes("/") || segment.includes("?") || segment.includes("#")) {
-    return null;
-  }
-  return encodeURIComponent(segment);
-}
 
 function escapeXml(value: string): string {
   return value
@@ -34,13 +25,7 @@ function escapeXml(value: string): string {
 }
 
 function renderSitemap(urls: SitemapUrl[]): string {
-  const seen = new Set<string>();
   const items = urls
-    .filter((url) => {
-      if (seen.has(url.loc)) return false;
-      seen.add(url.loc);
-      return true;
-    })
     .map(
       (url) => `  <url>
     <loc>${escapeXml(url.loc)}</loc>
@@ -62,23 +47,10 @@ async function createSitemapResponse(): Promise<Response> {
     { loc: `${BASE_URL}/cn`, changefreq: "daily", priority: "0.9" },
     { loc: `${BASE_URL}/discover`, changefreq: "daily", priority: "0.8" },
     { loc: `${BASE_URL}/blog`, changefreq: "weekly", priority: "0.7" },
-    { loc: `${BASE_URL}/about`, changefreq: "monthly", priority: "0.6" },
-    { loc: `${BASE_URL}/terms`, changefreq: "monthly", priority: "0.3" },
-    { loc: `${BASE_URL}/privacy`, changefreq: "monthly", priority: "0.3" },
-    {
-      loc: `${BASE_URL}/compare/ai-batch-generator-vs-single-prompt-tools`,
-      changefreq: "monthly",
-      priority: "0.8",
-    },
     ...seoLandingPages.map((page) => ({
       loc: `${BASE_URL}/tools/${page.slug}`,
       changefreq: "weekly" as const,
       priority: "0.8",
-    })),
-    ...examplePages.map((page) => ({
-      loc: `${BASE_URL}/examples/${page.slug}`,
-      changefreq: "monthly" as const,
-      priority: "0.7",
     })),
     ...blogPosts.map((post) => ({
       loc: `${BASE_URL}/blog/${post.slug}`,
@@ -89,12 +61,9 @@ async function createSitemapResponse(): Promise<Response> {
 
   const binding = getD1Binding();
   if (binding) {
-    let templates: Array<{ slug: string }> = [];
-    let works: Array<{ id: string }> = [];
-
     try {
       const db = getDb(binding);
-      [templates, works] = await Promise.all([
+      const [templates, works] = await Promise.all([
         db
           .select({ slug: templateTable.slug })
           .from(templateTable)
@@ -108,36 +77,22 @@ async function createSitemapResponse(): Promise<Response> {
           .orderBy(desc(work.publishedAt))
           .limit(500),
       ]);
-    } catch (error) {
-      console.warn("[sitemap] dynamic URLs unavailable", error);
-    }
 
-    urls.push(
-      ...templates.flatMap((item) => {
-        const slug = canonicalPathSegment(item.slug);
-        return slug
-          ? [
-              {
-                loc: `${BASE_URL}/templates/${slug}`,
-                changefreq: "weekly" as const,
-                priority: "0.7",
-              },
-            ]
-          : [];
-      }),
-      ...works.flatMap((item) => {
-        const id = canonicalPathSegment(item.id);
-        return id
-          ? [
-              {
-                loc: `${BASE_URL}/works/${id}`,
-                changefreq: "weekly" as const,
-                priority: "0.6",
-              },
-            ]
-          : [];
-      }),
-    );
+      urls.push(
+        ...templates.map((item) => ({
+          loc: `${BASE_URL}/templates/${item.slug}`,
+          changefreq: "weekly" as const,
+          priority: "0.7",
+        })),
+        ...works.map((item) => ({
+          loc: `${BASE_URL}/works/${item.id}`,
+          changefreq: "weekly" as const,
+          priority: "0.6",
+        })),
+      );
+    } catch {
+      // Keep the static SEO sitemap available even when dynamic discovery is unavailable.
+    }
   }
 
   return new Response(renderSitemap(urls), {

@@ -1,6 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 
-import { FaqSection } from "@/components/seo/FaqSection";
 import { getSeoLandingPage, seoLandingPages, type SeoLandingPage } from "@/lib/seo/landing-pages";
 import { createPageMeta } from "@/lib/seo/meta";
 import { faqPageLd, webPageLd } from "@/lib/seo/structured-data";
@@ -19,21 +18,21 @@ export const Route = createFileRoute("/tools/$slug")({
       description: page.description,
       path: `/tools/${page.slug}`,
       locale: "en",
-      jsonLd: [
-        webPageLd({
-          title: page.title,
-          description: page.description,
-          url: `https://batchlyai.com/tools/${page.slug}`,
-        }),
-        faqPageLd(page.faq),
-      ],
+      jsonLd: webPageLd({
+        title: page.title,
+        description: page.description,
+        url: `https://batchlyai.com/tools/${page.slug}`,
+      }),
     });
 
     return {
       htmlAttrs: { lang: "en" },
       meta: seo.meta,
       links: [{ rel: "canonical", href: `https://batchlyai.com/tools/${page.slug}` }],
-      scripts: seo.scripts,
+      scripts: [
+        ...seo.scripts,
+        { type: "application/ld+json", children: JSON.stringify(faqPageLd(page.faqs)) },
+      ],
     };
   },
   component: ToolLandingPage,
@@ -106,12 +105,6 @@ function ToolLandingPage() {
         </div>
       </section>
 
-      <FaqSection
-        title={`FAQ about ${page.h1}`}
-        description="Short answers for search engines, AI answer engines, and users comparing generation workflows."
-        items={page.faq}
-      />
-
       <section className="mt-10 border-t pt-8">
         <h2 className="text-xl font-semibold text-foreground">Related AI generation tools</h2>
         <div className="mt-4 flex flex-wrap gap-2">
@@ -124,6 +117,18 @@ function ToolLandingPage() {
             >
               {item.h1}
             </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-10 border-t pt-8">
+        <h2 className="text-xl font-semibold text-foreground">Frequently asked questions</h2>
+        <div className="mt-4 space-y-4">
+          {page.faqs.map((item) => (
+            <div key={item.question}>
+              <h3 className="text-base font-semibold text-foreground">{item.question}</h3>
+              <p className="mt-1 text-sm leading-6 text-muted-foreground">{item.answer}</p>
+            </div>
           ))}
         </div>
       </section>
