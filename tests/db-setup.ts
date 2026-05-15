@@ -121,6 +121,47 @@ export function applyMigrations(db: ReturnType<typeof createTestDb>) {
   db.run(`CREATE INDEX "generation_user_idx" ON "generation" ("user_id")`);
   db.run(`CREATE INDEX "generation_created_idx" ON "generation" ("created_at")`);
 
+  // Published works and social interactions
+  db.run(`CREATE TABLE "work" (
+    "id" text PRIMARY KEY NOT NULL,
+    "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+    "generation_id" text REFERENCES "generation"("id"),
+    "title" text NOT NULL,
+    "description" text,
+    "category" text,
+    "prompt_template" text NOT NULL,
+    "variable_groups" text NOT NULL,
+    "cover_url" text NOT NULL,
+    "result_urls" text NOT NULL,
+    "model" text NOT NULL,
+    "parent_work_id" text,
+    "is_published" integer DEFAULT 0,
+    "like_count" integer DEFAULT 0,
+    "comment_count" integer DEFAULT 0,
+    "remix_count" integer DEFAULT 0,
+    "created_at" integer NOT NULL,
+    "published_at" integer
+  )`);
+  db.run(`CREATE INDEX "work_user_idx" ON "work" ("user_id")`);
+  db.run(`CREATE INDEX "work_published_idx" ON "work" ("is_published", "created_at")`);
+  db.run(`CREATE INDEX "work_category_idx" ON "work" ("category")`);
+
+  db.run(`CREATE TABLE "work_like" (
+    "id" text PRIMARY KEY NOT NULL,
+    "work_id" text NOT NULL REFERENCES "work"("id") ON DELETE CASCADE,
+    "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+    "created_at" integer NOT NULL
+  )`);
+  db.run(`CREATE UNIQUE INDEX "work_like_unique" ON "work_like" ("work_id", "user_id")`);
+
+  db.run(`CREATE TABLE "work_comment" (
+    "id" text PRIMARY KEY NOT NULL,
+    "work_id" text NOT NULL REFERENCES "work"("id") ON DELETE CASCADE,
+    "user_id" text NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
+    "content" text NOT NULL,
+    "created_at" integer NOT NULL
+  )`);
+
   // Saved prompts table
   db.run(`CREATE TABLE "saved_prompt" (
     "id" text PRIMARY KEY NOT NULL,

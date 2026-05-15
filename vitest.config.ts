@@ -30,10 +30,10 @@ export default defineConfig({
         "src/env/server.ts",
       ],
       thresholds: {
-        statements: 40,
-        branches: 35,
-        functions: 30,
-        lines: 40,
+        statements: 52,
+        branches: 48,
+        functions: 43,
+        lines: 53,
         "src/components/universal-generator/utils.ts": {
           statements: 90,
           branches: 75,

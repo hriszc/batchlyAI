@@ -25,6 +25,7 @@ describe("sendEmail", () => {
     (globalThis as Record<string, unknown>).__env__ = {
       EMAIL: { send: vi.fn().mockRejectedValue(new Error("send failed")) },
     };
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("fallback failed")));
 
     const result = await sendEmail({
       to: "test@example.com",
