@@ -83,6 +83,12 @@ function FooterLinks() {
       <a href="/about" className="transition-colors hover:text-foreground">
         {t("aboutNav")}
       </a>
+      <a href="/terms" className="transition-colors hover:text-foreground">
+        {t("termsNav")}
+      </a>
+      <a href="/privacy" className="transition-colors hover:text-foreground">
+        {t("privacyNav")}
+      </a>
       <a href="/blog" className="transition-colors hover:text-foreground">
         {t("blog")}
       </a>

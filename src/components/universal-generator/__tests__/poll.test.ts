@@ -139,4 +139,49 @@ describe("unifiedPoll", () => {
     expect(catResults).toHaveLength(2);
     expect(dogResults).toHaveLength(1);
   });
+
+  it("confirms timed-out pending IDs with the backend and syncs refunded credits", async () => {
+    const fetchMock = vi.fn().mockImplementation((url: string) =>
+      Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            url.includes("timeout=1")
+              ? {
+                  results: [
+                    {
+                      id: "id1",
+                      status: "failed",
+                      urls: null,
+                      error: "Generation timed out",
+                      creditsRemaining: 80,
+                    },
+                  ],
+                }
+              : {
+                  results: [{ id: "id1", status: "processing", urls: null, error: null }],
+                },
+          ),
+      }),
+    );
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const onCreditsRemaining = vi.fn();
+
+    const results = await unifiedPoll(
+      [{ predictionIds: ["id1"], modelType: "replicate", combination: combo }],
+      undefined,
+      undefined,
+      1,
+      onCreditsRemaining,
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(61);
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      "/api/generate-status?ids=id1&type=replicate&timeout=1",
+      { headers: undefined },
+    );
+    expect(onCreditsRemaining).toHaveBeenCalledWith(80);
+    expect(results).toHaveLength(1);
+    expect(results[0].status).toBe("error");
+  });
 });

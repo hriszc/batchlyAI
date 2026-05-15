@@ -50,6 +50,10 @@ export async function unifiedPoll(
   // Default estimates: image ~90s, video ~300s
   const estimated = estimatedMs ?? 90_000;
   const startTime = Date.now();
+  const headers = (() => {
+    const guestToken = pendings.find((p) => p.guestToken)?.guestToken;
+    return guestToken ? { "x-guest-token": guestToken } : undefined;
+  })();
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     await new Promise((r) => setTimeout(r, pollIntervalMs));
@@ -57,12 +61,7 @@ export async function unifiedPoll(
     try {
       const resp = await fetch(
         `/api/generate-status?ids=${[...pendingIds].join(",")}&type=${modelType}`,
-        {
-          headers: (() => {
-            const guestToken = pendings.find((p) => p.guestToken)?.guestToken;
-            return guestToken ? { "x-guest-token": guestToken } : undefined;
-          })(),
-        },
+        { headers },
       );
       const json = (await resp.json()) as { results?: PollResult[]; error?: string };
 
@@ -112,6 +111,53 @@ export async function unifiedPoll(
     // Report progress
     const elapsed = Date.now() - startTime;
     onProgress?.({ elapsed, estimated, remaining: pendingIds.size });
+  }
+
+  try {
+    const resp = await fetch(
+      `/api/generate-status?ids=${[...pendingIds].join(",")}&type=${modelType}&timeout=1`,
+      { headers },
+    );
+    const json = (await resp.json()) as { results?: PollResult[]; error?: string };
+    if (json.results) {
+      for (const r of json.results) {
+        if (r.creditsRemaining != null) {
+          onCreditsRemaining?.(r.creditsRemaining);
+        }
+        if (
+          r.status === "succeeded" ||
+          r.status === "failed" ||
+          r.status === "canceled" ||
+          r.status === "error"
+        ) {
+          const combination = idToCombo.get(r.id) ?? pendings[0].combination;
+          if (r.status === "succeeded" && r.urls) {
+            for (const url of r.urls) {
+              finished.push({
+                id: generateResultId(),
+                combination,
+                imageUrl: url,
+                textContent: null,
+                watermark: false,
+                status: "complete" as const,
+              });
+            }
+          } else {
+            finished.push({
+              id: generateResultId(),
+              combination,
+              imageUrl: null,
+              textContent: null,
+              watermark: false,
+              status: "error" as const,
+            });
+          }
+          pendingIds.delete(r.id);
+        }
+      }
+    }
+  } catch {
+    // If timeout confirmation fails, still surface the pending items as local errors.
   }
 
   // Timeout: remaining pending IDs become error results

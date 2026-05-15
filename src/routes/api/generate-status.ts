@@ -81,10 +81,48 @@ function isRefundableStatus(status: string): boolean {
   return status === "failed" || status === "canceled" || status === "error";
 }
 
+function isTimeoutRequest(url: URL): boolean {
+  return url.searchParams.get("timeout") === "1";
+}
+
+async function timeoutPendingPrediction(
+  kv: KVNamespace | undefined,
+  predictionId: string,
+  sessionUserId: string | null,
+  guestToken: string | null,
+): Promise<StatusResult> {
+  if (kv) {
+    const guestRaw = await kv.get(`guest:${predictionId}`);
+    if (guestRaw) {
+      const guestOwner = parseGuestToken(guestRaw);
+      if (!guestToken || guestOwner !== guestToken) {
+        return { id: predictionId, status: "error", urls: null, error: "Not found" };
+      }
+    } else {
+      const ownerId = parseOwnerId(await kv.get(`gen:${predictionId}`));
+      if (ownerId && ownerId !== sessionUserId) {
+        return { id: predictionId, status: "error", urls: null, error: "Not found" };
+      }
+    }
+  }
+
+  const result: StatusResult = {
+    id: predictionId,
+    status: "failed",
+    urls: null,
+    error: "Generation timed out",
+  };
+  const creditsRemaining = await refundFailedPrediction(kv, predictionId, sessionUserId, {
+    requireTimeoutAge: true,
+  });
+  return creditsRemaining == null ? result : { ...result, creditsRemaining };
+}
+
 async function refundFailedPrediction(
   kv: KVNamespace | undefined,
   predictionId: string,
   sessionUserId: string | null,
+  options: { requireTimeoutAge?: boolean } = {},
 ): Promise<number | undefined> {
   if (!kv || !sessionUserId) return undefined;
 
@@ -104,11 +142,17 @@ async function refundFailedPrediction(
       userId: generation.userId,
       creditsUsed: generation.creditsUsed,
       model: generation.model,
+      createdAt: generation.createdAt,
     })
     .from(generation)
     .where(eq(generation.id, genData.generationId))
     .limit(1);
   if (!row || row.userId !== sessionUserId) return undefined;
+
+  const minAgeSeconds = row.model.startsWith("z-video") ? 5 * 60 : 90;
+  if (options.requireTimeoutAge && Math.floor(Date.now() / 1000) - row.createdAt < minAgeSeconds) {
+    return undefined;
+  }
 
   const totalCredits = genData.creditsUsed ?? row.creditsUsed;
   const totalPredictions = genData.predictionIds?.length || 1;
@@ -248,6 +292,7 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
   const url = new URL(request.url);
   const idsParam = url.searchParams.get("ids");
   const type = url.searchParams.get("type") || "replicate";
+  const timeout = isTimeoutRequest(url);
 
   if (!idsParam) {
     return jsonResponse({ error: "Missing ids parameter" }, 400);
@@ -257,6 +302,13 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
 
   try {
     const kv = getKvBinding();
+    if (timeout) {
+      const results = await Promise.all(
+        ids.map((id) => timeoutPendingPrediction(kv, id, userId, guestToken)),
+      );
+      return jsonResponse({ results }, 200);
+    }
+
     if (type === "grs") {
       const results = await Promise.all(
         ids.map(async (id) => {
