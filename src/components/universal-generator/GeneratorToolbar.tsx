@@ -144,11 +144,11 @@ export function GeneratorToolbar({
       {isGuest ? (
         <div
           className="inline-flex items-center gap-1.5 rounded-lg border bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground"
-          title={t("guestImageTurboOnly")}
+          title={t("loginRequiredToGenerate")}
         >
           <span className="font-medium text-foreground">{t("imageTurbo")}</span>
           <span className="rounded-full bg-accent-blue/10 px-1.5 py-0.5 text-[10px] font-medium text-accent-blue">
-            {t("guestBadge")}
+            {t("loginRequiredBadge")}
           </span>
         </div>
       ) : (
