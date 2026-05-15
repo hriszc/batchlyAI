@@ -63,6 +63,8 @@ async function createSitemapResponse(): Promise<Response> {
     { loc: `${BASE_URL}/discover`, changefreq: "daily", priority: "0.8" },
     { loc: `${BASE_URL}/blog`, changefreq: "weekly", priority: "0.7" },
     { loc: `${BASE_URL}/about`, changefreq: "monthly", priority: "0.6" },
+    { loc: `${BASE_URL}/terms`, changefreq: "monthly", priority: "0.3" },
+    { loc: `${BASE_URL}/privacy`, changefreq: "monthly", priority: "0.3" },
     {
       loc: `${BASE_URL}/compare/ai-batch-generator-vs-single-prompt-tools`,
       changefreq: "monthly",
