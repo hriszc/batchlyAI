@@ -17,6 +17,7 @@ import {
   createGrsaiPredictions,
   createReplicatePredictions,
   pollReplicatePrediction,
+  pollGrsaiResult,
   generateText,
   runExpandLLM,
 } from "@/lib/ai";
@@ -41,6 +42,8 @@ describe("createGrsaiPredictions", () => {
       { id: "grs-001", status: "processing" },
     ]);
     expect(mockFetch).toHaveBeenCalledTimes(2);
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body.aspectRatio).toBe("1774x887");
   });
 
   it("throws on GRS API error (non-ok response)", async () => {
@@ -223,6 +226,94 @@ describe("createGrsaiPredictions", () => {
     expect(results[0].id).toBe("grs-async");
     expect(results[0].status).toBe("processing");
     expect(results[0].urls).toBeUndefined();
+  });
+});
+
+describe("pollGrsaiResult", () => {
+  beforeEach(() => {
+    mockFetch.mockClear();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("posts to the GRS result endpoint through AI Gateway", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          code: 0,
+          data: {
+            id: "grs-result",
+            progress: 100,
+            status: "succeeded",
+            failure_reason: "",
+            error: "",
+            results: [{ url: "https://example.com/result.png" }],
+          },
+          msg: "success",
+        }),
+    });
+
+    const result = await pollGrsaiResult("grs-result");
+
+    expect(mockFetch.mock.calls[0][0]).toContain("/custom-grsai/v1/draw/result");
+    expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toEqual({ id: "grs-result" });
+    expect(result).toEqual({
+      status: "succeeded",
+      urls: ["https://example.com/result.png"],
+      error: null,
+    });
+  });
+
+  it("returns failed when the GRS result endpoint reports failure", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          code: 0,
+          data: {
+            id: "grs-failed-result",
+            progress: 100,
+            status: "failed",
+            failure_reason: "output_moderation",
+            error: "Output blocked",
+            results: [],
+          },
+          msg: "success",
+        }),
+    });
+
+    await expect(pollGrsaiResult("grs-failed-result")).resolves.toEqual({
+      status: "failed",
+      urls: null,
+      error: "Output blocked",
+    });
+  });
+
+  it("returns processing while the GRS result endpoint is still running", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          code: 0,
+          data: {
+            id: "grs-running",
+            progress: 30,
+            status: "running",
+            failure_reason: "",
+            error: "",
+            results: [],
+          },
+          msg: "success",
+        }),
+    });
+
+    await expect(pollGrsaiResult("grs-running")).resolves.toEqual({
+      status: "processing",
+      urls: null,
+      error: null,
+    });
   });
 });
 

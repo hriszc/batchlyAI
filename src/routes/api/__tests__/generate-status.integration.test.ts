@@ -7,8 +7,9 @@ import { user as userTable } from "@/lib/db/schema/auth.schema";
 const mocks = vi.hoisted(() => {
   const mockGetSession = vi.fn();
   const mockPollReplicate = vi.fn();
+  const mockPollGrsai = vi.fn();
   const mockMirrorImageToR2 = vi.fn((url: string) => Promise.resolve(url));
-  return { mockGetSession, mockPollReplicate, mockMirrorImageToR2 };
+  return { mockGetSession, mockPollReplicate, mockPollGrsai, mockMirrorImageToR2 };
 });
 
 vi.mock("@/lib/auth/auth", () => ({
@@ -23,6 +24,7 @@ vi.mock("@/lib/rate-limit", () => ({
 
 vi.mock("@/lib/ai", () => ({
   pollReplicatePrediction: mocks.mockPollReplicate,
+  pollGrsaiResult: mocks.mockPollGrsai,
 }));
 
 vi.mock("@/lib/cloudflare/r2", () => ({
@@ -61,6 +63,7 @@ describe("handleGenerateStatus", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.mockGetSession.mockResolvedValue({ user: { id: "u1" } });
+    mocks.mockPollGrsai.mockResolvedValue({ status: "processing", urls: null, error: null });
     delete (globalThis as Record<string, unknown>).__env__;
   });
 
@@ -399,6 +402,7 @@ describe("handleGenerateStatus", () => {
   it("returns processing when GRS task is still processing in KV", async () => {
     const mockKv = {
       get: vi.fn().mockResolvedValue(JSON.stringify({ userId: "u1", status: "processing" })),
+      put: vi.fn(),
     };
     (globalThis as Record<string, unknown>).__env__ = { batchlyai_kv: mockKv };
 
@@ -408,6 +412,141 @@ describe("handleGenerateStatus", () => {
       results: { id: string; status: string }[];
     };
     expect(body.results[0].status).toBe("processing");
+    expect(mocks.mockPollGrsai).toHaveBeenCalledWith("grs-1");
+  });
+
+  it("polls the GRS result endpoint and persists succeeded URLs before webhook arrives", async () => {
+    const db = createTestDb();
+    applyMigrations(db);
+    seedUser(db, { id: "u1" });
+
+    const genId = "gen-grs-result-poll";
+    db.insert(generation)
+      .values({
+        id: genId,
+        userId: "u1",
+        promptTemplate: "test prompt",
+        resolvedPrompts: JSON.stringify(["test prompt"]),
+        variableGroups: JSON.stringify([]),
+        resultUrls: JSON.stringify([]),
+        model: "z-image-pro",
+        creditsUsed: 20,
+        createdAt: Math.floor(Date.now() / 1000),
+      })
+      .run();
+
+    const kvStore = new Map<string, string>();
+    kvStore.set("grs:grs-polled", JSON.stringify({ userId: "u1", status: "processing" }));
+    kvStore.set("gen:grs-polled", JSON.stringify({ generationId: genId, userId: "u1" }));
+    const mockKv = {
+      get: vi.fn((key: string) => Promise.resolve(kvStore.get(key) ?? null)),
+      put: vi.fn((key: string, value: string) => {
+        kvStore.set(key, value);
+        return Promise.resolve();
+      }),
+    };
+    (globalThis as Record<string, unknown>).__env__ = {
+      batchlyai_kv: mockKv,
+      batchlyai_db: db,
+    };
+    mocks.mockPollGrsai.mockResolvedValue({
+      status: "succeeded",
+      urls: ["https://grs-cdn.com/result.png"],
+      error: null,
+    });
+
+    const { request, waitForDeferred } = makeRequestWithWaitUntil("ids=grs-polled&type=grs");
+    const resp = await handleGenerateStatus(request);
+    expect(resp.status).toBe(200);
+    await waitForDeferred();
+    const body = (await resp.json()) as {
+      results: { status: string; urls: string[] }[];
+    };
+    expect(body.results[0].status).toBe("succeeded");
+    expect(body.results[0].urls).toEqual(["https://grs-cdn.com/result.png"]);
+    expect(JSON.parse(kvStore.get("grs:grs-polled")!).status).toBe("succeeded");
+    expect(JSON.parse(kvStore.get("grs:grs-polled")!).urls).toEqual([
+      "https://grs-cdn.com/result.png",
+    ]);
+    const row = db
+      .select({ resultUrls: generation.resultUrls })
+      .from(generation)
+      .where(eq(generation.id, genId))
+      .get();
+    expect(JSON.parse(row!.resultUrls)).toEqual(["https://grs-cdn.com/result.png"]);
+  });
+
+  it("polls the GRS result endpoint and refunds when it reports failure", async () => {
+    const db = createTestDb();
+    applyMigrations(db);
+    seedUser(db, { id: "u1", credits: 20 });
+
+    const genId = "gen-grs-result-failed";
+    db.insert(generation)
+      .values({
+        id: genId,
+        userId: "u1",
+        promptTemplate: "test prompt",
+        resolvedPrompts: JSON.stringify(["test prompt"]),
+        variableGroups: JSON.stringify([]),
+        resultUrls: JSON.stringify([]),
+        model: "z-image-pro",
+        creditsUsed: 20,
+        createdAt: Math.floor(Date.now() / 1000),
+      })
+      .run();
+
+    const kvStore = new Map<string, string>();
+    kvStore.set("grs:grs-failed-poll", JSON.stringify({ userId: "u1", status: "processing" }));
+    kvStore.set(
+      "gen:grs-failed-poll",
+      JSON.stringify({ generationId: genId, userId: "u1", creditsUsed: 20 }),
+    );
+    const mockKv = {
+      get: vi.fn((key: string) => Promise.resolve(kvStore.get(key) ?? null)),
+      put: vi.fn((key: string, value: string) => {
+        kvStore.set(key, value);
+        return Promise.resolve();
+      }),
+    };
+    (globalThis as Record<string, unknown>).__env__ = {
+      batchlyai_kv: mockKv,
+      batchlyai_db: db,
+    };
+    mocks.mockPollGrsai.mockResolvedValue({
+      status: "failed",
+      urls: null,
+      error: "output_moderation",
+    });
+
+    const resp = await handleGenerateStatus(makeRequest("ids=grs-failed-poll&type=grs"));
+    expect(resp.status).toBe(200);
+    const body = (await resp.json()) as {
+      results: { status: string; error: string; creditsRemaining?: number }[];
+    };
+    expect(body.results[0].status).toBe("failed");
+    expect(body.results[0].error).toBe("output_moderation");
+    expect(body.results[0].creditsRemaining).toBe(40);
+    expect(JSON.parse(kvStore.get("grs:grs-failed-poll")!).status).toBe("failed");
+  });
+
+  it("keeps GRS task processing when result polling has a transient error", async () => {
+    const mockKv = {
+      get: vi.fn().mockResolvedValue(JSON.stringify({ userId: "u1", status: "processing" })),
+      put: vi.fn(),
+    };
+    (globalThis as Record<string, unknown>).__env__ = { batchlyai_kv: mockKv };
+    mocks.mockPollGrsai.mockRejectedValue(new Error("temporary gateway issue"));
+
+    const resp = await handleGenerateStatus(makeRequest("ids=grs-transient&type=grs"));
+    expect(resp.status).toBe(200);
+    const body = (await resp.json()) as {
+      results: { status: string; error: string | null; creditsRemaining?: number }[];
+    };
+    expect(body.results[0].status).toBe("processing");
+    expect(body.results[0].error).toBeNull();
+    expect(body.results[0].creditsRemaining).toBeUndefined();
+    expect(mockKv.put).not.toHaveBeenCalled();
   });
 
   it("returns succeeded with image URLs when GRS webhook has completed", async () => {
