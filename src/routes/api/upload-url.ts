@@ -18,6 +18,7 @@ const ALLOWED_MIME_TYPES = [
 ];
 
 const ALLOWED_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".bmp", ".tiff"];
+const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
 
 export async function handleUpload(request: Request): Promise<Response> {
   const originError = requireValidOrigin(request);
@@ -51,6 +52,11 @@ export async function handleUpload(request: Request): Promise<Response> {
     return jsonResponse({ error: `Content-Type not allowed: ${contentType || "unknown"}` }, 400);
   }
 
+  const contentLength = Number(request.headers.get("content-length") || "");
+  if (Number.isFinite(contentLength) && contentLength > MAX_UPLOAD_SIZE_BYTES) {
+    return jsonResponse({ error: "File too large (max 10 MB)" }, 413);
+  }
+
   // Read entire body into buffer — request.body stream may be consumed by
   // middleware or sent with chunked encoding, losing data if passed raw to R2.
   let buffer: ArrayBuffer;
@@ -64,8 +70,7 @@ export async function handleUpload(request: Request): Promise<Response> {
     return jsonResponse({ error: "Empty file" }, 400);
   }
 
-  const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
-  if (buffer.byteLength > MAX_SIZE) {
+  if (buffer.byteLength > MAX_UPLOAD_SIZE_BYTES) {
     return jsonResponse({ error: "File too large (max 10 MB)" }, 413);
   }
 

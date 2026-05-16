@@ -292,7 +292,10 @@ export function GeneratorCard({
               <WandSparklesIcon className="h-4 w-4 text-muted-foreground" />
             </button>
           )}
-          <label className="relative flex h-9 w-9 cursor-pointer items-center justify-center overflow-hidden rounded-lg border bg-muted/30 transition-colors hover:bg-muted">
+          <label
+            className="relative flex h-9 w-9 cursor-pointer items-center justify-center overflow-hidden rounded-lg border bg-muted/30 transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:bg-muted"
+            title={t("attach")}
+          >
             <input
               type="file"
               className="absolute inset-0 cursor-pointer opacity-0"

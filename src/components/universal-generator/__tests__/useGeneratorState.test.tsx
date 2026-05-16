@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, act } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 import { authClient } from "@/lib/auth/auth-client";
 
@@ -23,6 +23,10 @@ beforeEach(() => {
     data: null,
     isPending: false,
   });
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("useGeneratorState", () => {
@@ -374,6 +378,58 @@ describe("useGeneratorState", () => {
 
     expect(result.current.state.attachedFiles).toHaveLength(0);
     expect(result.current.state.error).toBe("fail");
+  });
+
+  it("uploadFile rejects large files before starting network upload", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { result } = renderHook(() => useGeneratorState(), {
+      wrapper: createWrapper(),
+    });
+
+    const file = new File([new Uint8Array(11 * 1024 * 1024)], "large.png", {
+      type: "image/png",
+    });
+
+    await act(async () => {
+      await result.current.actions.uploadFile(file);
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.current.state.attachedFiles).toHaveLength(0);
+    expect(result.current.state.error).toBe("uploadTooLarge");
+  });
+
+  it("uploadFile times out instead of leaving an attachment stuck uploading", async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((_url: string, init?: RequestInit) => {
+        return new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            const err = new Error("aborted");
+            err.name = "AbortError";
+            reject(err);
+          });
+        });
+      }),
+    );
+
+    const { result } = renderHook(() => useGeneratorState(), {
+      wrapper: createWrapper(),
+    });
+
+    const file = new File(["test"], "test.png", { type: "image/png" });
+
+    await act(async () => {
+      const upload = result.current.actions.uploadFile(file);
+      await vi.advanceTimersByTimeAsync(30_000);
+      await upload;
+    });
+
+    expect(result.current.state.attachedFiles).toHaveLength(0);
+    expect(result.current.state.error).toBe("uploadTimedOut");
   });
 
   it("removeAttachment removes attachment by id", () => {

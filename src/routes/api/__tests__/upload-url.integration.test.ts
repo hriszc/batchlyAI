@@ -25,11 +25,13 @@ import { handleUpload } from "@/routes/api/upload-url";
 
 function makeRequest(overrides?: {
   buffer?: ArrayBuffer;
+  arrayBuffer?: () => Promise<ArrayBuffer>;
   headers?: Record<string, string>;
   url?: string;
 }): Request {
   return {
-    arrayBuffer: () => Promise.resolve(overrides?.buffer ?? new ArrayBuffer(100)),
+    arrayBuffer:
+      overrides?.arrayBuffer ?? (() => Promise.resolve(overrides?.buffer ?? new ArrayBuffer(100))),
     body: new ReadableStream(),
     headers: new Headers(overrides?.headers ?? {}),
     url: overrides?.url ?? "https://batchlyai.com/api/upload-url",
@@ -118,6 +120,23 @@ describe("handleUpload", () => {
       }),
     );
     expect(resp.status).toBe(413);
+  });
+
+  it("returns 413 before reading the body when Content-Length exceeds 10 MB", async () => {
+    mocks.mockGetSession.mockResolvedValue({ user: { id: "u1" } });
+    const arrayBuffer = vi.fn().mockResolvedValue(new ArrayBuffer(100));
+    const resp = await handleUpload(
+      makeRequest({
+        arrayBuffer,
+        headers: {
+          "x-file-name": "large.png",
+          "Content-Type": "image/png",
+          "Content-Length": String(11 * 1024 * 1024),
+        },
+      }),
+    );
+    expect(resp.status).toBe(413);
+    expect(arrayBuffer).not.toHaveBeenCalled();
   });
 
   it("returns 200 with publicUrl and key on valid upload", async () => {
