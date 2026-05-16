@@ -54,71 +54,127 @@ export interface GrsaiCreateResult {
   urls?: string[];
 }
 
+interface GrsaiTaskPayload {
+  id?: string;
+  task_id?: string;
+  status?: string;
+  progress?: number;
+  results?: Array<{ url?: string } | string> | null;
+  url?: string;
+  failure_reason?: string;
+  error?: string;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function extractGrsaiUrls(payload: GrsaiTaskPayload): string[] {
+  const urls = new Set<string>();
+  if (typeof payload.url === "string" && payload.url) urls.add(payload.url);
+  for (const result of payload.results ?? []) {
+    if (typeof result === "string" && result) {
+      urls.add(result);
+    } else if (
+      typeof result === "object" &&
+      result &&
+      typeof result.url === "string" &&
+      result.url
+    ) {
+      urls.add(result.url);
+    }
+  }
+  return [...urls];
+}
+
+function normalizeGrsaiPayload(raw: unknown): GrsaiTaskPayload | null {
+  if (!isRecord(raw)) return null;
+
+  if (typeof raw.code === "number" && raw.code !== 0) {
+    throw new Error(`grsai API unexpected response: ${JSON.stringify(raw)}`);
+  }
+
+  const payload = isRecord(raw.data) ? raw.data : raw;
+  const id = typeof payload.id === "string" ? payload.id : undefined;
+  const taskId = typeof payload.task_id === "string" ? payload.task_id : undefined;
+  if (!id && !taskId) return null;
+
+  return payload as GrsaiTaskPayload;
+}
+
+function toGrsaiCreateResult(raw: unknown): GrsaiCreateResult | null {
+  const payload = normalizeGrsaiPayload(raw);
+  if (!payload) return null;
+
+  const id = payload.id || payload.task_id;
+  if (!id) return null;
+
+  const error =
+    (typeof payload.error === "string" && payload.error) ||
+    (typeof payload.failure_reason === "string" && payload.failure_reason) ||
+    "";
+  if (payload.status === "failed" || error) {
+    throw new Error(`grsai API failed: ${error || "Generation failed"}`);
+  }
+
+  const urls = extractGrsaiUrls(payload);
+  if (payload.progress === 100 && payload.status === "succeeded") {
+    if (urls.length > 0) {
+      return { id, status: "succeeded", urls };
+    }
+    throw new Error("grsai API succeeded without image URLs");
+  }
+
+  return { id, status: "processing" };
+}
+
+async function parseGrsaiCreateResponse(resp: Response): Promise<GrsaiCreateResult> {
+  if (!resp.ok) {
+    const errText = await resp.text();
+    if (resp.status === 401 && env.GRSAI_API_KEY === "dev-key") {
+      throw new Error(
+        `grsai API error 401: Using dev API key. Set real key via: wrangler secret put GRSAI_API_KEY. Details: ${errText}`,
+      );
+    }
+    throw new Error(`grsai API error ${resp.status}: ${errText}`);
+  }
+
+  const raw = await resp.json();
+  const result = toGrsaiCreateResult(raw);
+  if (!result) {
+    throw new Error(`grsai API unexpected response: ${JSON.stringify(raw)}`);
+  }
+  return result;
+}
+
+async function createGrsaiPrediction(init: RequestInit): Promise<GrsaiCreateResult> {
+  const resp = await fetchWithFallback(DRAW_API_HOST, DRAW_API_DIRECT, init, "grsai");
+  return parseGrsaiCreateResponse(resp);
+}
+
 export async function createGrsaiPredictions({
   prompt,
   aspectRatio = "1:1",
   n = 1,
   urls,
 }: ImageGenerationParams & { urls?: string[] }): Promise<GrsaiCreateResult[]> {
+  const init: RequestInit = {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(env.GRSAI_API_KEY ? { Authorization: `Bearer ${env.GRSAI_API_KEY}` } : {}),
+    },
+    body: JSON.stringify({
+      model: "gpt-image-2",
+      prompt,
+      aspectRatio,
+      urls: urls ?? [],
+      webHook: `${env.VITE_BASE_URL}/api/grs-webhook`,
+    }),
+  };
+
   const predictions = await Promise.all(
-    Array.from({ length: n }, () =>
-      fetchWithFallback(
-        DRAW_API_HOST,
-        DRAW_API_DIRECT,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(env.GRSAI_API_KEY ? { Authorization: `Bearer ${env.GRSAI_API_KEY}` } : {}),
-          },
-          body: JSON.stringify({
-            model: "gpt-image-2",
-            prompt,
-            aspectRatio,
-            urls: urls ?? [],
-            webHook: `${env.VITE_BASE_URL}/api/grs-webhook`,
-          }),
-        },
-        "grsai",
-      ).then(async (resp) => {
-        if (!resp.ok) {
-          const errText = await resp.text();
-          if (resp.status === 401 && env.GRSAI_API_KEY === "dev-key") {
-            throw new Error(
-              `grsai API error 401: Using dev API key. Set real key via: wrangler secret put GRSAI_API_KEY. Details: ${errText}`,
-            );
-          }
-          throw new Error(`grsai API error ${resp.status}: ${errText}`);
-        }
-        const raw = (await resp.json()) as {
-          code: number;
-          data: {
-            id: string;
-            status?: string;
-            progress?: number;
-            results?: { url: string }[];
-          };
-          msg: string;
-        };
-        if (raw.code !== 0 || !raw.data?.id) {
-          throw new Error(`grsai API unexpected response: ${JSON.stringify(raw)}`);
-        }
-        // AIGATE may return results synchronously when progress reaches 100.
-        // If not at 100%, treat as async (results arrive via webhook callback).
-        if (
-          raw.data.progress === 100 &&
-          raw.data.status === "succeeded" &&
-          raw.data.results?.length
-        ) {
-          return {
-            id: raw.data.id,
-            status: "succeeded",
-            urls: raw.data.results.map((r) => r.url),
-          };
-        }
-        return { id: raw.data.id, status: "processing" };
-      }),
-    ),
+    Array.from({ length: n }, () => createGrsaiPrediction(init)),
   );
 
   return predictions;
