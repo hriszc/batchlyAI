@@ -75,6 +75,7 @@ export type GeneratorAction =
   | { type: "UPDATE_VALUE"; payload: { groupId: GroupId; index: number; value: string } }
   | { type: "REMOVE_VALUE"; payload: { groupId: GroupId; index: number } }
   | { type: "START_GENERATING" }
+  | { type: "APPEND_RESULTS"; payload: GeneratedResult[] }
   | { type: "FINISH_GENERATING"; payload: GeneratedResult[] }
   | { type: "SET_ERROR"; payload: string | null }
   | { type: "SET_CREDITS_REMAINING"; payload: number | null }

@@ -94,6 +94,13 @@ export function reducer(state: GeneratorState, action: GeneratorAction): Generat
     case "START_GENERATING":
       return { ...state, isGenerating: true, results: [], error: null };
 
+    case "APPEND_RESULTS": {
+      const seenIds = new Set(state.results.map((result) => result.id));
+      const nextResults = action.payload.filter((result) => !seenIds.has(result.id));
+      if (nextResults.length === 0) return state;
+      return { ...state, results: [...state.results, ...nextResults] };
+    }
+
     case "FINISH_GENERATING":
       return { ...state, isGenerating: false, results: action.payload };
 

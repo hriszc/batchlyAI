@@ -19,6 +19,10 @@ function generateResultId(): string {
 
 const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
 const UPLOAD_TIMEOUT_MS = 30_000;
+const IMAGE_ESTIMATE_MS_PER_RESULT = 60_000;
+const VIDEO_ESTIMATE_MS_PER_RESULT = 300_000;
+const IMAGE_POLL_INTERVAL_MS = 5_000;
+const VIDEO_POLL_INTERVAL_MS = 10_000;
 const ALLOWED_UPLOAD_EXTENSIONS = new Set([
   ".png",
   ".jpg",
@@ -320,8 +324,20 @@ export function useGeneratorState() {
           // Unified polling: merge all prediction IDs into a single poll loop
           if (asyncPendings.length > 0) {
             const isVideo = model?.category === "video";
-            const estimatedMs = isVideo ? 300_000 : 90_000;
-            const pollIntervalMs = isVideo ? 10_000 : 5_000;
+            const asyncResultCount = asyncPendings.reduce(
+              (sum, pending) => sum + pending.predictionIds.length,
+              0,
+            );
+            const estimatedMs = Math.max(
+              isVideo ? VIDEO_ESTIMATE_MS_PER_RESULT : IMAGE_ESTIMATE_MS_PER_RESULT,
+              asyncResultCount *
+                (isVideo ? VIDEO_ESTIMATE_MS_PER_RESULT : IMAGE_ESTIMATE_MS_PER_RESULT),
+            );
+            const pollIntervalMs = isVideo ? VIDEO_POLL_INTERVAL_MS : IMAGE_POLL_INTERVAL_MS;
+            dispatch({
+              type: "SET_PROGRESS",
+              payload: { elapsed: 0, estimated: estimatedMs, remaining: asyncResultCount },
+            });
             const polled = (await unifiedPoll(
               asyncPendings,
               estimatedMs,
@@ -330,6 +346,14 @@ export function useGeneratorState() {
               },
               pollIntervalMs,
               syncCreditsRemaining,
+              (partialResults) => {
+                dispatch({
+                  type: "APPEND_RESULTS",
+                  payload: isWatermarked
+                    ? partialResults.map((result) => ({ ...result, watermark: true }))
+                    : partialResults,
+                });
+              },
             )) as typeof results;
             results = [...results, ...polled];
           }

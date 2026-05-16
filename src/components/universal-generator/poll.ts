@@ -31,9 +31,8 @@ export async function unifiedPoll(
   onProgress?: (progress: PollProgress) => void,
   pollIntervalMs = 2000,
   onCreditsRemaining?: (creditsRemaining: number) => void,
+  onResults?: (results: GeneratedResult[]) => void,
 ): Promise<GeneratedResult[]> {
-  const maxAttempts = 60;
-
   const idToCombo = new Map<string, PromptCombination>();
   const allIds: string[] = [];
   for (const p of pendings) {
@@ -49,6 +48,7 @@ export async function unifiedPoll(
 
   // Default estimates: image ~90s, video ~300s
   const estimated = estimatedMs ?? 90_000;
+  const maxAttempts = Math.max(1, Math.ceil((estimated * 1.2) / pollIntervalMs));
   const startTime = Date.now();
   const headers = (() => {
     const guestToken = pendings.find((p) => p.guestToken)?.guestToken;
@@ -67,6 +67,7 @@ export async function unifiedPoll(
 
       if (!json.results) continue;
 
+      const newResults: GeneratedResult[] = [];
       for (const r of json.results) {
         if (r.creditsRemaining != null) {
           onCreditsRemaining?.(r.creditsRemaining);
@@ -80,7 +81,7 @@ export async function unifiedPoll(
           const combination = idToCombo.get(r.id) ?? pendings[0].combination;
           if (r.status === "succeeded" && r.urls) {
             for (const url of r.urls) {
-              finished.push({
+              newResults.push({
                 id: generateResultId(),
                 combination,
                 imageUrl: url,
@@ -90,7 +91,7 @@ export async function unifiedPoll(
               });
             }
           } else {
-            finished.push({
+            newResults.push({
               id: generateResultId(),
               combination,
               imageUrl: null,
@@ -101,6 +102,10 @@ export async function unifiedPoll(
           }
           pendingIds.delete(r.id);
         }
+      }
+      if (newResults.length > 0) {
+        finished.push(...newResults);
+        onResults?.(newResults);
       }
 
       if (pendingIds.size === 0) return finished;
@@ -120,6 +125,7 @@ export async function unifiedPoll(
     );
     const json = (await resp.json()) as { results?: PollResult[]; error?: string };
     if (json.results) {
+      const newResults: GeneratedResult[] = [];
       for (const r of json.results) {
         if (r.creditsRemaining != null) {
           onCreditsRemaining?.(r.creditsRemaining);
@@ -133,7 +139,7 @@ export async function unifiedPoll(
           const combination = idToCombo.get(r.id) ?? pendings[0].combination;
           if (r.status === "succeeded" && r.urls) {
             for (const url of r.urls) {
-              finished.push({
+              newResults.push({
                 id: generateResultId(),
                 combination,
                 imageUrl: url,
@@ -143,7 +149,7 @@ export async function unifiedPoll(
               });
             }
           } else {
-            finished.push({
+            newResults.push({
               id: generateResultId(),
               combination,
               imageUrl: null,
@@ -154,6 +160,10 @@ export async function unifiedPoll(
           }
           pendingIds.delete(r.id);
         }
+      }
+      if (newResults.length > 0) {
+        finished.push(...newResults);
+        onResults?.(newResults);
       }
     }
   } catch {
