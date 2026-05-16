@@ -541,6 +541,31 @@ describe("runExpandLLM", () => {
     const values = await runExpandLLM("animals");
     expect(values).toEqual(["cat", "dog"]);
   });
+
+  it("splits Chinese comma-separated responses", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          choices: [{ message: { content: "红色， 蓝色,绿色，黄色" }, finish_reason: "stop" }],
+        }),
+    });
+    const values = await runExpandLLM("colors");
+    expect(values).toEqual(["红色", "蓝色", "绿色", "黄色"]);
+  });
+
+  it("does not cap expand responses with max_tokens", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          choices: [{ message: { content: "cat, dog" }, finish_reason: "stop" }],
+        }),
+    });
+    await runExpandLLM("animals");
+    const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(body).not.toHaveProperty("max_tokens");
+  });
 });
 
 // --- fetchWithFallback: gateway error → direct API ---

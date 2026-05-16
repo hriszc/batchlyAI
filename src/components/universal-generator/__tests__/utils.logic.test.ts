@@ -80,6 +80,13 @@ describe("extractVariableGroups", () => {
     ]);
   });
 
+  it("treats Chinese commas as variable separators", () => {
+    expect(extractVariableGroups("一只{{猫，狗, 鸟}}在{{森林， 海滩}}")).toEqual([
+      { id: "var_0", values: ["猫", "狗", "鸟"] },
+      { id: "var_1", values: ["森林", "海滩"] },
+    ]);
+  });
+
   it("handles template with text before and after variables", () => {
     expect(extractVariableGroups("A {{red, blue}} car in {{day, night}} time")).toEqual([
       { id: "var_0", values: ["red", "blue"] },

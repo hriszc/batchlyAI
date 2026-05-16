@@ -26,7 +26,7 @@ export function extractVariableGroups(template: string): VariableGroup[] {
   while ((match = regex.exec(template)) !== null) {
     const raw = match[1].trim();
     const values = raw
-      .split(",")
+      .split(/[,，]/)
       .map((v) => v.trim())
       .filter(Boolean);
     groups.push({ id: `var_${idx++}`, values });
