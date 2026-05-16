@@ -17,12 +17,39 @@ function generateResultId(): string {
   return `result_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+const MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024;
+const UPLOAD_TIMEOUT_MS = 30_000;
+const ALLOWED_UPLOAD_EXTENSIONS = new Set([
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".webp",
+  ".gif",
+  ".svg",
+  ".bmp",
+  ".tiff",
+]);
+const ALLOWED_UPLOAD_MIME_TYPES = new Set([
+  "image/png",
+  "image/jpeg",
+  "image/webp",
+  "image/gif",
+  "image/svg+xml",
+  "image/bmp",
+  "image/tiff",
+]);
+
 function getSessionCredits(session: unknown): number | null {
   if (!session || typeof session !== "object" || !("user" in session)) return null;
   const user = (session as { user?: unknown }).user;
   if (!user || typeof user !== "object" || !("credits" in user)) return null;
   const credits = (user as { credits?: unknown }).credits;
   return typeof credits === "number" ? credits : null;
+}
+
+function getFileExtension(name: string): string {
+  const index = name.lastIndexOf(".");
+  return index >= 0 ? name.slice(index).toLowerCase() : "";
 }
 
 interface AsyncPending {
@@ -429,13 +456,31 @@ export function useGeneratorState() {
 
   const uploadFile = useCallback(
     async (file: File) => {
+      const extension = getFileExtension(file.name);
+      if (!ALLOWED_UPLOAD_EXTENSIONS.has(extension)) {
+        dispatch({ type: "SET_ERROR", payload: t("uploadUnsupportedFile") });
+        return;
+      }
+      if (file.type && !ALLOWED_UPLOAD_MIME_TYPES.has(file.type)) {
+        dispatch({ type: "SET_ERROR", payload: t("uploadUnsupportedFile") });
+        return;
+      }
+      if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+        dispatch({ type: "SET_ERROR", payload: t("uploadTooLarge") });
+        return;
+      }
+
       const id = `attach_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       dispatch({ type: "ADD_ATTACHMENT", payload: { id, name: file.name, uploading: true } });
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
 
       try {
         const resp = await fetch("/api/upload-url", {
           method: "POST",
           body: file,
+          signal: controller.signal,
           headers: {
             "X-File-Name": encodeURIComponent(file.name),
             "Content-Type": file.type || "application/octet-stream",
@@ -457,9 +502,15 @@ export function useGeneratorState() {
 
         const { publicUrl, key } = (await resp.json()) as { publicUrl: string; key: string };
         dispatch({ type: "UPDATE_ATTACHMENT", payload: { id, url: publicUrl, key } });
-      } catch {
-        dispatch({ type: "SET_ERROR", payload: t("uploadFailed") });
+      } catch (err) {
+        const timedOut = err instanceof Error && err.name === "AbortError";
+        dispatch({
+          type: "SET_ERROR",
+          payload: timedOut ? t("uploadTimedOut") : t("uploadFailed"),
+        });
         dispatch({ type: "REMOVE_ATTACHMENT", payload: id });
+      } finally {
+        clearTimeout(timeoutId);
       }
     },
     [t],
