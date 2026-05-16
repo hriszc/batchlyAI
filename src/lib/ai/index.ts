@@ -446,7 +446,7 @@ async function chatDeepseek(
       headers,
       body: JSON.stringify({
         model: opts?.model ?? "deepseek-v4-flash",
-        max_tokens: opts?.maxTokens ?? 256,
+        ...(opts?.maxTokens ? { max_tokens: opts.maxTokens } : {}),
         temperature: opts?.temperature ?? 0.7,
         messages,
       }),
@@ -522,11 +522,11 @@ export async function runExpandLLM(description: string): Promise<string[]> {
       { role: "system", content: EXPAND_SYSTEM_PROMPT },
       { role: "user", content: description },
     ],
-    { maxTokens: 500, temperature: 0.7, model: "deepseek-v4-flash" },
+    { temperature: 0.7, model: "deepseek-v4-flash" },
   );
 
   return text
-    .split(",")
+    .split(/[,，]/)
     .map((s) => s.trim())
     .filter(Boolean);
 }
