@@ -52,6 +52,18 @@ describe("verifyOrigin", () => {
     expect(verifyOrigin(request)).toBe(true);
   });
 
+  it("accepts Cloudflare Workers preview domains", () => {
+    const request = new Request(
+      "https://45b0f4e3-batchlyai.hriszc.workers.dev/api/auth/sign-in/email",
+      {
+        method: "POST",
+        headers: { Origin: "https://45b0f4e3-batchlyai.hriszc.workers.dev" },
+      },
+    );
+
+    expect(verifyOrigin(request)).toBe(true);
+  });
+
   it("rejects unknown origins", () => {
     const request = new Request("https://batchlyai.com/api/auth/sign-in/email", {
       method: "POST",

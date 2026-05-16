@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { eq, sql } from "drizzle-orm";
 
-import { pollReplicatePrediction } from "@/lib/ai";
+import { pollGrsaiResult, pollReplicatePrediction } from "@/lib/ai";
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getD1Binding, getKvBinding } from "@/lib/cloudflare/bindings";
@@ -17,6 +17,9 @@ interface GrsTaskData {
   status: string;
   urls?: string[];
   error?: string;
+  prompt?: string;
+  aspectRatio?: string;
+  createdAt?: number;
 }
 
 interface GenerationTaskData {
@@ -210,6 +213,47 @@ async function attachRefundsToFailedResults(
   );
 }
 
+async function pollAndPersistGrsResult(
+  kv: KVNamespace,
+  predictionId: string,
+  taskData: GrsTaskData,
+): Promise<StatusResult> {
+  const pollResult = await pollGrsaiResult(predictionId);
+  if (pollResult.status === "succeeded" && pollResult.urls?.length) {
+    await kv.put(
+      `grs:${predictionId}`,
+      JSON.stringify({
+        ...taskData,
+        status: "succeeded",
+        urls: pollResult.urls,
+        error: undefined,
+      }),
+      { expirationTtl: 3600 },
+    );
+    return { id: predictionId, status: "succeeded", urls: pollResult.urls, error: null };
+  }
+
+  if (pollResult.status === "failed" || pollResult.status === "error") {
+    await kv.put(
+      `grs:${predictionId}`,
+      JSON.stringify({
+        ...taskData,
+        status: "failed",
+        error: pollResult.error || "Generation failed",
+      }),
+      { expirationTtl: 3600 },
+    );
+    return {
+      id: predictionId,
+      status: "failed",
+      urls: null,
+      error: pollResult.error || "Generation failed",
+    };
+  }
+
+  return { id: predictionId, status: "processing", urls: null, error: null };
+}
+
 async function tryUpdateGeneration(kv: KVNamespace, predictionId: string, urls: string[]) {
   try {
     const kvKey = `gen:${predictionId}`;
@@ -341,7 +385,16 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
                 error: data.error || "Generation failed",
               };
             }
-            return { id, status: "processing", urls: null, error: null };
+            try {
+              const polled = await pollAndPersistGrsResult(kv, id, data);
+              if (polled.status === "succeeded" && polled.urls?.length) {
+                scheduleMirrorTask(() => tryUpdateGeneration(kv, id, polled.urls!));
+              }
+              return polled;
+            } catch (err) {
+              console.warn(`[gen-status] GRS result poll failed for ${id}:`, err);
+              return { id, status: "processing", urls: null, error: null };
+            }
           } catch {
             return { id, status: "error", urls: null, error: "Poll failed" };
           }

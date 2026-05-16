@@ -16,10 +16,12 @@ const AI_GATEWAY =
 const DEEPSEEK_DIRECT = "https://api.deepseek.com/v1/chat/completions";
 const REPLICATE_DIRECT = "https://api.replicate.com/v1/predictions";
 const DRAW_API_DIRECT = "https://grsaiapi.com/v1/draw/completions";
+const DRAW_RESULT_DIRECT = "https://grsaiapi.com/v1/draw/result";
 
 const DEEPSEEK_HOST = `${AI_GATEWAY}/deepseek/v1/chat/completions`;
 const REPLICATE_API_BASE = `${AI_GATEWAY}/replicate`;
 const DRAW_API_HOST = `${AI_GATEWAY}/custom-grsai/v1/draw/completions`;
+const DRAW_RESULT_HOST = `${AI_GATEWAY}/custom-grsai/v1/draw/result`;
 
 /**
  * Try gateway first; fall back to direct API on any failure.
@@ -52,6 +54,12 @@ export interface GrsaiCreateResult {
   id: string;
   status: string;
   urls?: string[];
+}
+
+export interface GrsaiPollResult {
+  status: string;
+  urls: string[] | null;
+  error: string | null;
 }
 
 interface GrsaiTaskPayload {
@@ -128,6 +136,29 @@ function toGrsaiCreateResult(raw: unknown): GrsaiCreateResult | null {
   return { id, status: "processing" };
 }
 
+function toGrsaiPollResult(raw: unknown): GrsaiPollResult {
+  const payload = normalizeGrsaiPayload(raw);
+  if (!payload) {
+    throw new Error(`grsai API unexpected response: ${JSON.stringify(raw)}`);
+  }
+
+  const error =
+    (typeof payload.error === "string" && payload.error) ||
+    (typeof payload.failure_reason === "string" && payload.failure_reason) ||
+    "";
+  if (payload.status === "failed" || error) {
+    return { status: "failed", urls: null, error: error || "Generation failed" };
+  }
+
+  const urls = extractGrsaiUrls(payload);
+  if (payload.progress === 100 && payload.status === "succeeded") {
+    if (urls.length > 0) return { status: "succeeded", urls, error: null };
+    return { status: "failed", urls: null, error: "Generation finished without image URLs" };
+  }
+
+  return { status: "processing", urls: null, error: null };
+}
+
 async function parseGrsaiCreateResponse(resp: Response): Promise<GrsaiCreateResult> {
   if (!resp.ok) {
     const errText = await resp.text();
@@ -152,6 +183,19 @@ async function createGrsaiPrediction(init: RequestInit): Promise<GrsaiCreateResu
   return parseGrsaiCreateResponse(resp);
 }
 
+function toGrsaiAspectRatio(aspectRatio: string): string {
+  const ratios: Record<string, string> = {
+    "1:1": "1024x1024",
+    "16:9": "1774x887",
+    "9:16": "887x1774",
+    "3:2": "1536x1024",
+    "2:3": "1024x1536",
+    "4:3": "1536x1024",
+    "3:4": "1024x1536",
+  };
+  return ratios[aspectRatio] ?? "1024x1024";
+}
+
 export async function createGrsaiPredictions({
   prompt,
   aspectRatio = "1:1",
@@ -167,7 +211,7 @@ export async function createGrsaiPredictions({
     body: JSON.stringify({
       model: "gpt-image-2",
       prompt,
-      aspectRatio,
+      aspectRatio: toGrsaiAspectRatio(aspectRatio),
       urls: urls ?? [],
       webHook: `${env.VITE_BASE_URL}/api/grs-webhook`,
     }),
@@ -178,6 +222,29 @@ export async function createGrsaiPredictions({
   );
 
   return predictions;
+}
+
+export async function pollGrsaiResult(id: string): Promise<GrsaiPollResult> {
+  const resp = await fetchWithFallback(
+    DRAW_RESULT_HOST,
+    DRAW_RESULT_DIRECT,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(env.GRSAI_API_KEY ? { Authorization: `Bearer ${env.GRSAI_API_KEY}` } : {}),
+      },
+      body: JSON.stringify({ id }),
+    },
+    "grsai-result",
+  );
+
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error(`grsai result API error ${resp.status}: ${errText}`);
+  }
+
+  return toGrsaiPollResult(await resp.json());
 }
 
 interface ReplicatePrediction {
