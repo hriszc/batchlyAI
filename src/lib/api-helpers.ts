@@ -21,10 +21,21 @@ const ALLOWED_ORIGINS = [
   "http://localhost:3000",
 ];
 
+function isAllowedOrigin(origin: string): boolean {
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+
+  try {
+    const url = new URL(origin);
+    return url.protocol === "https:" && url.hostname.endsWith(".workers.dev");
+  } catch {
+    return false;
+  }
+}
+
 export function verifyOrigin(request: Request): boolean {
   const origin = request.headers?.get("Origin");
   if (!origin) return true; // same-origin requests have no Origin header
-  return ALLOWED_ORIGINS.includes(origin);
+  return isAllowedOrigin(origin);
 }
 
 export function requireValidOrigin(request: Request): Response | null {
