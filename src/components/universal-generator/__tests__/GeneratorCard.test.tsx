@@ -159,13 +159,12 @@ describe("GeneratorCard", () => {
       <GeneratorCard state={baseState} actions={{ ...mockActions, uploadFile }} />,
     );
     const input = container.querySelector('input[type="file"]') as HTMLInputElement;
-    const label = container.querySelector(`label[for="${input.id}"]`);
 
     const file = new File(["image"], "reference.png", { type: "image/png" });
     await userEvent.upload(input, file);
 
     expect(input).not.toHaveAttribute("accept");
-    expect(label).toBeInTheDocument();
+    expect(input).toHaveClass("absolute", "inset-0", "h-full", "w-full", "opacity-0");
     expect(uploadFile).toHaveBeenCalledWith(file);
   });
 
