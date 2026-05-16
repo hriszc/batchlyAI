@@ -124,6 +124,68 @@ describe("createGrsaiPredictions", () => {
     ]);
   });
 
+  it("returns urls when GRS returns the unwrapped Image Pro task payload", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          id: "grs-raw-sync",
+          progress: 100,
+          results: [{ url: "https://example.com/example.png" }],
+          status: "succeeded",
+          failure_reason: "",
+          error: "",
+        }),
+    });
+
+    const results = await createGrsaiPredictions({ prompt: "test" });
+
+    expect(results).toEqual([
+      {
+        id: "grs-raw-sync",
+        status: "succeeded",
+        urls: ["https://example.com/example.png"],
+      },
+    ]);
+  });
+
+  it("returns async status when GRS returns an unwrapped task id", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          id: "grs-raw-async",
+          progress: 10,
+          status: "processing",
+          failure_reason: "",
+          error: "",
+        }),
+    });
+
+    const results = await createGrsaiPredictions({ prompt: "test" });
+
+    expect(results).toEqual([{ id: "grs-raw-async", status: "processing" }]);
+  });
+
+  it("throws when GRS returns a failed task payload", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          id: "grs-failed",
+          progress: 100,
+          results: [],
+          status: "failed",
+          failure_reason: "content policy",
+          error: "",
+        }),
+    });
+
+    await expect(createGrsaiPredictions({ prompt: "test" })).rejects.toThrow(
+      "grsai API failed: content policy",
+    );
+  });
+
   it("returns async when progress < 100 even with results present", async () => {
     mockFetch.mockResolvedValue({
       ok: true,
