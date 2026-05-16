@@ -1,12 +1,13 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
 const mocks = vi.hoisted(() => ({
+  mockCreateAuth: vi.fn(),
   mockGetSession: vi.fn(),
   mockGenerateExploreMetadata: vi.fn(),
 }));
 
 vi.mock("@/lib/auth/auth", () => ({
-  createAuth: () => ({ api: { getSession: mocks.mockGetSession } }),
+  createAuth: mocks.mockCreateAuth,
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -31,13 +32,18 @@ function makePostReq(body: Record<string, unknown>): Request {
   } as unknown as Request;
 }
 
-function makeMockDb() {
+function makeMockDb(existingSlugs: string[] = []) {
   let insertedTemplate: Record<string, unknown> | null = null;
+  let selectCount = 0;
 
   return {
     select: () => ({
       from: () => ({
-        where: () => Promise.resolve([]),
+        where: () => {
+          const hasExisting = selectCount < existingSlugs.length;
+          selectCount++;
+          return Promise.resolve(hasExisting ? [{ id: existingSlugs[selectCount - 1] }] : []);
+        },
       }),
     }),
     insert: () => ({
@@ -60,6 +66,7 @@ describe("handlePostTemplate", () => {
   beforeEach(() => {
     db = makeMockDb();
     vi.clearAllMocks();
+    mocks.mockCreateAuth.mockReturnValue({ api: { getSession: mocks.mockGetSession } });
     mocks.mockGetSession.mockResolvedValue({ user: { id: "u1" } });
     mocks.mockGenerateExploreMetadata.mockResolvedValue({
       name: "Skincare Shelf Scene",
@@ -112,5 +119,94 @@ describe("handlePostTemplate", () => {
       previewImageUrl: "/api/generation-files/works/work-1/0.png",
       slug: "skincare-shelf-scene",
     });
+  });
+
+  it("requires an authenticated user", async () => {
+    mocks.mockGetSession.mockResolvedValue(null);
+
+    const resp = await handlePostTemplate(
+      makePostReq({
+        promptTemplate: "A {{product}} photo",
+        variableGroups: [{ id: "var_0", values: ["product"] }],
+      }),
+    );
+
+    expect(resp.status).toBe(401);
+    await expect(resp.json()).resolves.toEqual({ error: "Unauthorized" });
+  });
+
+  it("returns 501 when auth or DB is unavailable", async () => {
+    mocks.mockCreateAuth.mockReturnValueOnce(null);
+
+    const resp = await handlePostTemplate(
+      makePostReq({
+        promptTemplate: "A {{product}} photo",
+        variableGroups: [{ id: "var_0", values: ["product"] }],
+      }),
+    );
+
+    expect(resp.status).toBe(501);
+  });
+
+  it.each([
+    [
+      "missing required fields",
+      {},
+      { error: "Missing required fields: promptTemplate, variableGroups" },
+    ],
+    [
+      "too long prompt",
+      { promptTemplate: `${"x".repeat(5001)} {{product}}`, variableGroups: [] },
+      { error: "Prompt template too long" },
+    ],
+    [
+      "too long name",
+      { name: "x".repeat(121), promptTemplate: "A {{product}}", variableGroups: [] },
+      { error: "Name too long" },
+    ],
+    [
+      "too long description",
+      { description: "x".repeat(501), promptTemplate: "A {{product}}", variableGroups: [] },
+      { error: "Description too long" },
+    ],
+    [
+      "too large variable groups",
+      { promptTemplate: "A {{product}}", variableGroups: "x".repeat(20_001) },
+      { error: "Variable groups too large" },
+    ],
+    [
+      "too many result URLs",
+      { promptTemplate: "A {{product}}", variableGroups: [], resultUrls: Array(21).fill("x") },
+      { error: "Too many result URLs" },
+    ],
+    [
+      "no variable marker",
+      { promptTemplate: "A product photo", variableGroups: [] },
+      { error: "Prompt template must contain at least one {{variable}} marker" },
+    ],
+  ])("validates %s", async (_name, body, expected) => {
+    const resp = await handlePostTemplate(makePostReq(body));
+
+    expect(resp.status).toBe(400);
+    await expect(resp.json()).resolves.toEqual(expected);
+  });
+
+  it("generates a unique slug when metadata name collides", async () => {
+    db = makeMockDb(["existing-template"]);
+    (globalThis as Record<string, unknown>).__env__ = { batchlyai_db: db };
+
+    const resp = await handlePostTemplate(
+      makePostReq({
+        promptTemplate: "A {{product}} photo",
+        variableGroups: JSON.stringify([{ id: "var_0", values: ["product"] }]),
+      }),
+    );
+    const body = (await resp.json()) as { slug: string };
+
+    expect(resp.status).toBe(201);
+    expect(body.slug).toBe("skincare-shelf-scene-1");
+    expect(db.__state.insertedTemplate?.variableGroups).toBe(
+      JSON.stringify([{ id: "var_0", values: ["product"] }]),
+    );
   });
 });
