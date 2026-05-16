@@ -60,6 +60,15 @@ describe("ResultsGrid", () => {
     expect(skeletonImages.length).toBe(6);
   });
 
+  it("shows completed results while generation is still running", () => {
+    renderWithProviders(
+      <ResultsGrid results={[imageResult]} isGenerating={true} totalExpected={3} />,
+    );
+    expect(screen.getByText("A cat")).toBeInTheDocument();
+    expect(screen.getByText("1 ready · 2 working")).toBeInTheDocument();
+    expect(document.querySelectorAll(".animate-pulse").length).toBe(2);
+  });
+
   it("renders with Chinese heading after hydration", async () => {
     renderWithProviders(<ResultsGrid results={[imageResult]} isGenerating={false} />, {
       language: "zh",

@@ -205,6 +205,32 @@ describe("reducer", () => {
     });
   });
 
+  // --- APPEND_RESULTS ---
+  describe("APPEND_RESULTS", () => {
+    it("adds newly completed results without stopping generation", () => {
+      const existing = {
+        id: "r1",
+        combination: { variables: { var_0: "a" }, prompt: "test" },
+        imageUrl: "http://img.com/1.png",
+        textContent: null,
+        watermark: false,
+        status: "complete" as const,
+      };
+      const incoming = {
+        ...existing,
+        id: "r2",
+        imageUrl: "http://img.com/2.png",
+      };
+      const next = reducer(state({ isGenerating: true, results: [existing] }), {
+        type: "APPEND_RESULTS",
+        payload: [incoming],
+      });
+
+      expect(next.isGenerating).toBe(true);
+      expect(next.results).toEqual([existing, incoming]);
+    });
+  });
+
   // --- FINISH_GENERATING ---
   describe("FINISH_GENERATING", () => {
     it("sets results and stops generating", () => {

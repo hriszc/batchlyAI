@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // We only test the unifiedPoll function logic, not the fetch calls.
 // The key fix was moving `finished` array outside the for loop.
 import { unifiedPoll } from "../poll";
-import type { PromptCombination } from "../types";
+import type { GeneratedResult, PromptCombination } from "../types";
 
 const combo: PromptCombination = {
   variables: { var_0: "cat" },
@@ -45,11 +45,14 @@ describe("unifiedPoll", () => {
       });
     }) as unknown as typeof fetch;
 
+    const onResults = vi.fn();
     const results = await unifiedPoll(
       [{ predictionIds: ["id1", "id2", "id3"], modelType: "replicate", combination: combo }],
       undefined,
       undefined,
       1,
+      undefined,
+      onResults,
     );
 
     // Should have all 3 results, not just the last 2
@@ -58,6 +61,14 @@ describe("unifiedPoll", () => {
     expect(
       results.map((r) => r.imageUrl).sort((a, b) => String(a).localeCompare(String(b))),
     ).toEqual(["url1", "url2", "url3"]);
+    expect(onResults).toHaveBeenCalledTimes(2);
+    expect((onResults.mock.calls[0][0] as GeneratedResult[]).map((r) => r.imageUrl)).toEqual([
+      "url1",
+    ]);
+    expect((onResults.mock.calls[1][0] as GeneratedResult[]).map((r) => r.imageUrl)).toEqual([
+      "url2",
+      "url3",
+    ]);
   });
 
   it("returns all results when all succeed in first poll", async () => {
@@ -169,13 +180,13 @@ describe("unifiedPoll", () => {
 
     const results = await unifiedPoll(
       [{ predictionIds: ["id1"], modelType: "replicate", combination: combo }],
-      undefined,
+      3,
       undefined,
       1,
       onCreditsRemaining,
     );
 
-    expect(fetchMock).toHaveBeenCalledTimes(61);
+    expect(fetchMock).toHaveBeenCalledTimes(5);
     expect(fetchMock).toHaveBeenLastCalledWith(
       "/api/generate-status?ids=id1&type=replicate&timeout=1",
       { headers: undefined },

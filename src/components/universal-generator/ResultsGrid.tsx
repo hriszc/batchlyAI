@@ -45,12 +45,14 @@ function getResultStatusText(
   t: ReturnType<typeof useLanguage>["t"],
   totalExpected?: number,
 ) {
-  if (isGenerating) {
+  const complete = results.filter((r) => r.status === "complete").length;
+  const pending = isGenerating
+    ? Math.max(0, (totalExpected ?? results.length) - results.length)
+    : results.filter((r) => r.status === "pending" || r.status === "generating").length;
+  const failed = results.filter((r) => r.status === "error").length;
+  if (isGenerating && results.length === 0) {
     return totalExpected ? t("generatingCount", { count: totalExpected }) : t("generatingOutputs");
   }
-  const complete = results.filter((r) => r.status === "complete").length;
-  const pending = results.filter((r) => r.status === "pending" || r.status === "generating").length;
-  const failed = results.filter((r) => r.status === "error").length;
   const parts = [];
   if (complete > 0) parts.push(t("readyCount", { count: complete }));
   if (pending > 0) parts.push(t("workingCount", { count: pending }));
@@ -124,6 +126,9 @@ export function ResultsGrid({
     (r) => r.status === "complete" && (r.imageUrl || r.textContent),
   ).length;
   const showActions = !isGenerating && results.length > 0;
+  const skeletonCount = isGenerating
+    ? Math.min(6, Math.max(0, (totalExpected ?? 6) - results.length))
+    : 0;
 
   return (
     <div className="mt-8">
@@ -189,11 +194,12 @@ export function ResultsGrid({
       )}
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {isGenerating
-          ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
-          : displayResults.map((result) => (
-              <ResultCard key={result.id} result={result} showWatermark={showWatermark} />
-            ))}
+        {displayResults.map((result) => (
+          <ResultCard key={result.id} result={result} showWatermark={showWatermark} />
+        ))}
+        {Array.from({ length: skeletonCount }).map((_, i) => (
+          <SkeletonCard key={`pending-${i}`} />
+        ))}
       </div>
 
       {showActions && (

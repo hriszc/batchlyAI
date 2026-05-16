@@ -285,7 +285,11 @@ if [[ "$SMOKE_RUN_GENERATION" == "1" ]]; then
     GENERATE_BODY="{\"prompt\":\"$PROMPT\",\"promptTemplate\":\"$PROMPT\",\"variableGroups\":[],\"aspectRatio\":\"1:1\",\"n\":$SMOKE_GENERATION_COUNT,\"model\":\"$SMOKE_GENERATION_MODEL\"}"
     request POST "/api/generate" "$GENERATE_BODY" 1 30
     if ! expect_status 200; then
-      red "generation create failed: status=$LAST_STATUS body=$LAST_BODY"
+      if [[ "$LAST_STATUS" == "402" ]] && echo "$LAST_BODY" | grep -q 'Insufficient credits'; then
+        yellow "real generation check skipped because smoke account has insufficient credits"
+      else
+        red "generation create failed: status=$LAST_STATUS body=$LAST_BODY"
+      fi
     elif json_check "$LAST_BODY" 'Array.isArray(data.urls) && data.urls.length > 0' 2>/dev/null; then
       FIRST_URL="$(json_value "$LAST_BODY" 'data.urls[0]')"
       green "generation returned sync URLs"
