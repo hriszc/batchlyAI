@@ -155,13 +155,17 @@ describe("GeneratorCard", () => {
 
   it("uploads selected attachment from the attach control", async () => {
     const uploadFile = vi.fn();
-    renderWithProviders(
+    const { container } = renderWithProviders(
       <GeneratorCard state={baseState} actions={{ ...mockActions, uploadFile }} />,
     );
+    const input = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const label = container.querySelector(`label[for="${input.id}"]`);
 
     const file = new File(["image"], "reference.png", { type: "image/png" });
-    await userEvent.upload(screen.getByLabelText("Attach"), file);
+    await userEvent.upload(input, file);
 
+    expect(input).not.toHaveAttribute("accept");
+    expect(label).toBeInTheDocument();
     expect(uploadFile).toHaveBeenCalledWith(file);
   });
 

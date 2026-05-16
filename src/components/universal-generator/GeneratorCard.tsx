@@ -5,7 +5,7 @@ import {
   Undo2Icon,
   ShoppingCartIcon,
 } from "lucide-react";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useId, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 
 import { calculateGenerationCredits } from "@/lib/generator-credits";
@@ -57,6 +57,7 @@ export function GeneratorCard({
 }: GeneratorCardProps) {
   const [showVariables, setShowVariables] = useState(false);
   const [buyLoading, setBuyLoading] = useState(false);
+  const attachInputId = useId();
   const { t } = useLanguage();
   const insufficientCreditsMessage = t("insufficientCreditsTitle");
 
@@ -292,21 +293,22 @@ export function GeneratorCard({
               <WandSparklesIcon className="h-4 w-4 text-muted-foreground" />
             </button>
           )}
+          <input
+            id={attachInputId}
+            type="file"
+            className="peer sr-only"
+            aria-label={t("attach")}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) actions.uploadFile(file);
+              e.target.value = "";
+            }}
+          />
           <label
-            className="relative flex h-9 w-9 cursor-pointer items-center justify-center overflow-hidden rounded-lg border bg-muted/30 transition-colors focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 hover:bg-muted"
+            htmlFor={attachInputId}
+            className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border bg-muted/30 transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 hover:bg-muted"
             title={t("attach")}
           >
-            <input
-              type="file"
-              className="absolute inset-0 cursor-pointer opacity-0"
-              aria-label={t("attach")}
-              accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml,image/bmp,image/tiff"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) actions.uploadFile(file);
-                e.target.value = "";
-              }}
-            />
             <PaperclipIcon className="h-4 w-4 text-muted-foreground" />
           </label>
         </div>
