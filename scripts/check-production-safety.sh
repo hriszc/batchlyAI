@@ -18,6 +18,14 @@ else
   exit 1
 fi
 
+# 2b: Google One Tap needs a public client id in the client bundle
+if grep -q '^VITE_GOOGLE_CLIENT_ID=' .env.production && grep -q 'VITE_GOOGLE_CLIENT_ID' wrangler.toml; then
+  echo "✅ Google One Tap client id configured"
+else
+  echo "❌ VITE_GOOGLE_CLIENT_ID missing — Google One Tap will not initialize"
+  exit 1
+fi
+
 # 3: requireEmailVerification needs real email OR be disabled
 if grep -q 'requireEmailVerification: true' src/lib/auth/auth.ts; then
   if grep -q 'console.log.*rification email\|console.log.*Reset email' src/lib/auth/auth.ts; then
