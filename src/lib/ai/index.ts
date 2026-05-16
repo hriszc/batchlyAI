@@ -22,6 +22,10 @@ const DEEPSEEK_HOST = `${AI_GATEWAY}/deepseek/v1/chat/completions`;
 const REPLICATE_API_BASE = `${AI_GATEWAY}/replicate`;
 const DRAW_API_HOST = `${AI_GATEWAY}/custom-grsai/v1/draw/completions`;
 const DRAW_RESULT_HOST = `${AI_GATEWAY}/custom-grsai/v1/draw/result`;
+const GRS_NO_CACHE_HEADERS = {
+  "cf-aig-skip-cache": "true",
+  "cf-skip-cache": "true",
+};
 
 /**
  * Try gateway first; fall back to direct API on any failure.
@@ -206,6 +210,7 @@ export async function createGrsaiPredictions({
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...GRS_NO_CACHE_HEADERS,
       ...(env.GRSAI_API_KEY ? { Authorization: `Bearer ${env.GRSAI_API_KEY}` } : {}),
     },
     body: JSON.stringify({
@@ -232,6 +237,7 @@ export async function pollGrsaiResult(id: string): Promise<GrsaiPollResult> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...GRS_NO_CACHE_HEADERS,
         ...(env.GRSAI_API_KEY ? { Authorization: `Bearer ${env.GRSAI_API_KEY}` } : {}),
       },
       body: JSON.stringify({ id }),

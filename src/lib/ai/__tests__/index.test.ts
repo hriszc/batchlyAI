@@ -44,6 +44,8 @@ describe("createGrsaiPredictions", () => {
     expect(mockFetch).toHaveBeenCalledTimes(2);
     const body = JSON.parse(mockFetch.mock.calls[0][1].body);
     expect(body.aspectRatio).toBe("1774x887");
+    expect(mockFetch.mock.calls[0][1].headers["cf-aig-skip-cache"]).toBe("true");
+    expect(mockFetch.mock.calls[0][1].headers["cf-skip-cache"]).toBe("true");
   });
 
   it("throws on GRS API error (non-ok response)", async () => {
@@ -258,6 +260,8 @@ describe("pollGrsaiResult", () => {
     const result = await pollGrsaiResult("grs-result");
 
     expect(mockFetch.mock.calls[0][0]).toContain("/custom-grsai/v1/draw/result");
+    expect(mockFetch.mock.calls[0][1].headers["cf-aig-skip-cache"]).toBe("true");
+    expect(mockFetch.mock.calls[0][1].headers["cf-skip-cache"]).toBe("true");
     expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toEqual({ id: "grs-result" });
     expect(result).toEqual({
       status: "succeeded",
