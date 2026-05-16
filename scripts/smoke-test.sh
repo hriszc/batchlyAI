@@ -136,27 +136,27 @@ else
 fi
 
 request GET "/" "" 0 10
-if expect_status 200 && echo "$LAST_BODY" | head -1 | grep -q '<!DOCTYPE html>'; then
+if expect_status 200 && [[ "$LAST_BODY" == '<!DOCTYPE html>'* ]]; then
   green "homepage returns HTML document"
 else
   red "homepage failed: status=$LAST_STATUS"
 fi
 
-if echo "$LAST_BODY" | grep -q 'BatchlyAI'; then
+if grep -q 'BatchlyAI' <<< "$LAST_BODY"; then
   green "homepage contains BatchlyAI"
 else
   yellow "homepage missing BatchlyAI text"
 fi
 
 request GET "/robots.txt" "" 0 10
-if expect_status 200 && echo "$LAST_BODY" | grep -qi 'User-agent'; then
+if expect_status 200 && grep -qi 'User-agent' <<< "$LAST_BODY"; then
   green "robots.txt available"
 else
   red "robots.txt failed: status=$LAST_STATUS body=$LAST_BODY"
 fi
 
 request GET "/sitemap.xml" "" 0 10
-if expect_status 200 && echo "$LAST_BODY" | grep -q '<urlset'; then
+if expect_status 200 && grep -q '<urlset' <<< "$LAST_BODY"; then
   green "sitemap.xml available"
 else
   red "sitemap.xml failed: status=$LAST_STATUS body=$LAST_BODY"
@@ -193,7 +193,7 @@ if [[ "$AUTH_OK" == "1" ]]; then
   request GET "/api/diag/email" "" 1 30
   if expect_status 200 && expect_json 'data.ok === true' 2>/dev/null; then
     green "email diagnostic endpoint returned ok"
-  elif expect_status 200 && echo "$LAST_BODY" | grep -q '<!DOCTYPE html>'; then
+  elif expect_status 200 && grep -q '<!DOCTYPE html>' <<< "$LAST_BODY"; then
     yellow "email diagnostic route returned HTML fallback"
   else
     red "email diagnostic failed: status=$LAST_STATUS body=$LAST_BODY"
@@ -210,7 +210,7 @@ SIGNUP_OK=0
 if expect_status 200 && expect_json 'typeof data.token === "string" && data.user && data.user.email'; then
   SIGNUP_OK=1
   green "sign-up API creates user and returns token"
-elif expect_status 403 && echo "$LAST_BODY" | grep -qi 'Human verification required'; then
+elif expect_status 403 && grep -qi 'Human verification required' <<< "$LAST_BODY"; then
   yellow "sign-up flow skipped because human verification is required"
 else
   red "sign-up API failed: status=$LAST_STATUS body=$LAST_BODY"
@@ -229,7 +229,7 @@ fi
 if [[ "$SIGNUP_OK" == "1" ]]; then
   UNVERIFIED_BODY="{\"email\":\"$SMOKE_SIGNUP_EMAIL\",\"password\":\"$SMOKE_SIGNUP_PASSWORD\"}"
   request POST "/api/auth/sign-in/email" "$UNVERIFIED_BODY" 0 20
-  if [[ "$LAST_STATUS" =~ ^(400|401|403)$ ]] || echo "$LAST_BODY" | grep -qE 'Email not verified|EMAIL_NOT_VERIFIED'; then
+  if [[ "$LAST_STATUS" =~ ^(400|401|403)$ ]] || grep -qE 'Email not verified|EMAIL_NOT_VERIFIED' <<< "$LAST_BODY"; then
     green "unverified account is blocked"
   else
     red "unverified account was not blocked as expected: status=$LAST_STATUS body=$LAST_BODY"
@@ -239,7 +239,7 @@ else
 fi
 
 request POST "/api/auth/sign-in/email" '{"email":"fake@no.com","password":"wrong"}' 0 15
-if [[ "$LAST_STATUS" =~ ^(400|401|403)$ ]] || echo "$LAST_BODY" | grep -qE 'error|Invalid|Unauthorized'; then
+if [[ "$LAST_STATUS" =~ ^(400|401|403)$ ]] || grep -qE 'error|Invalid|Unauthorized' <<< "$LAST_BODY"; then
   green "invalid credentials are rejected"
 else
   red "invalid credentials unexpected response: status=$LAST_STATUS body=$LAST_BODY"
@@ -248,7 +248,7 @@ fi
 # Authenticated low-side-effect reads
 if [[ "$AUTH_OK" == "1" ]]; then
   request GET "/api/auth/get-session" "" 1 15
-  if expect_status 200 && echo "$LAST_BODY" | grep -q "$SMOKE_AUTH_EMAIL"; then
+  if expect_status 200 && grep -q "$SMOKE_AUTH_EMAIL" <<< "$LAST_BODY"; then
     green "authenticated session endpoint returns smoke user"
   else
     red "authenticated session check failed: status=$LAST_STATUS body=$LAST_BODY"
@@ -285,7 +285,7 @@ if [[ "$SMOKE_RUN_GENERATION" == "1" ]]; then
     GENERATE_BODY="{\"prompt\":\"$PROMPT\",\"promptTemplate\":\"$PROMPT\",\"variableGroups\":[],\"aspectRatio\":\"1:1\",\"n\":$SMOKE_GENERATION_COUNT,\"model\":\"$SMOKE_GENERATION_MODEL\"}"
     request POST "/api/generate" "$GENERATE_BODY" 1 30
     if ! expect_status 200; then
-      if [[ "$LAST_STATUS" == "402" ]] && echo "$LAST_BODY" | grep -q 'Insufficient credits'; then
+      if [[ "$LAST_STATUS" == "402" ]] && grep -q 'Insufficient credits' <<< "$LAST_BODY"; then
         yellow "real generation check skipped because smoke account has insufficient credits"
       else
         red "generation create failed: status=$LAST_STATUS body=$LAST_BODY"
