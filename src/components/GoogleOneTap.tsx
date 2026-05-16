@@ -42,54 +42,75 @@ export function GoogleOneTap() {
   const router = useRouter();
 
   useEffect(() => {
+    let cancelled = false;
+    const scriptId = "google-gsi-script";
+
     // Only show One-Tap for unauthenticated users
     if (session?.user) return;
 
-    // Only if Google OAuth is configured
-    const clientId = env.VITE_GOOGLE_CLIENT_ID;
-    if (!clientId) return;
+    async function getGoogleClientId(): Promise<string> {
+      if (env.VITE_GOOGLE_CLIENT_ID) return env.VITE_GOOGLE_CLIENT_ID;
 
-    const scriptId = "google-gsi-script";
-    if (document.getElementById(scriptId)) return;
+      try {
+        const resp = await fetch("/api/auth/google-one-tap-config", {
+          method: "GET",
+          headers: { Accept: "application/json" },
+          credentials: "same-origin",
+        });
+        if (!resp.ok) return "";
+        const data = (await resp.json()) as { clientId?: unknown };
+        return typeof data.clientId === "string" ? data.clientId : "";
+      } catch {
+        return "";
+      }
+    }
 
-    const script = document.createElement("script");
-    script.id = scriptId;
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
+    void getGoogleClientId().then((clientId) => {
+      // Only if Google OAuth is configured
+      if (cancelled || !clientId) return;
 
-    script.onload = () => {
-      if (!window.google?.accounts?.id) return;
+      if (document.getElementById(scriptId)) return;
 
-      window.google.accounts.id.initialize({
-        client_id: clientId as string,
-        callback: async (response: { credential: string }) => {
-          try {
-            const resp = await fetch("/api/auth/google-one-tap", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ credential: response.credential }),
-            });
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
 
-            if (resp.ok) {
-              // Reload to refresh session state
-              void router.invalidate();
+      script.onload = () => {
+        if (cancelled || !window.google?.accounts?.id) return;
+
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: async (response: { credential: string }) => {
+            try {
+              const resp = await fetch("/api/auth/google-one-tap", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ credential: response.credential }),
+              });
+
+              if (resp.ok) {
+                // Reload to refresh session state
+                void router.invalidate();
+              }
+            } catch {
+              // Silently fail — user can try again
             }
-          } catch {
-            // Silently fail — user can try again
-          }
-        },
-        auto_select: false,
-        cancel_on_tap_outside: true,
-        context: "signin",
-      });
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+          context: "signin",
+        });
 
-      window.google.accounts.id.prompt();
-    };
+        window.google.accounts.id.prompt();
+      };
 
-    document.head.appendChild(script);
+      document.head.appendChild(script);
+    });
 
     return () => {
+      cancelled = true;
       const el = document.getElementById(scriptId);
       if (el) el.remove();
       window.google?.accounts?.id?.cancel();

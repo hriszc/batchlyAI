@@ -58,6 +58,7 @@ import { Route as ApiReferralGenerateCodeRouteImport } from './routes/api/referr
 import { Route as ApiGenerationFilesSplatRouteImport } from './routes/api/generation-files/$'
 import { Route as ApiFilesSplatRouteImport } from './routes/api/files/$'
 import { Route as ApiDiagEmailRouteImport } from './routes/api/diag/email'
+import { Route as ApiAuthGoogleOneTapConfigRouteImport } from './routes/api/auth/google-one-tap-config'
 import { Route as ApiAuthGoogleOneTapRouteImport } from './routes/api/auth/google-one-tap'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
@@ -306,6 +307,12 @@ const ApiDiagEmailRoute = ApiDiagEmailRouteImport.update({
   path: '/api/diag/email',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthGoogleOneTapConfigRoute =
+  ApiAuthGoogleOneTapConfigRouteImport.update({
+    id: '/api/auth/google-one-tap-config',
+    path: '/api/auth/google-one-tap-config',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiAuthGoogleOneTapRoute = ApiAuthGoogleOneTapRouteImport.update({
   id: '/api/auth/google-one-tap',
   path: '/api/auth/google-one-tap',
@@ -357,6 +364,7 @@ export interface FileRoutesByFullPath {
   '/templates/': typeof TemplatesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/google-one-tap': typeof ApiAuthGoogleOneTapRoute
+  '/api/auth/google-one-tap-config': typeof ApiAuthGoogleOneTapConfigRoute
   '/api/diag/email': typeof ApiDiagEmailRoute
   '/api/files/$': typeof ApiFilesSplatRoute
   '/api/generation-files/$': typeof ApiGenerationFilesSplatRoute
@@ -409,6 +417,7 @@ export interface FileRoutesByTo {
   '/templates': typeof TemplatesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/google-one-tap': typeof ApiAuthGoogleOneTapRoute
+  '/api/auth/google-one-tap-config': typeof ApiAuthGoogleOneTapConfigRoute
   '/api/diag/email': typeof ApiDiagEmailRoute
   '/api/files/$': typeof ApiFilesSplatRoute
   '/api/generation-files/$': typeof ApiGenerationFilesSplatRoute
@@ -463,6 +472,7 @@ export interface FileRoutesById {
   '/templates/': typeof TemplatesIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/auth/google-one-tap': typeof ApiAuthGoogleOneTapRoute
+  '/api/auth/google-one-tap-config': typeof ApiAuthGoogleOneTapConfigRoute
   '/api/diag/email': typeof ApiDiagEmailRoute
   '/api/files/$': typeof ApiFilesSplatRoute
   '/api/generation-files/$': typeof ApiGenerationFilesSplatRoute
@@ -517,6 +527,7 @@ export interface FileRouteTypes {
     | '/templates/'
     | '/api/auth/$'
     | '/api/auth/google-one-tap'
+    | '/api/auth/google-one-tap-config'
     | '/api/diag/email'
     | '/api/files/$'
     | '/api/generation-files/$'
@@ -569,6 +580,7 @@ export interface FileRouteTypes {
     | '/templates'
     | '/api/auth/$'
     | '/api/auth/google-one-tap'
+    | '/api/auth/google-one-tap-config'
     | '/api/diag/email'
     | '/api/files/$'
     | '/api/generation-files/$'
@@ -622,6 +634,7 @@ export interface FileRouteTypes {
     | '/templates/'
     | '/api/auth/$'
     | '/api/auth/google-one-tap'
+    | '/api/auth/google-one-tap-config'
     | '/api/diag/email'
     | '/api/files/$'
     | '/api/generation-files/$'
@@ -672,6 +685,7 @@ export interface RootRouteChildren {
   TemplatesIndexRoute: typeof TemplatesIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAuthGoogleOneTapRoute: typeof ApiAuthGoogleOneTapRoute
+  ApiAuthGoogleOneTapConfigRoute: typeof ApiAuthGoogleOneTapConfigRoute
   ApiDiagEmailRoute: typeof ApiDiagEmailRoute
   ApiFilesSplatRoute: typeof ApiFilesSplatRoute
   ApiGenerationFilesSplatRoute: typeof ApiGenerationFilesSplatRoute
@@ -1027,6 +1041,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDiagEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/google-one-tap-config': {
+      id: '/api/auth/google-one-tap-config'
+      path: '/api/auth/google-one-tap-config'
+      fullPath: '/api/auth/google-one-tap-config'
+      preLoaderRoute: typeof ApiAuthGoogleOneTapConfigRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/google-one-tap': {
       id: '/api/auth/google-one-tap'
       path: '/api/auth/google-one-tap'
@@ -1126,6 +1147,7 @@ const rootRouteChildren: RootRouteChildren = {
   TemplatesIndexRoute: TemplatesIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAuthGoogleOneTapRoute: ApiAuthGoogleOneTapRoute,
+  ApiAuthGoogleOneTapConfigRoute: ApiAuthGoogleOneTapConfigRoute,
   ApiDiagEmailRoute: ApiDiagEmailRoute,
   ApiFilesSplatRoute: ApiFilesSplatRoute,
   ApiGenerationFilesSplatRoute: ApiGenerationFilesSplatRoute,
