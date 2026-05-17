@@ -52,5 +52,5 @@ export const Route = createFileRoute("/")({
     links: [...hreflangLinks("/"), { rel: "canonical", href: "https://batchlyai.com/" }],
     scripts: meta.scripts,
   }),
-  component: () => <HomePage forceLanguage="en" />,
+  component: () => <HomePage forceLanguage="en" showTaaftBadge />,
 });

@@ -87,6 +87,16 @@ describe("HomePage", () => {
     expect(screen.getByText("Image Pro")).toBeInTheDocument();
   });
 
+  it("renders the TAAFT badge only when enabled by the root route", () => {
+    renderWithProviders(<HomePage showTaaftBadge />);
+    expect(screen.getByAltText("Featured on There's An AI For That")).toBeInTheDocument();
+  });
+
+  it("does not render the TAAFT badge by default", () => {
+    renderWithProviders(<HomePage forceLanguage="zh" />, { language: "zh" });
+    expect(screen.queryByAltText("Featured on There's An AI For That")).not.toBeInTheDocument();
+  });
+
   it("keeps the root homepage in English for Chinese browsers before redirect completes", () => {
     vi.stubGlobal("navigator", { language: "zh-CN" });
     renderWithProviders(<HomePage forceLanguage="en" />);
