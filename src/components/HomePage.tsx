@@ -463,6 +463,23 @@ export function HomePage({ forceLanguage }: HomePageProps) {
 
       <HomepageExample t={t} />
 
+      <section className="mx-auto flex max-w-[980px] justify-center px-4 pb-12">
+        <a
+          href="https://theresanaiforthat.com/ai/batchlyai/?ref=featured&v=8086392"
+          target="_blank"
+          rel="nofollow"
+        >
+          <img
+            width="300"
+            height="100"
+            src="https://media.theresanaiforthat.com/featured-on-taaft.png?width=600"
+            alt="Featured on There's An AI For That"
+            loading="lazy"
+            decoding="async"
+          />
+        </a>
+      </section>
+
       <section className="mx-auto max-w-[980px] px-4 pb-16">
         <FaqSection
           title={t("homepageFaqTitle")}
