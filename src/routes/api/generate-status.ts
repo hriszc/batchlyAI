@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { eq, sql } from "drizzle-orm";
 
 import { pollGrsaiResult, pollReplicatePrediction } from "@/lib/ai";
+import { CONTENT_SAFETY_BLOCK_MESSAGE, filterSafeImageUrls } from "@/lib/ai/nsfw";
 import { jsonResponse } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getD1Binding, getKvBinding } from "@/lib/cloudflare/bindings";
@@ -220,17 +221,36 @@ async function pollAndPersistGrsResult(
 ): Promise<StatusResult> {
   const pollResult = await pollGrsaiResult(predictionId);
   if (pollResult.status === "succeeded" && pollResult.urls?.length) {
+    const { safeUrls, blockedUrls } = await filterSafeImageUrls(pollResult.urls);
+    if (blockedUrls.length > 0 && safeUrls.length === 0) {
+      await kv.put(
+        `grs:${predictionId}`,
+        JSON.stringify({
+          ...taskData,
+          status: "failed",
+          urls: undefined,
+          error: CONTENT_SAFETY_BLOCK_MESSAGE,
+        }),
+        { expirationTtl: 3600 },
+      );
+      return {
+        id: predictionId,
+        status: "failed",
+        urls: null,
+        error: CONTENT_SAFETY_BLOCK_MESSAGE,
+      };
+    }
     await kv.put(
       `grs:${predictionId}`,
       JSON.stringify({
         ...taskData,
         status: "succeeded",
-        urls: pollResult.urls,
+        urls: safeUrls,
         error: undefined,
       }),
       { expirationTtl: 3600 },
     );
-    return { id: predictionId, status: "succeeded", urls: pollResult.urls, error: null };
+    return { id: predictionId, status: "succeeded", urls: safeUrls, error: null };
   }
 
   if (pollResult.status === "failed" || pollResult.status === "error") {
@@ -366,8 +386,22 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
               return { id, status: "error", urls: null, error: "Not found" };
             }
             if (data.status === "succeeded" && data.urls?.length) {
-              scheduleMirrorTask(() => tryUpdateGeneration(kv, id, data.urls!));
-              return { id, status: "succeeded", urls: data.urls, error: null };
+              const { safeUrls, blockedUrls } = await filterSafeImageUrls(data.urls);
+              if (blockedUrls.length > 0 && safeUrls.length === 0) {
+                await kv.put(
+                  `grs:${id}`,
+                  JSON.stringify({
+                    ...data,
+                    status: "failed",
+                    urls: undefined,
+                    error: CONTENT_SAFETY_BLOCK_MESSAGE,
+                  }),
+                  { expirationTtl: 3600 },
+                );
+                return { id, status: "failed", urls: null, error: CONTENT_SAFETY_BLOCK_MESSAGE };
+              }
+              scheduleMirrorTask(() => tryUpdateGeneration(kv, id, safeUrls));
+              return { id, status: "succeeded", urls: safeUrls, error: null };
             }
             if (data.status === "succeeded") {
               return {
@@ -433,8 +467,19 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
     );
 
     // Update generation records for succeeded Replicate results
+    const moderatedResults = await Promise.all(
+      results.map(async (result) => {
+        if (result.status !== "succeeded" || !result.urls?.length) return result;
+        const { safeUrls, blockedUrls } = await filterSafeImageUrls(result.urls);
+        if (blockedUrls.length > 0 && safeUrls.length === 0) {
+          return { status: "failed", urls: null, error: CONTENT_SAFETY_BLOCK_MESSAGE };
+        }
+        return { ...result, urls: safeUrls };
+      }),
+    );
+
     if (kv) {
-      for (const [i, r] of results.entries()) {
+      for (const [i, r] of moderatedResults.entries()) {
         if (r.status === "succeeded" && r.urls?.length) {
           scheduleMirrorTask(() => tryUpdateGeneration(kv, ids[i], r.urls!));
         }
@@ -442,7 +487,7 @@ export async function handleGenerateStatus(request: Request): Promise<Response> 
     }
 
     await flushMirrorTasks();
-    const resultsWithIds = results.map((r, i) => ({ id: ids[i], ...r }));
+    const resultsWithIds = moderatedResults.map((r, i) => ({ id: ids[i], ...r }));
     const refundedResults = await attachRefundsToFailedResults(kv, resultsWithIds, userId);
     return jsonResponse({ results: refundedResults }, 200);
   } catch (err) {

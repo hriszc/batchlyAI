@@ -218,7 +218,8 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
           },
         });
       } else {
-        toast.error(t("publishFailed"), { id: publishToastId });
+        const errBody = (await resp.json().catch(() => ({}))) as { error?: string };
+        toast.error(errBody.error || t("publishFailed"), { id: publishToastId });
       }
     } catch {
       toast.error(t("publishFailed"), { id: publishToastId });

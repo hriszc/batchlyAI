@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, desc, eq, like, or, sql, type SQL } from "drizzle-orm";
 
+import { assertImageUrlsSafe, CONTENT_SAFETY_BLOCK_MESSAGE } from "@/lib/ai/nsfw";
 import { jsonResponse, requireValidOrigin } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getD1Binding } from "@/lib/cloudflare/bindings";
@@ -118,6 +119,18 @@ export async function handlePostTemplate(request: Request): Promise<Response> {
       { error: "Prompt template must contain at least one {{variable}} marker" },
       400,
     );
+  }
+  try {
+    await assertImageUrlsSafe([
+      ...(body.previewImageUrl ? [body.previewImageUrl] : []),
+      ...(body.coverUrl ? [body.coverUrl] : []),
+      ...(body.resultUrls ?? []),
+    ]);
+  } catch (err) {
+    if (err instanceof Error && err.message === CONTENT_SAFETY_BLOCK_MESSAGE) {
+      return jsonResponse({ error: CONTENT_SAFETY_BLOCK_MESSAGE }, 400);
+    }
+    throw err;
   }
 
   const binding = getD1Binding();

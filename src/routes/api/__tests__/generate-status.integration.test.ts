@@ -9,7 +9,17 @@ const mocks = vi.hoisted(() => {
   const mockPollReplicate = vi.fn();
   const mockPollGrsai = vi.fn();
   const mockMirrorImageToR2 = vi.fn((url: string) => Promise.resolve(url));
-  return { mockGetSession, mockPollReplicate, mockPollGrsai, mockMirrorImageToR2 };
+  const mockFilterSafeImageUrls = vi.fn(
+    (urls: string[]): Promise<{ safeUrls: string[]; blockedUrls: string[] }> =>
+      Promise.resolve({ safeUrls: urls, blockedUrls: [] }),
+  );
+  return {
+    mockGetSession,
+    mockPollReplicate,
+    mockPollGrsai,
+    mockMirrorImageToR2,
+    mockFilterSafeImageUrls,
+  };
 });
 
 vi.mock("@/lib/auth/auth", () => ({
@@ -31,10 +41,19 @@ vi.mock("@/lib/cloudflare/r2", () => ({
   mirrorImageToR2: mocks.mockMirrorImageToR2,
 }));
 
+vi.mock("@/lib/ai/nsfw", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/ai/nsfw")>();
+  return {
+    ...actual,
+    filterSafeImageUrls: mocks.mockFilterSafeImageUrls,
+  };
+});
+
 vi.mock("@/lib/db", () => ({
   getDb: (b: any) => b,
 }));
 
+import { CONTENT_SAFETY_BLOCK_MESSAGE } from "@/lib/ai/nsfw";
 import { generation } from "@/lib/db/schema/data-flywheel.schema";
 import { handleGenerateStatus } from "@/routes/api/generate-status";
 
@@ -64,6 +83,9 @@ describe("handleGenerateStatus", () => {
     vi.clearAllMocks();
     mocks.mockGetSession.mockResolvedValue({ user: { id: "u1" } });
     mocks.mockPollGrsai.mockResolvedValue({ status: "processing", urls: null, error: null });
+    mocks.mockFilterSafeImageUrls.mockImplementation((urls: string[]) =>
+      Promise.resolve({ safeUrls: urls, blockedUrls: [] }),
+    );
     delete (globalThis as Record<string, unknown>).__env__;
   });
 
@@ -145,6 +167,76 @@ describe("handleGenerateStatus", () => {
     };
     expect(body.results[0].status).toBe("succeeded");
     expect(body.results[0].urls).toEqual(["https://replicate.delivery/pbix/abc123/output-0.png"]);
+  });
+
+  it("returns failed and refunds when completed Replicate output is unsafe", async () => {
+    const db = createTestDb();
+    applyMigrations(db);
+    seedUser(db, { id: "u1", credits: 60 });
+
+    const genId = "gen-replicate-unsafe";
+    db.insert(generation)
+      .values({
+        id: genId,
+        userId: "u1",
+        promptTemplate: "test prompt",
+        resolvedPrompts: JSON.stringify(["test prompt"]),
+        variableGroups: JSON.stringify([]),
+        resultUrls: JSON.stringify([]),
+        model: "z-image-fast",
+        creditsUsed: 10,
+        createdAt: Math.floor(Date.now() / 1000),
+      })
+      .run();
+
+    const kvStore = new Map<string, string>();
+    kvStore.set(
+      "gen:pred-unsafe",
+      JSON.stringify({ generationId: genId, userId: "u1", creditsUsed: 10 }),
+    );
+    const mockKv = {
+      get: vi.fn((key: string) => Promise.resolve(kvStore.get(key) ?? null)),
+      put: vi.fn((key: string, value: string) => {
+        kvStore.set(key, value);
+        return Promise.resolve();
+      }),
+    };
+    (globalThis as Record<string, unknown>).__env__ = {
+      batchlyai_kv: mockKv,
+      batchlyai_db: db,
+    };
+
+    mocks.mockPollReplicate.mockResolvedValue({
+      id: "pred-unsafe",
+      status: "succeeded",
+      urls: ["https://replicate.delivery/unsafe.png"],
+      error: null,
+    });
+    mocks.mockFilterSafeImageUrls.mockResolvedValue({
+      safeUrls: [] as string[],
+      blockedUrls: ["https://replicate.delivery/unsafe.png"] as string[],
+    });
+
+    const resp = await handleGenerateStatus(makeRequest("ids=pred-unsafe&type=replicate"));
+
+    expect(resp.status).toBe(200);
+    const body = (await resp.json()) as {
+      results: { status: string; error: string; creditsRemaining?: number }[];
+    };
+    expect(body.results[0].status).toBe("failed");
+    expect(body.results[0].error).toBe(CONTENT_SAFETY_BLOCK_MESSAGE);
+    expect(body.results[0].creditsRemaining).toBe(70);
+    expect(
+      db.select({ credits: userTable.credits }).from(userTable).where(eq(userTable.id, "u1")).get()
+        ?.credits,
+    ).toBe(70);
+    const row = db
+      .select({ resultUrls: generation.resultUrls })
+      .from(generation)
+      .where(eq(generation.id, genId))
+      .get();
+    expect(JSON.parse(row!.resultUrls)).toEqual([]);
+    expect(mocks.mockMirrorImageToR2).not.toHaveBeenCalled();
   });
 
   it("polls multiple Replicate IDs and returns results for all", async () => {
@@ -570,6 +662,38 @@ describe("handleGenerateStatus", () => {
       "https://grs-cdn.com/output/image1.png",
       "https://grs-cdn.com/output/image2.png",
     ]);
+  });
+
+  it("returns failed when completed GRS webhook URLs are unsafe", async () => {
+    const kvStore = new Map<string, string>();
+    kvStore.set(
+      "grs:grs-unsafe",
+      JSON.stringify({
+        userId: "u1",
+        status: "succeeded",
+        urls: ["https://grs-cdn.com/output/unsafe.png"],
+      }),
+    );
+    const mockKv = {
+      get: vi.fn((key: string) => Promise.resolve(kvStore.get(key) ?? null)),
+      put: vi.fn((key: string, value: string) => {
+        kvStore.set(key, value);
+        return Promise.resolve();
+      }),
+    };
+    (globalThis as Record<string, unknown>).__env__ = { batchlyai_kv: mockKv };
+    mocks.mockFilterSafeImageUrls.mockResolvedValue({
+      safeUrls: [] as string[],
+      blockedUrls: ["https://grs-cdn.com/output/unsafe.png"] as string[],
+    });
+
+    const resp = await handleGenerateStatus(makeRequest("ids=grs-unsafe&type=grs"));
+
+    expect(resp.status).toBe(200);
+    const body = (await resp.json()) as { results: { status: string; error: string }[] };
+    expect(body.results[0].status).toBe("failed");
+    expect(body.results[0].error).toBe(CONTENT_SAFETY_BLOCK_MESSAGE);
+    expect(JSON.parse(kvStore.get("grs:grs-unsafe")!).status).toBe("failed");
   });
 
   it("returns failed with error when GRS webhook reports failure", async () => {

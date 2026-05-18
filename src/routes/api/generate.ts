@@ -7,6 +7,11 @@ import {
   generateTextFallback,
   generateVideoFallback,
 } from "@/lib/ai/fallback";
+import {
+  CONTENT_SAFETY_BLOCK_MESSAGE,
+  filterSafeImageUrls,
+  type NsfwDetector,
+} from "@/lib/ai/nsfw";
 import { jsonResponse, requireValidOrigin } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getCachedResult, setCachedResult } from "@/lib/cache/prompt-cache";
@@ -34,6 +39,7 @@ export interface GenerateContext {
   textFn?: typeof generateText;
   getCachedFn?: typeof getCachedResult;
   setCachedFn?: typeof setCachedResult;
+  nsfwDetectorFn?: NsfwDetector;
 }
 
 type AiProvider = "deepseek" | "replicate" | "grsai" | "workers-ai";
@@ -67,6 +73,7 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
     textFn = generateText,
     getCachedFn = getCachedResult,
     setCachedFn = setCachedResult,
+    nsfwDetectorFn,
   } = ctx;
 
   try {
@@ -91,6 +98,13 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
     const template = body.promptTemplate || body.prompt;
     const variableGroups = body.variableGroups || [];
 
+    if (body.attachedUrls?.length) {
+      const { blockedUrls } = await filterSafeImageUrls(body.attachedUrls, nsfwDetectorFn);
+      if (blockedUrls.length > 0) {
+        return jsonResponse({ error: CONTENT_SAFETY_BLOCK_MESSAGE }, 400);
+      }
+    }
+
     // Check prompt cache first
     const cachedUrls = await getCachedFn(
       body.prompt,
@@ -101,10 +115,11 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
       body.attachedUrls,
     );
     if (cachedUrls) {
-      return jsonResponse(
-        { urls: cachedUrls, creditsRemaining: null, cached: true, watermark },
-        200,
-      );
+      const { safeUrls } = await filterSafeImageUrls(cachedUrls, nsfwDetectorFn);
+      if (safeUrls.length === 0) {
+        return jsonResponse({ error: CONTENT_SAFETY_BLOCK_MESSAGE }, 400);
+      }
+      return jsonResponse({ urls: safeUrls, creditsRemaining: null, cached: true, watermark }, 200);
     }
 
     // Atomically check and deduct credits before generation
@@ -290,6 +305,31 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
         // Check for synchronous results (AIGATE returned images directly)
         const syncUrls = grsaiResults.flatMap((p) => p.urls ?? []);
         if (syncUrls.length > 0) {
+          const { safeUrls } = await filterSafeImageUrls(syncUrls, nsfwDetectorFn);
+          if (safeUrls.length === 0) {
+            const [refunded] = await db
+              .update(userTable)
+              .set({ credits: sql`${userTable.credits} + ${maxCost}` })
+              .where(eq(userTable.id, userId))
+              .returning({ credits: userTable.credits });
+            await auditAiSpend({
+              db,
+              userId,
+              credits: maxCost,
+              provider: "grsai",
+              model,
+              apiCallCount: grsaiResults.length,
+              status: "refunded",
+              metadata: { error: CONTENT_SAFETY_BLOCK_MESSAGE, sync: true },
+            });
+            return jsonResponse(
+              {
+                error: CONTENT_SAFETY_BLOCK_MESSAGE,
+                creditsRemaining: refunded?.credits ?? deducted.credits + maxCost,
+              },
+              400,
+            );
+          }
           await auditAiSpend({
             db,
             userId,
@@ -299,10 +339,10 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
             apiCallCount: grsaiResults.length,
             status: "succeeded",
             sourceId: grsaiResults.map((p) => p.id).join(","),
-            metadata: { sync: true, resultCount: syncUrls.length },
+            metadata: { sync: true, resultCount: safeUrls.length },
           });
           return jsonResponse(
-            { urls: syncUrls, creditsRemaining: deducted.credits, sync: true, watermark },
+            { urls: safeUrls, creditsRemaining: deducted.credits, sync: true, watermark },
             200,
           );
         }
@@ -368,6 +408,10 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
         } else {
           const fbResult = await generateImageFallback(body.prompt, body.aspectRatio || "1:1", n);
           if (fbResult.urls.length > 0) {
+            const { safeUrls } = await filterSafeImageUrls(fbResult.urls, nsfwDetectorFn);
+            if (safeUrls.length === 0) {
+              throw new Error(CONTENT_SAFETY_BLOCK_MESSAGE);
+            }
             await auditAiSpend({
               db,
               userId,
@@ -383,7 +427,7 @@ export async function handleGenerate(ctx: GenerateContext): Promise<Response> {
             });
             return jsonResponse(
               {
-                urls: fbResult.urls,
+                urls: safeUrls,
                 creditsRemaining: deducted.credits,
                 sync: true,
                 watermark: true,

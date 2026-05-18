@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { and, desc, eq, gte } from "drizzle-orm";
 
+import { assertImageUrlsSafe, CONTENT_SAFETY_BLOCK_MESSAGE } from "@/lib/ai/nsfw";
 import { jsonResponse, requireValidOrigin } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getD1Binding } from "@/lib/cloudflare/bindings";
@@ -109,6 +110,7 @@ export async function handlePostWork(request: Request): Promise<Response> {
     if (body.resultUrls && body.resultUrls.length > 20) {
       return jsonResponse({ error: "Too many result URLs" }, 400);
     }
+    await assertImageUrlsSafe([body.coverUrl, ...(body.resultUrls ?? [])]);
 
     const now = Math.floor(Date.now() / 1000);
     const id = crypto.randomUUID();
@@ -161,7 +163,10 @@ export async function handlePostWork(request: Request): Promise<Response> {
       },
       201,
     );
-  } catch {
+  } catch (err) {
+    if (err instanceof Error && err.message === CONTENT_SAFETY_BLOCK_MESSAGE) {
+      return jsonResponse({ error: CONTENT_SAFETY_BLOCK_MESSAGE }, 400);
+    }
     return jsonResponse({ error: "Failed to publish work" }, 500);
   }
 }

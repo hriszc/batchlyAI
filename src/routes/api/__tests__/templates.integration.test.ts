@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   mockCreateAuth: vi.fn(),
   mockGetSession: vi.fn(),
   mockGenerateExploreMetadata: vi.fn(),
+  mockAssertImageUrlsSafe: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock("@/lib/auth/auth", () => ({
@@ -22,6 +23,15 @@ vi.mock("@/lib/explore-metadata", () => ({
   generateExploreMetadata: mocks.mockGenerateExploreMetadata,
 }));
 
+vi.mock("@/lib/ai/nsfw", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/ai/nsfw")>();
+  return {
+    ...actual,
+    assertImageUrlsSafe: mocks.mockAssertImageUrlsSafe,
+  };
+});
+
+import { CONTENT_SAFETY_BLOCK_MESSAGE } from "@/lib/ai/nsfw";
 import { handlePostTemplate } from "@/routes/api/templates";
 
 function makePostReq(body: Record<string, unknown>): Request {
@@ -66,6 +76,7 @@ describe("handlePostTemplate", () => {
   beforeEach(() => {
     db = makeMockDb();
     vi.clearAllMocks();
+    mocks.mockAssertImageUrlsSafe.mockResolvedValue(undefined);
     mocks.mockCreateAuth.mockReturnValue({ api: { getSession: mocks.mockGetSession } });
     mocks.mockGetSession.mockResolvedValue({ user: { id: "u1" } });
     mocks.mockGenerateExploreMetadata.mockResolvedValue({
@@ -208,5 +219,23 @@ describe("handlePostTemplate", () => {
     expect(db.__state.insertedTemplate?.variableGroups).toBe(
       JSON.stringify([{ id: "var_0", values: ["product"] }]),
     );
+  });
+
+  it("rejects templates with unsafe preview or result images", async () => {
+    mocks.mockAssertImageUrlsSafe.mockRejectedValue(new Error(CONTENT_SAFETY_BLOCK_MESSAGE));
+
+    const resp = await handlePostTemplate(
+      makePostReq({
+        promptTemplate: "A {{product}} photo",
+        variableGroups: [{ id: "var_0", values: ["product"] }],
+        coverUrl: "https://temp.example.com/unsafe.png",
+        resultUrls: ["https://temp.example.com/unsafe.png"],
+      }),
+    );
+
+    expect(resp.status).toBe(400);
+    await expect(resp.json()).resolves.toEqual({ error: CONTENT_SAFETY_BLOCK_MESSAGE });
+    expect(mocks.mockGenerateExploreMetadata).not.toHaveBeenCalled();
+    expect(db.__state.insertedTemplate).toBeNull();
   });
 });
