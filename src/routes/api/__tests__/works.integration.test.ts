@@ -6,7 +6,13 @@ const mocks = vi.hoisted(() => {
     Promise.resolve(`/api/generation-files/${key}`),
   );
   const mockGenerateExploreMetadata = vi.fn();
-  return { mockGetSession, mockMirrorImageToR2, mockGenerateExploreMetadata };
+  const mockAssertImageUrlsSafe = vi.fn(() => Promise.resolve());
+  return {
+    mockGetSession,
+    mockMirrorImageToR2,
+    mockGenerateExploreMetadata,
+    mockAssertImageUrlsSafe,
+  };
 });
 
 vi.mock("@/lib/auth/auth", () => ({
@@ -23,10 +29,19 @@ vi.mock("@/lib/explore-metadata", () => ({
   generateExploreMetadata: mocks.mockGenerateExploreMetadata,
 }));
 
+vi.mock("@/lib/ai/nsfw", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/ai/nsfw")>();
+  return {
+    ...actual,
+    assertImageUrlsSafe: mocks.mockAssertImageUrlsSafe,
+  };
+});
+
 vi.mock("@/lib/db", () => ({
   getDb: (binding: unknown) => binding,
 }));
 
+import { CONTENT_SAFETY_BLOCK_MESSAGE } from "@/lib/ai/nsfw";
 import { handleGenerationFile } from "@/routes/api/generation-files/$";
 import { handlePostWork } from "@/routes/api/works";
 
@@ -74,6 +89,7 @@ describe("handlePostWork", () => {
   beforeEach(() => {
     db = makeMockDb();
     vi.clearAllMocks();
+    mocks.mockAssertImageUrlsSafe.mockResolvedValue(undefined);
     mocks.mockGetSession.mockResolvedValue({ user: { id: "u1" } });
     mocks.mockGenerateExploreMetadata.mockResolvedValue({
       name: "Studio Product Shot",
@@ -125,6 +141,25 @@ describe("handlePostWork", () => {
     expect(body.title).toBe("Studio Product Shot");
     expect(body.coverUrl).toContain("/api/generation-files/works/");
     expect(body.resultUrls).toHaveLength(2);
+  });
+
+  it("rejects publishing unsafe work images", async () => {
+    mocks.mockAssertImageUrlsSafe.mockRejectedValue(new Error(CONTENT_SAFETY_BLOCK_MESSAGE));
+
+    const resp = await handlePostWork(
+      makeJsonRequest("https://batchlyai.com/api/works", {
+        coverUrl: "https://temp.example.com/unsafe.png",
+        resultUrls: ["https://temp.example.com/unsafe.png"],
+        promptTemplate: "A {{cat}}",
+        variableGroups: "[]",
+        model: "z-image-fast",
+      }),
+    );
+
+    expect(resp.status).toBe(400);
+    await expect(resp.json()).resolves.toEqual({ error: CONTENT_SAFETY_BLOCK_MESSAGE });
+    expect(mocks.mockMirrorImageToR2).not.toHaveBeenCalled();
+    expect(db.__state.insertedWork).toBeNull();
   });
 });
 

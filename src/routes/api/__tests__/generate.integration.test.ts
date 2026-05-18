@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+import { CONTENT_SAFETY_BLOCK_MESSAGE } from "@/lib/ai/nsfw";
 import { user as userTable } from "@/lib/db/schema/auth.schema";
 import { creditAuditEvent } from "@/lib/db/schema/credit-audit.schema";
 import { generation, savedPrompt } from "@/lib/db/schema/data-flywheel.schema";
@@ -16,6 +17,10 @@ function makeRequest(body: Record<string, unknown>): Request {
 
 function makePrediction(id: string) {
   return { id, status: "processing" };
+}
+
+function makeSafeNsfwDetector() {
+  return vi.fn().mockResolvedValue({ isNsfw: false, label: "normal" });
 }
 
 function getCreditsForUser(db: ReturnType<typeof createTestDb>, userId: string): number {
@@ -117,6 +122,7 @@ describe("handleGenerate", () => {
   // --- Fast model (Replicate) ---
   it("z-image-fast uses replicate and returns async prediction IDs", async () => {
     const mockReplicate = vi.fn().mockResolvedValue([makePrediction("pred-001")]);
+    const mockDetector = makeSafeNsfwDetector();
 
     const resp = await handleGenerate({
       request: makeRequest({
@@ -128,6 +134,7 @@ describe("handleGenerate", () => {
       db,
       userId,
       replicateFn: mockReplicate,
+      nsfwDetectorFn: mockDetector,
     } as any);
     expect(resp.status).toBe(200);
     const body = (await resp.json()) as { predictionIds: string[]; async: boolean };
@@ -139,6 +146,29 @@ describe("handleGenerate", () => {
         urls: ["https://r2.example.com/uploads/ref.png"],
       }),
     );
+  });
+
+  it("blocks unsafe attached reference images before deducting credits", async () => {
+    const mockReplicate = vi.fn();
+    const mockDetector = vi.fn().mockResolvedValue({ isNsfw: true, label: "nsfw" });
+
+    const resp = await handleGenerate({
+      request: makeRequest({
+        prompt: "test",
+        n: 1,
+        model: "z-image-fast",
+        attachedUrls: ["https://r2.example.com/uploads/ref.png"],
+      }),
+      db,
+      userId,
+      replicateFn: mockReplicate,
+      nsfwDetectorFn: mockDetector,
+    } as any);
+
+    expect(resp.status).toBe(400);
+    await expect(resp.json()).resolves.toEqual({ error: CONTENT_SAFETY_BLOCK_MESSAGE });
+    expect(mockReplicate).not.toHaveBeenCalled();
+    expect(getCredits()).toBe(100);
   });
 
   it("records AI credit spend audit event", async () => {
@@ -186,6 +216,7 @@ describe("handleGenerate", () => {
   // --- Cache hit ---
   it("returns cached result without deducting credits", async () => {
     const mockGetCache = vi.fn().mockResolvedValue(["http://cached.com/1.png"]);
+    const mockDetector = makeSafeNsfwDetector();
 
     const resp = await handleGenerate({
       request: makeRequest({ prompt: "cached prompt", n: 1, model: "z-image-pro" }),
@@ -193,12 +224,31 @@ describe("handleGenerate", () => {
       userId,
       grsaiFn: vi.fn(),
       getCachedFn: mockGetCache,
+      nsfwDetectorFn: mockDetector,
     } as any);
     expect(resp.status).toBe(200);
     const body = (await resp.json()) as { cached: boolean; urls: string[] };
     expect(body.cached).toBe(true);
 
     // Credits should NOT be deducted for cache hits
+    expect(getCredits()).toBe(100);
+  });
+
+  it("blocks cached images when all cached URLs fail content safety", async () => {
+    const mockGetCache = vi.fn().mockResolvedValue(["http://cached.com/unsafe.png"]);
+    const mockDetector = vi.fn().mockResolvedValue({ isNsfw: true, label: "nsfw" });
+
+    const resp = await handleGenerate({
+      request: makeRequest({ prompt: "cached prompt", n: 1, model: "z-image-pro" }),
+      db,
+      userId,
+      grsaiFn: vi.fn(),
+      getCachedFn: mockGetCache,
+      nsfwDetectorFn: mockDetector,
+    } as any);
+
+    expect(resp.status).toBe(400);
+    await expect(resp.json()).resolves.toEqual({ error: CONTENT_SAFETY_BLOCK_MESSAGE });
     expect(getCredits()).toBe(100);
   });
 
@@ -228,6 +278,7 @@ describe("handleGenerate", () => {
   // --- Video model (Replicate) ---
   it("z-video-fast uses replicate and returns async prediction IDs", async () => {
     const mockReplicate = vi.fn().mockResolvedValue([makePrediction("vid-001")]);
+    const mockDetector = makeSafeNsfwDetector();
 
     const resp = await handleGenerate({
       request: makeRequest({
@@ -240,6 +291,7 @@ describe("handleGenerate", () => {
       db,
       userId,
       replicateFn: mockReplicate,
+      nsfwDetectorFn: mockDetector,
     } as any);
     expect(resp.status).toBe(200);
     const body = (await resp.json()) as { predictionIds: string[]; async: boolean };
@@ -482,6 +534,7 @@ describe("generate → poll status pipeline (simulated AI image return)", () => 
       "https://replicate.delivery/pbix/xyz/output-1.png",
     ];
     const mockGetCache = vi.fn().mockResolvedValue(cachedUrls);
+    const mockDetector = makeSafeNsfwDetector();
 
     const resp = await handleGenerate({
       request: makeRequest({ prompt: "cached sunset", n: 2, model: "z-image-pro" }),
@@ -489,6 +542,7 @@ describe("generate → poll status pipeline (simulated AI image return)", () => 
       userId,
       grsaiFn: vi.fn(),
       getCachedFn: mockGetCache,
+      nsfwDetectorFn: mockDetector,
     } as any);
 
     expect(resp.status).toBe(200);
@@ -542,15 +596,42 @@ describe("generate → poll status pipeline (simulated AI image return)", () => 
         urls: ["https://aigate.com/output/img.png"],
       },
     ]);
+    const mockDetector = makeSafeNsfwDetector();
 
     const resp = await handleGenerate({
       request: makeRequest({ prompt: "test", n: 1, model: "z-image-pro" }),
       db,
       userId,
       grsaiFn: mockGrsai,
+      nsfwDetectorFn: mockDetector,
     } as any);
     expect(resp.status).toBe(200);
     const body = (await resp.json()) as { urls: string[]; sync: boolean };
     expect(body.urls).toEqual(["https://aigate.com/output/img.png"]);
+  });
+
+  it("refunds credits when synchronous GRS output fails content safety", async () => {
+    const mockGrsai = vi.fn().mockResolvedValue([
+      {
+        id: "grs-sync-unsafe",
+        status: "succeeded" as const,
+        urls: ["https://aigate.com/output/unsafe.png"],
+      },
+    ]);
+    const mockDetector = vi.fn().mockResolvedValue({ isNsfw: true, label: "nsfw" });
+
+    const resp = await handleGenerate({
+      request: makeRequest({ prompt: "test", n: 1, model: "z-image-pro" }),
+      db,
+      userId,
+      grsaiFn: mockGrsai,
+      nsfwDetectorFn: mockDetector,
+    } as any);
+
+    expect(resp.status).toBe(400);
+    const body = (await resp.json()) as { error: string; creditsRemaining: number };
+    expect(body.error).toBe(CONTENT_SAFETY_BLOCK_MESSAGE);
+    expect(body.creditsRemaining).toBe(200);
+    expect(getCreditsForUser(db, userId)).toBe(200);
   });
 });
