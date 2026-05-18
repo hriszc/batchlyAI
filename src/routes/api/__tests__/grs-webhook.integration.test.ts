@@ -4,6 +4,22 @@ vi.mock("@/env/server", () => ({
   env: { GRS_WEBHOOK_SECRET: "test-secret" },
 }));
 
+const mocks = vi.hoisted(() => ({
+  mockFilterSafeImageUrls: vi.fn(
+    (urls: string[]): Promise<{ safeUrls: string[]; blockedUrls: string[] }> =>
+      Promise.resolve({ safeUrls: urls, blockedUrls: [] }),
+  ),
+}));
+
+vi.mock("@/lib/ai/nsfw", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/ai/nsfw")>();
+  return {
+    ...actual,
+    filterSafeImageUrls: mocks.mockFilterSafeImageUrls,
+  };
+});
+
+import { CONTENT_SAFETY_BLOCK_MESSAGE } from "@/lib/ai/nsfw";
 import { handleGrsWebhook } from "@/routes/api/grs-webhook";
 
 async function signBody(body: string, secret: string): Promise<string> {
@@ -43,6 +59,9 @@ describe("handleGrsWebhook", () => {
       get: vi.fn(),
       put: vi.fn().mockResolvedValue(undefined),
     };
+    mocks.mockFilterSafeImageUrls.mockImplementation((urls: string[]) =>
+      Promise.resolve({ safeUrls: urls, blockedUrls: [] }),
+    );
     (globalThis as Record<string, unknown>).__env__ = { batchlyai_kv: mockKv };
   });
 
@@ -163,6 +182,37 @@ describe("handleGrsWebhook", () => {
     const putValue = JSON.parse(mockKv.put.mock.calls[0][1] as string);
     expect(putValue.status).toBe("failed");
     expect(putValue.error).toBe("NSFW content filtered");
+  });
+
+  it("stores failed status when succeeded webhook output fails content safety", async () => {
+    mockKv.get.mockResolvedValue(
+      JSON.stringify({
+        userId: "u1",
+        status: "processing",
+        prompt: "test",
+        createdAt: Date.now(),
+      }),
+    );
+    mocks.mockFilterSafeImageUrls.mockResolvedValue({
+      safeUrls: [] as string[],
+      blockedUrls: ["https://grs-cdn.com/output/unsafe.png"] as string[],
+    });
+
+    const resp = await handleGrsWebhook(
+      await makeRequest({
+        body: {
+          id: "grs-task-unsafe",
+          status: "succeeded",
+          results: [{ url: "https://grs-cdn.com/output/unsafe.png" }],
+        },
+      }),
+    );
+
+    expect(resp.status).toBe(200);
+    const putValue = JSON.parse(mockKv.put.mock.calls[0][1] as string);
+    expect(putValue.status).toBe("failed");
+    expect(putValue.urls).toBeUndefined();
+    expect(putValue.error).toBe(CONTENT_SAFETY_BLOCK_MESSAGE);
   });
 
   it("preserves userId and prompt in updated KV entry", async () => {

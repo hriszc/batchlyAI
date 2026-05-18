@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { eq } from "drizzle-orm";
 
 import { env } from "@/env/server";
+import { CONTENT_SAFETY_BLOCK_MESSAGE, filterSafeImageUrls } from "@/lib/ai/nsfw";
 import { jsonResponse } from "@/lib/api-helpers";
 import { getD1Binding, getKvBinding } from "@/lib/cloudflare/bindings";
 import { mirrorImageToR2 } from "@/lib/cloudflare/r2";
@@ -118,8 +119,17 @@ export async function handleGrsWebhook(request: Request): Promise<Response> {
 
     const urls = extractImageUrls(body);
     if (body.status === "succeeded" && urls.length > 0) {
+      const { safeUrls, blockedUrls } = await filterSafeImageUrls(urls);
+      if (blockedUrls.length > 0 && safeUrls.length === 0) {
+        taskData.status = "failed";
+        (taskData as Record<string, unknown>).urls = undefined;
+        (taskData as Record<string, unknown>).error = CONTENT_SAFETY_BLOCK_MESSAGE;
+        await kv.put(`grs:${taskId}`, JSON.stringify(taskData), { expirationTtl: 3600 });
+        return jsonResponse({ received: true }, 200);
+      }
+
       taskData.status = "succeeded";
-      (taskData as Record<string, unknown>).urls = urls;
+      (taskData as Record<string, unknown>).urls = safeUrls;
 
       // Mirror images to R2 and update generation record
       try {
@@ -133,7 +143,7 @@ export async function handleGrsWebhook(request: Request): Promise<Response> {
             console.warn("[grs-webhook] D1 binding not available");
           } else {
             const r2Urls = await Promise.all(
-              urls.map((url, i) =>
+              safeUrls.map((url, i) =>
                 mirrorImageToR2(
                   url,
                   `generations/${genData.userId}/${genData.generationId}/${safePathSegment(taskId)}-${i}.png`,
