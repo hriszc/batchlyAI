@@ -10,6 +10,12 @@ vi.mock("@/lib/auth/auth", () => ({
 }));
 
 vi.mock("@/lib/ai", () => ({
+  parseExpandedValues: (text: string) =>
+    text
+      .replace(/[，、；;|\n\r]+/g, ",")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
   runExpandLLM: mocks.mockRunExpandLLM,
 }));
 
