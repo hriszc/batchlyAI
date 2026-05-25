@@ -89,12 +89,14 @@ describe("HomePage", () => {
     expect(screen.getByText("Image Pro")).toBeInTheDocument();
   });
 
-  it("shows the onboarding booklet to signed-out visitors and fills the example prompt", async () => {
+  it("shows a persistent guide button and expands the onboarding booklet", async () => {
     renderWithProviders(<HomePage />);
 
-    await waitFor(() => {
-      expect(screen.getByText("Start with one image")).toBeInTheDocument();
-    });
+    expect(screen.getByRole("button", { name: "Guide" })).toBeInTheDocument();
+    expect(screen.queryByText("Start with one image")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Guide" }));
+    expect(screen.getByText("Start with one image")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Next" }));
     expect(screen.getByText("Let AI write the list")).toBeInTheDocument();
@@ -114,21 +116,21 @@ describe("HomePage", () => {
 
     renderWithProviders(<HomePage />);
 
-    await waitFor(() => {
-      expect(screen.getByText("Start with one image")).toBeInTheDocument();
-    });
+    fireEvent.click(screen.getByRole("button", { name: "Guide" }));
+    expect(screen.getByText("Start with one image")).toBeInTheDocument();
   });
 
-  it("places the onboarding booklet before the generator on a fresh visit", async () => {
+  it("places the guide controls below the generator on a fresh visit", async () => {
     renderWithProviders(<HomePage />);
 
-    await waitFor(() => {
-      expect(screen.getByText("Start with one image")).toBeInTheDocument();
-    });
+    const generator = screen.getByPlaceholderText(/Describe your image/);
+    const guideButton = screen.getByRole("button", { name: "Guide" });
+    expect(generator.compareDocumentPosition(guideButton)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+
+    fireEvent.click(guideButton);
 
     const onboarding = screen.getByLabelText("Quick start");
-    const generator = screen.getByPlaceholderText(/Describe your image/);
-    expect(onboarding.compareDocumentPosition(generator)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(generator.compareDocumentPosition(onboarding)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
   it("renders the TAAFT badge only when enabled by the root route", () => {
