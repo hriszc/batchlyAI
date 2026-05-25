@@ -59,11 +59,13 @@ describe("shouldRedirectToCn", () => {
 describe("HomePage", () => {
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     mockUseSession.mockReturnValue({ data: null, isPending: false });
     vi.restoreAllMocks();
   });
 
   afterEach(() => {
+    sessionStorage.clear();
     vi.unstubAllGlobals();
     window.history.replaceState({}, "", "/");
   });
