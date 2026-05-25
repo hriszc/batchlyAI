@@ -119,6 +119,18 @@ describe("HomePage", () => {
     });
   });
 
+  it("places the onboarding booklet before the generator on a fresh visit", async () => {
+    renderWithProviders(<HomePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Start with one image")).toBeInTheDocument();
+    });
+
+    const onboarding = screen.getByLabelText("Quick start");
+    const generator = screen.getByPlaceholderText(/Describe your image/);
+    expect(onboarding.compareDocumentPosition(generator)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
   it("renders the TAAFT badge only when enabled by the root route", () => {
     renderWithProviders(<HomePage showTaaftBadge />);
     expect(screen.getByAltText("Featured on There's An AI For That")).toBeInTheDocument();
