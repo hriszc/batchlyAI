@@ -107,6 +107,16 @@ describe("HomePage", () => {
     );
   });
 
+  it("shows the onboarding booklet while auth session is still pending", async () => {
+    mockUseSession.mockReturnValue({ data: null, isPending: true });
+
+    renderWithProviders(<HomePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Start with one image")).toBeInTheDocument();
+    });
+  });
+
   it("renders the TAAFT badge only when enabled by the root route", () => {
     renderWithProviders(<HomePage showTaaftBadge />);
     expect(screen.getByAltText("Featured on There's An AI For That")).toBeInTheDocument();
