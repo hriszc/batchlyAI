@@ -20,6 +20,8 @@ export interface GeneratedResult {
   combination: PromptCombination;
   imageUrl: string | null;
   textContent: string | null;
+  mediaType?: "image" | "video" | "text";
+  errorMessage?: string | null;
   watermark: boolean;
   status: "pending" | "generating" | "complete" | "error";
 }

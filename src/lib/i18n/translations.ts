@@ -162,6 +162,8 @@ export const translations = {
     insufficientCredits: "Need {required} credits, have {available}",
     insufficientCreditsTitle: "Insufficient credits",
     insufficientCreditsDetailed: "Insufficient credits: need {required}, have {available}",
+    contentSafetyBlocked:
+      "This image was blocked by our content safety policy. Please try a safer prompt or reference image.",
     loginRequiredToGenerate: "Please log in to generate",
     loginRequiredToUpload: "Please log in to upload files",
     uploadFailed: "Upload failed",
@@ -418,6 +420,7 @@ export const translations = {
     insufficientCredits: "需要 {required} 积分，当前只有 {available}",
     insufficientCreditsTitle: "积分不足",
     insufficientCreditsDetailed: "积分不足：需要 {required}，当前只有 {available}",
+    contentSafetyBlocked: "该图片已被内容安全策略拦截，请尝试更安全的提示词或参考图。",
     loginRequiredToGenerate: "登录后才能生成",
     loginRequiredToUpload: "登录后才能上传文件",
     uploadFailed: "上传失败",

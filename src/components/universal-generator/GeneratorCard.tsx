@@ -13,6 +13,7 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 import { GeneratorToolbar } from "./GeneratorToolbar";
 import { getRandomPrompt } from "./inspire-prompts";
+import { MODELS } from "./models";
 import { ProgressBar } from "./ProgressBar";
 import type { GeneratorState, GroupId, TextLength, VideoDuration } from "./types";
 import { VIDEO_DURATION_SECONDS } from "./types";
@@ -92,9 +93,11 @@ export function GeneratorCard({
 
   const combinations = computePromptCombinations(state.promptTemplate, state.variableGroups);
   const comboCount = combinations.length;
+  const modelInfo = MODELS.find((m) => m.id === state.model);
+  const unitsPerCombination = modelInfo?.category === "video" ? 1 : state.quantity;
   const creditEstimate = calculateGenerationCredits({
     model: state.model,
-    quantity: comboCount * state.quantity,
+    quantity: comboCount * unitsPerCombination,
     durationSeconds: VIDEO_DURATION_SECONDS[state.videoDuration],
   });
   const hasGroups = state.variableGroups.length > 0;

@@ -1,12 +1,12 @@
 import { env } from "@/env/server";
+import { CONTENT_SAFETY_BLOCK_MESSAGE } from "@/lib/content-safety";
 
 const AI_GATEWAY =
   "https://gateway.ai.cloudflare.com/v1/b06ef09426453ac00c27f343d05a0a23/ai-draw-guess";
 const REPLICATE_MODEL_PREDICTIONS = "https://api.replicate.com/v1/models";
 const NSFW_MODEL = "falcons-ai/nsfw_image_detection";
 
-export const CONTENT_SAFETY_BLOCK_MESSAGE =
-  "Image blocked by content safety policy. Please try a safer prompt or image.";
+export { CONTENT_SAFETY_BLOCK_MESSAGE };
 
 export interface NsfwDetectionResult {
   isNsfw: boolean;

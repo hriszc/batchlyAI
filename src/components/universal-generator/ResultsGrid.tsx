@@ -87,7 +87,7 @@ export function ResultsGrid({
     for (let i = 0; i < downloadable.length; i++) {
       const r = downloadable[i];
       const url = r.imageUrl;
-      const ext = url ? "png" : "txt";
+      const ext = url ? (r.mediaType === "video" ? "mp4" : "png") : "txt";
       const filename = `batchlyai-${r.id}.${ext}`;
       try {
         const content = url || r.textContent || "";
@@ -121,7 +121,9 @@ export function ResultsGrid({
 
   if (!isGenerating && results.length === 0) return null;
 
-  const publishableCount = results.filter((r) => r.status === "complete" && r.imageUrl).length;
+  const publishableCount = results.filter(
+    (r) => r.status === "complete" && r.imageUrl && r.mediaType !== "video",
+  ).length;
   const downloadableCount = displayResults.filter(
     (r) => r.status === "complete" && (r.imageUrl || r.textContent),
   ).length;

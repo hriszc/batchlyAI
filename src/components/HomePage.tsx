@@ -6,6 +6,7 @@ import { FaqSection } from "@/components/seo/FaqSection";
 import { GeneratorCard } from "@/components/universal-generator/GeneratorCard";
 import { ResultsGrid } from "@/components/universal-generator/ResultsGrid";
 import { ShareScreenshot } from "@/components/universal-generator/ShareScreenshot";
+import { MODELS } from "@/components/universal-generator/models";
 import { useGeneratorState } from "@/components/universal-generator/useGeneratorState";
 import { computePromptCombinations } from "@/components/universal-generator/utils";
 import { useAuthGate } from "@/components/useAuthGate";
@@ -245,6 +246,8 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
   const authGate = useAuthGate();
   const isLoggedIn = !!visibleUser;
   const canGuestGenerate = !isLoggedIn;
+  const activeModel = MODELS.find((model) => model.id === state.model);
+  const expectedUnitsPerCombination = activeModel?.category === "video" ? 1 : state.quantity;
   const { setPromptTemplate, updateValue, setAspectRatio, setModel } = actions;
   const homepageFaq = getHomepageFaq(language);
 
@@ -450,7 +453,7 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
             isGenerating={state.isGenerating}
             totalExpected={
               computePromptCombinations(state.promptTemplate, state.variableGroups).length *
-              state.quantity
+              expectedUnitsPerCombination
             }
             showWatermark={showWatermark}
             onShare={() => {

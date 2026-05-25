@@ -16,6 +16,7 @@ interface AsyncPending {
   predictionIds: string[];
   modelType: string;
   combination: PromptCombination;
+  mediaType?: "image" | "video";
   guestToken?: string;
 }
 
@@ -32,12 +33,15 @@ export async function unifiedPoll(
   pollIntervalMs = 2000,
   onCreditsRemaining?: (creditsRemaining: number) => void,
   onResults?: (results: GeneratedResult[]) => void,
+  onError?: (error: string) => void,
 ): Promise<GeneratedResult[]> {
   const idToCombo = new Map<string, PromptCombination>();
+  const idToMediaType = new Map<string, "image" | "video">();
   const allIds: string[] = [];
   for (const p of pendings) {
     for (const id of p.predictionIds) {
       idToCombo.set(id, p.combination);
+      idToMediaType.set(id, p.mediaType ?? "image");
       allIds.push(id);
     }
   }
@@ -79,6 +83,7 @@ export async function unifiedPoll(
           r.status === "error"
         ) {
           const combination = idToCombo.get(r.id) ?? pendings[0].combination;
+          const mediaType = idToMediaType.get(r.id) ?? "image";
           if (r.status === "succeeded" && r.urls) {
             for (const url of r.urls) {
               newResults.push({
@@ -86,16 +91,20 @@ export async function unifiedPoll(
                 combination,
                 imageUrl: url,
                 textContent: null,
+                mediaType,
                 watermark: false,
                 status: "complete" as const,
               });
             }
           } else {
+            if (r.error) onError?.(r.error);
             newResults.push({
               id: generateResultId(),
               combination,
               imageUrl: null,
               textContent: null,
+              mediaType,
+              errorMessage: r.error,
               watermark: false,
               status: "error" as const,
             });
@@ -137,6 +146,7 @@ export async function unifiedPoll(
           r.status === "error"
         ) {
           const combination = idToCombo.get(r.id) ?? pendings[0].combination;
+          const mediaType = idToMediaType.get(r.id) ?? "image";
           if (r.status === "succeeded" && r.urls) {
             for (const url of r.urls) {
               newResults.push({
@@ -144,16 +154,20 @@ export async function unifiedPoll(
                 combination,
                 imageUrl: url,
                 textContent: null,
+                mediaType,
                 watermark: false,
                 status: "complete" as const,
               });
             }
           } else {
+            if (r.error) onError?.(r.error);
             newResults.push({
               id: generateResultId(),
               combination,
               imageUrl: null,
               textContent: null,
+              mediaType,
+              errorMessage: r.error,
               watermark: false,
               status: "error" as const,
             });
@@ -173,11 +187,13 @@ export async function unifiedPoll(
   // Timeout: remaining pending IDs become error results
   for (const id of pendingIds) {
     const combination = idToCombo.get(id) ?? pendings[0].combination;
+    const mediaType = idToMediaType.get(id) ?? "image";
     finished.push({
       id: generateResultId(),
       combination,
       imageUrl: null,
       textContent: null,
+      mediaType,
       watermark: false,
       status: "error" as const,
     });
