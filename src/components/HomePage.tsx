@@ -284,7 +284,14 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
   const [hydrated, setHydrated] = useState(false);
   const [shareMode, setShareMode] = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const [showOnboardingCard, setShowOnboardingCard] = useState(false);
+  const [showOnboardingCard, setShowOnboardingCard] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return localStorage.getItem(ONBOARDING_CARD_DISMISSED_KEY) !== "1";
+    } catch {
+      return true;
+    }
+  });
   const [onboardingStep, setOnboardingStep] = useState(0);
 
   const handlePublish = useCallback(async () => {
@@ -378,7 +385,10 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
     [onboardingStep],
   );
   const showOnboardingGuide =
-    showOnboardingCard && !state.promptTemplate.trim() && state.results.length === 0;
+    sessionReady &&
+    showOnboardingCard &&
+    !state.promptTemplate.trim() &&
+    state.results.length === 0;
 
   const dismissOnboardingCard = useCallback(() => {
     setShowOnboardingCard(false);
@@ -398,14 +408,6 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
     // oxlint-disable-next-line react-hooks-js/set-state-in-effect
     setHydrated(true);
   }, []);
-
-  useEffect(() => {
-    if (!sessionReady) return;
-    try {
-      if (localStorage.getItem(ONBOARDING_CARD_DISMISSED_KEY) === "1") return;
-    } catch {}
-    setShowOnboardingCard(true);
-  }, [sessionReady]);
 
   // Restore pending prompt from sessionStorage (preserved across login redirect)
   useEffect(() => {

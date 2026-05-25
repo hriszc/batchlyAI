@@ -82,9 +82,7 @@ describe("HomePage", () => {
     renderWithProviders(<HomePage />);
     expect(screen.getByText("One short prompt. Five cinematic results.")).toBeInTheDocument();
     expect(
-      screen.getAllByText("Make the person in the image cosplay as {*One Piece characters*}")[
-        0
-      ],
+      screen.getAllByText("Make the person in the image cosplay as {*One Piece characters*}")[0],
     ).toBeInTheDocument();
     expect(screen.getByText("Image Pro")).toBeInTheDocument();
   });
