@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useReducer, useCallback, useRef, useEffect } from "react";
 
 import { authClient } from "@/lib/auth/auth-client";
+import { CONTENT_SAFETY_BLOCK_MESSAGE } from "@/lib/content-safety";
 import { applyCreditsToClientCaches, CREDIT_UPDATED_EVENT } from "@/lib/credits/client-sync";
 import { calculateGenerationCredits } from "@/lib/generator-credits";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -9,7 +10,13 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { MODELS } from "./models";
 import { unifiedPoll } from "./poll";
 import { reducer, initialState } from "./reducer";
-import type { GroupId, PromptCombination, TextLength, VideoDuration } from "./types";
+import type {
+  GeneratedResult,
+  GroupId,
+  PromptCombination,
+  TextLength,
+  VideoDuration,
+} from "./types";
 import { TEXT_LENGTH_TOKENS, VIDEO_DURATION_SECONDS } from "./types";
 import { computePromptCombinations } from "./utils";
 
@@ -60,6 +67,7 @@ interface AsyncPending {
   predictionIds: string[];
   modelType: string;
   combination: PromptCombination;
+  mediaType: "image" | "video";
   guestToken?: string;
 }
 
@@ -192,8 +200,9 @@ export function useGeneratorState() {
 
     const model = MODELS.find((m) => m.id === currentState.model);
     const isTextModel = model?.category === "text";
+    const isVideoModel = model?.category === "video";
     const guestToken = isLoggedIn ? null : getGuestToken();
-    const unitsPerCombination = isTextModel ? 1 : currentState.quantity;
+    const unitsPerCombination = isTextModel || isVideoModel ? 1 : currentState.quantity;
     const optimisticCost = calculateGenerationCredits({
       model: currentState.model,
       quantity: combinations.length * unitsPerCombination,
@@ -213,6 +222,9 @@ export function useGeneratorState() {
       let creditsRemaining: number | null = null;
       let isWatermarked = false;
       const asyncPendings: AsyncPending[] = [];
+      const outputMediaType: "image" | "video" = isVideoModel ? "video" : "image";
+      const mapBackendError = (message: string) =>
+        message === CONTENT_SAFETY_BLOCK_MESSAGE ? t("contentSafetyBlocked") : message;
 
       void Promise.all(
         combinations.map(async (combination) => {
@@ -225,11 +237,11 @@ export function useGeneratorState() {
                 promptTemplate: currentState.promptTemplate,
                 variableGroups: currentState.variableGroups,
                 aspectRatio: currentState.aspectRatio,
-                n: currentState.quantity,
+                n: isVideoModel ? 1 : currentState.quantity,
                 model: currentState.model,
                 ...(guestToken ? { guestToken } : {}),
                 attachedUrls: currentState.attachedFiles.filter((f) => f.url).map((f) => f.url!),
-                ...(model?.category === "video"
+                ...(isVideoModel
                   ? { duration: VIDEO_DURATION_SECONDS[currentState.videoDuration] }
                   : {}),
               }),
@@ -265,11 +277,16 @@ export function useGeneratorState() {
             }
 
             if (!resp.ok || json.error) {
+              if (json.error) {
+                globalError = mapBackendError(json.error);
+              }
               return {
                 id: generateResultId(),
                 combination,
                 imageUrl: null,
                 textContent: null,
+                mediaType: outputMediaType,
+                errorMessage: json.error ? mapBackendError(json.error) : null,
                 watermark: false,
                 status: "error" as const,
               };
@@ -286,6 +303,7 @@ export function useGeneratorState() {
                 combination,
                 imageUrl: url,
                 textContent: null,
+                mediaType: outputMediaType,
                 watermark: false,
                 status: "complete" as const,
               }));
@@ -298,6 +316,7 @@ export function useGeneratorState() {
                 predictionIds: json.predictionIds,
                 modelType,
                 combination,
+                mediaType: outputMediaType,
                 guestToken: guestToken ?? undefined,
               });
               return [];
@@ -311,6 +330,7 @@ export function useGeneratorState() {
                 combination,
                 imageUrl: null,
                 textContent: null,
+                mediaType: outputMediaType,
                 watermark: false,
                 status: "error" as const,
               },
@@ -319,7 +339,7 @@ export function useGeneratorState() {
         }),
       )
         .then(async (resultGroups) => {
-          let results = resultGroups.flat();
+          let results: GeneratedResult[] = resultGroups.flat();
 
           // Unified polling: merge all prediction IDs into a single poll loop
           if (asyncPendings.length > 0) {
@@ -334,6 +354,12 @@ export function useGeneratorState() {
                 (isVideo ? VIDEO_ESTIMATE_MS_PER_RESULT : IMAGE_ESTIMATE_MS_PER_RESULT),
             );
             const pollIntervalMs = isVideo ? VIDEO_POLL_INTERVAL_MS : IMAGE_POLL_INTERVAL_MS;
+            const normalizeResultErrors = (items: GeneratedResult[]): GeneratedResult[] =>
+              items.map((result) =>
+                result.errorMessage
+                  ? { ...result, errorMessage: mapBackendError(result.errorMessage) }
+                  : result,
+              );
             dispatch({
               type: "SET_PROGRESS",
               payload: { elapsed: 0, estimated: estimatedMs, remaining: asyncResultCount },
@@ -347,15 +373,19 @@ export function useGeneratorState() {
               pollIntervalMs,
               syncCreditsRemaining,
               (partialResults) => {
+                const normalizedResults = normalizeResultErrors(partialResults);
                 dispatch({
                   type: "APPEND_RESULTS",
                   payload: isWatermarked
-                    ? partialResults.map((result) => ({ ...result, watermark: true }))
-                    : partialResults,
+                    ? normalizedResults.map((result) => ({ ...result, watermark: true }))
+                    : normalizedResults,
                 });
               },
+              (message) => {
+                globalError = mapBackendError(message);
+              },
             )) as typeof results;
-            results = [...results, ...polled];
+            results = [...results, ...normalizeResultErrors(polled)];
           }
 
           if (isWatermarked) {
@@ -418,11 +448,16 @@ export function useGeneratorState() {
             }
 
             if (!resp.ok || json.error) {
+              if (json.error) {
+                dispatch({ type: "SET_ERROR", payload: json.error });
+              }
               return {
                 id: generateResultId(),
                 combination,
                 imageUrl: null,
                 textContent: null,
+                mediaType: "text" as const,
+                errorMessage: json.error,
                 watermark: textWatermark,
                 status: "error" as const,
               };
@@ -433,6 +468,7 @@ export function useGeneratorState() {
               combination,
               imageUrl: null,
               textContent: json.texts ? text : null,
+              mediaType: "text" as const,
               watermark: textWatermark,
               status: "complete" as const,
             }));
@@ -443,6 +479,7 @@ export function useGeneratorState() {
                 combination,
                 imageUrl: null,
                 textContent: null,
+                mediaType: "text" as const,
                 watermark: false,
                 status: "error" as const,
               },

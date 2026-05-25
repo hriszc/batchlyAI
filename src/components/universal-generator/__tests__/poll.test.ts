@@ -105,17 +105,53 @@ describe("unifiedPoll", () => {
         }),
     }) as unknown as typeof fetch;
 
+    const onError = vi.fn();
     const results = await unifiedPoll(
       [{ predictionIds: ["id1", "id2"], modelType: "replicate", combination: combo }],
       undefined,
       undefined,
       1,
+      undefined,
+      undefined,
+      onError,
     );
 
     const succeeded = results.filter((r) => r.status === "complete");
     const failed = results.filter((r) => r.status === "error");
     expect(succeeded).toHaveLength(1);
     expect(failed).toHaveLength(1);
+    expect(failed[0].errorMessage).toBe("error msg");
+    expect(onError).toHaveBeenCalledWith("error msg");
+  });
+
+  it("marks video poll results as video media", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          results: [
+            { id: "id1", status: "succeeded", urls: ["https://cdn.test/out.mp4"], error: null },
+          ],
+        }),
+    }) as unknown as typeof fetch;
+
+    const results = await unifiedPoll(
+      [
+        {
+          predictionIds: ["id1"],
+          modelType: "replicate",
+          combination: combo,
+          mediaType: "video",
+        },
+      ],
+      undefined,
+      undefined,
+      1,
+    );
+
+    expect(results).toHaveLength(1);
+    expect(results[0].mediaType).toBe("video");
+    expect(results[0].imageUrl).toBe("https://cdn.test/out.mp4");
   });
 
   it("handles multiple combinations with separate prediction IDs", async () => {

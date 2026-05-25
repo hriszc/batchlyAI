@@ -104,7 +104,7 @@ exports[`ResultCard snapshots > matches error state 1`] = `
         />
       </svg>
       <span
-        class="text-xs"
+        class="px-3 text-center text-xs"
       >
         Failed
       </span>

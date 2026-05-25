@@ -4,6 +4,23 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 import type { GeneratedResult } from "./types";
 
+function getUrlExtension(url: string, fallback: string): string {
+  try {
+    const pathname = new URL(url, window.location.href).pathname;
+    const ext = pathname.split(".").pop()?.toLowerCase();
+    return ext && ext.length <= 5 ? ext : fallback;
+  } catch {
+    const ext = url.split("?")[0].split(".").pop()?.toLowerCase();
+    return ext && ext.length <= 5 ? ext : fallback;
+  }
+}
+
+function isVideoResult(result: GeneratedResult): boolean {
+  if (result.mediaType === "video") return true;
+  if (!result.imageUrl) return false;
+  return /\.(mp4|webm|mov|m4v)(\?|$)/i.test(result.imageUrl);
+}
+
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, "&amp;")
@@ -134,6 +151,7 @@ async function downloadWithWatermark(imageUrl: string, filename: string) {
 export function ResultCard({ result, showWatermark = false }: ResultCardProps) {
   const { combination } = result;
   const { t } = useLanguage();
+  const isVideo = isVideoResult(result);
 
   const hasDownloadable = (result.imageUrl || result.textContent) && result.status === "complete";
 
@@ -142,12 +160,25 @@ export function ResultCard({ result, showWatermark = false }: ResultCardProps) {
       <div className="flex aspect-square items-center justify-center bg-muted">
         {result.imageUrl ? (
           <div className="relative h-full w-full">
-            <img
-              src={result.imageUrl}
-              alt={combination.prompt}
-              className="h-full w-full object-cover"
-            />
-            {showWatermark && (
+            {isVideo ? (
+              <video
+                src={result.imageUrl}
+                aria-label={combination.prompt}
+                className="h-full w-full object-cover"
+                controls
+                playsInline
+                preload="metadata"
+              >
+                <track kind="captions" />
+              </video>
+            ) : (
+              <img
+                src={result.imageUrl}
+                alt={combination.prompt}
+                className="h-full w-full object-cover"
+              />
+            )}
+            {showWatermark && !isVideo && (
               <div className="absolute right-2 bottom-2 rounded bg-black/50 px-2 py-0.5 text-[10px] text-white/70 backdrop-blur-sm">
                 {t("generatedByBatchlyAI")}
               </div>
@@ -155,14 +186,15 @@ export function ResultCard({ result, showWatermark = false }: ResultCardProps) {
             {hasDownloadable && (
               <button
                 onClick={() => {
-                  if (showWatermark) {
+                  if (showWatermark && !isVideo) {
                     void downloadWithWatermark(result.imageUrl!, `batchlyai-${result.id}.png`);
                   } else {
-                    void downloadUrl(result.imageUrl!, `batchlyai-${result.id}.png`);
+                    const ext = getUrlExtension(result.imageUrl!, isVideo ? "mp4" : "png");
+                    void downloadUrl(result.imageUrl!, `batchlyai-${result.id}.${ext}`);
                   }
                 }}
                 className="absolute top-2 right-2 rounded-lg bg-black/50 p-1.5 text-white/80 opacity-100 backdrop-blur-sm transition-opacity hover:bg-black/70 md:opacity-0 md:group-hover:opacity-100"
-                title={showWatermark ? t("downloadWithWatermark") : t("download")}
+                title={showWatermark && !isVideo ? t("downloadWithWatermark") : t("download")}
               >
                 <DownloadIcon className="size-4" />
               </button>
@@ -191,7 +223,9 @@ export function ResultCard({ result, showWatermark = false }: ResultCardProps) {
         ) : result.status === "error" ? (
           <div className="flex flex-col items-center gap-1 text-muted-foreground/40">
             <AlertCircleIcon className="size-8" />
-            <span className="text-xs">{t("resultFailed")}</span>
+            <span className="px-3 text-center text-xs">
+              {result.errorMessage || t("resultFailed")}
+            </span>
           </div>
         ) : result.status === "generating" ? (
           <Loader2Icon className="size-8 animate-spin text-muted-foreground/40" />

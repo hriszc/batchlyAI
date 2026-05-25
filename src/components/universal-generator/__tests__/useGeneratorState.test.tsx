@@ -3,6 +3,7 @@ import { renderHook, act } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 import { authClient } from "@/lib/auth/auth-client";
+import { CONTENT_SAFETY_BLOCK_MESSAGE } from "@/lib/content-safety";
 
 import { useGeneratorState } from "../useGeneratorState";
 
@@ -353,6 +354,66 @@ describe("useGeneratorState", () => {
     });
 
     expect(fetch).toHaveBeenCalledTimes(1);
+    vi.unstubAllGlobals();
+  });
+
+  it("sends one output for video generation even when quantity is two", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({
+          urls: ["https://example.com/video.mp4"],
+          creditsRemaining: 90,
+        }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { result } = renderHook(() => useGeneratorState(), {
+      wrapper: createWrapper(),
+    });
+
+    act(() => {
+      result.current.actions.setModel("z-video-fast");
+      result.current.actions.setPromptTemplate("{{cat}} running");
+    });
+
+    await act(async () => {
+      result.current.actions.startGenerating();
+      await new Promise((r) => setTimeout(r, 100));
+    });
+
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.n).toBe(1);
+    expect(result.current.state.results[0].mediaType).toBe("video");
+    vi.unstubAllGlobals();
+  });
+
+  it("shows localized content safety errors from image generation", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 400,
+        json: () => Promise.resolve({ error: CONTENT_SAFETY_BLOCK_MESSAGE }),
+      }),
+    );
+
+    const { result } = renderHook(() => useGeneratorState(), {
+      wrapper: createWrapper(),
+    });
+
+    act(() => {
+      result.current.actions.setPromptTemplate("{{unsafe}}");
+    });
+
+    await act(async () => {
+      result.current.actions.startGenerating();
+      await new Promise((r) => setTimeout(r, 100));
+    });
+
+    expect(result.current.state.error).toBe("contentSafetyBlocked");
+    expect(result.current.state.results[0].errorMessage).toBe(result.current.state.error);
     vi.unstubAllGlobals();
   });
 
