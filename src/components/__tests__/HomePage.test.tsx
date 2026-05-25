@@ -1,4 +1,4 @@
-import { screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 import { renderWithProviders } from "#test/test-utils";
@@ -82,9 +82,29 @@ describe("HomePage", () => {
     renderWithProviders(<HomePage />);
     expect(screen.getByText("One short prompt. Five cinematic results.")).toBeInTheDocument();
     expect(
-      screen.getByText("Make the person in the image cosplay as {*One Piece characters*}"),
+      screen.getAllByText("Make the person in the image cosplay as {*One Piece characters*}")[0],
     ).toBeInTheDocument();
     expect(screen.getByText("Image Pro")).toBeInTheDocument();
+  });
+
+  it("shows the onboarding booklet to signed-out visitors and fills the example prompt", async () => {
+    renderWithProviders(<HomePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Start with one image")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByText("Let AI write the list")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByText("Batch with {{ }}")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByText("Get a small set at once")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Use this example" }));
+    expect(screen.getByPlaceholderText(/Describe your image/)).toHaveValue(
+      "Make the person in the image cosplay as {*One Piece characters*}",
+    );
   });
 
   it("renders the TAAFT badge only when enabled by the root route", () => {

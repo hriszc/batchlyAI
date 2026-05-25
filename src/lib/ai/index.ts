@@ -506,8 +506,8 @@ async function chatDeepseek(
 const EXPAND_SYSTEM_PROMPT =
   "You are a variable expander for an AI image generator. " +
   "Given a natural language description, output 3-8 concrete, diverse, and specific values " +
-  "as a comma-separated list on one line. Be creative and varied. Do not include explanations " +
-  "or numbering. Output only the comma-separated list.\n\n" +
+  "as a comma-separated list on one line. Use English commas only. Do not use Chinese punctuation, " +
+  "semicolons, bullets, explanations, or numbering. Output only the comma-separated list.\n\n" +
   "Examples:\n" +
   'User: "three colors"\n' +
   "Assistant: crimson red, sunshine yellow, ocean blue\n" +
@@ -515,6 +515,14 @@ const EXPAND_SYSTEM_PROMPT =
   "Assistant: Picasso, Van Gogh, Monet, Dali, Warhol\n" +
   'User: "summer vibes"\n' +
   "Assistant: beach sunset, tropical palm, pool party, ice cream truck";
+
+export function parseExpandedValues(text: string): string[] {
+  return text
+    .replace(/[，、；;|\n\r]+/g, ",")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
 
 export async function runExpandLLM(description: string): Promise<string[]> {
   const text = await chatDeepseek(
@@ -525,10 +533,7 @@ export async function runExpandLLM(description: string): Promise<string[]> {
     { temperature: 0.7, model: "deepseek-v4-flash" },
   );
 
-  return text
-    .split(/[,，]/)
-    .map((s) => s.trim())
-    .filter(Boolean);
+  return parseExpandedValues(text);
 }
 
 export interface TextGenerationParams {
