@@ -1,4 +1,11 @@
-import { ChevronLeftIcon, ChevronRightIcon, SparklesIcon, UploadIcon, XIcon } from "lucide-react";
+import {
+  BookOpenIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  SparklesIcon,
+  UploadIcon,
+  XIcon,
+} from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -54,7 +61,6 @@ const STARTER_TEMPLATES = [
 ];
 
 const HOMEPAGE_EXAMPLE_MODEL = "Image Pro";
-const ONBOARDING_CARD_DISMISSED_KEY = "batchlyai:onboarding-card-dismissed";
 const ONBOARDING_EXAMPLE_PROMPT =
   "Make the person in the image cosplay as {*One Piece characters*}";
 const HOMEPAGE_EXAMPLE_RESULTS = [
@@ -284,7 +290,7 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
   const [hydrated, setHydrated] = useState(false);
   const [shareMode, setShareMode] = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const [showOnboardingCard, setShowOnboardingCard] = useState(true);
+  const [showOnboardingCard, setShowOnboardingCard] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
 
   const handlePublish = useCallback(async () => {
@@ -377,14 +383,11 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
     () => ONBOARDING_STEPS[onboardingStep] ?? ONBOARDING_STEPS[0],
     [onboardingStep],
   );
-  const showOnboardingGuide =
-    showOnboardingCard && !state.promptTemplate.trim() && state.results.length === 0;
+  const showOnboardingGuideButton = state.results.length === 0;
+  const showOnboardingGuide = showOnboardingCard && showOnboardingGuideButton;
 
   const dismissOnboardingCard = useCallback(() => {
     setShowOnboardingCard(false);
-    try {
-      localStorage.setItem(ONBOARDING_CARD_DISMISSED_KEY, "1");
-    } catch {}
   }, []);
 
   const handleUseOnboardingExample = useCallback(() => {
@@ -397,11 +400,6 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
     // when auth state resolves before the page finishes hydrating.
     // oxlint-disable-next-line react-hooks-js/set-state-in-effect
     setHydrated(true);
-    try {
-      setShowOnboardingCard(localStorage.getItem(ONBOARDING_CARD_DISMISSED_KEY) !== "1");
-    } catch {
-      setShowOnboardingCard(true);
-    }
   }, []);
 
   // Restore pending prompt from sessionStorage (preserved across login redirect)
@@ -544,7 +542,7 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
     <main>
       <section
         className={`mx-auto max-w-[980px] px-4 ${
-          hasResults || showOnboardingGuide
+          hasResults
             ? "py-8 sm:py-10"
             : "flex min-h-[100svh] flex-col justify-center py-10 sm:py-14"
         }`}
@@ -566,10 +564,35 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
           {t("siteDescription")}
         </p>
 
+        <GeneratorCard
+          state={state}
+          actions={actions}
+          onRequireAuth={authGate.checkAuth}
+          canGuestGenerate={canGuestGenerate}
+          canExpandVars={isLoggedIn}
+          isGuest={canGuestGenerate}
+          availableCredits={effectiveCredits}
+          isSessionReady={sessionReady}
+        />
+
+        {showOnboardingGuideButton && (
+          <div className="mt-4 flex justify-center">
+            <button
+              type="button"
+              onClick={() => setShowOnboardingCard((visible) => !visible)}
+              aria-expanded={showOnboardingGuide}
+              className="inline-flex h-9 items-center gap-2 rounded-full border bg-background px-3.5 text-sm font-medium text-muted-foreground shadow-sm transition-colors hover:border-accent-blue/40 hover:text-accent-blue"
+            >
+              <BookOpenIcon className="size-4" />
+              {t("onboardingGuideButton")}
+            </button>
+          </div>
+        )}
+
         {showOnboardingGuide && (
           <aside
             aria-label={t("onboardingEyebrow")}
-            className="mb-5 overflow-hidden rounded-lg border bg-background shadow-sm"
+            className="mt-4 overflow-hidden rounded-lg border bg-background shadow-sm"
           >
             <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_360px]">
               <div className="p-3 sm:p-4">
@@ -660,17 +683,6 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
             </div>
           </aside>
         )}
-
-        <GeneratorCard
-          state={state}
-          actions={actions}
-          onRequireAuth={authGate.checkAuth}
-          canGuestGenerate={canGuestGenerate}
-          canExpandVars={isLoggedIn}
-          isGuest={canGuestGenerate}
-          availableCredits={effectiveCredits}
-          isSessionReady={sessionReady}
-        />
 
         {!state.promptTemplate.trim() && state.results.length === 0 && (
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
