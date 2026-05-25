@@ -385,10 +385,7 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
     [onboardingStep],
   );
   const showOnboardingGuide =
-    sessionReady &&
-    showOnboardingCard &&
-    !state.promptTemplate.trim() &&
-    state.results.length === 0;
+    hydrated && showOnboardingCard && !state.promptTemplate.trim() && state.results.length === 0;
 
   const dismissOnboardingCard = useCallback(() => {
     setShowOnboardingCard(false);

@@ -59,11 +59,13 @@ describe("shouldRedirectToCn", () => {
 describe("HomePage", () => {
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     mockUseSession.mockReturnValue({ data: null, isPending: false });
     vi.restoreAllMocks();
   });
 
   afterEach(() => {
+    sessionStorage.clear();
     vi.unstubAllGlobals();
     window.history.replaceState({}, "", "/");
   });
@@ -105,6 +107,16 @@ describe("HomePage", () => {
     expect(screen.getByPlaceholderText(/Describe your image/)).toHaveValue(
       "Make the person in the image cosplay as {*One Piece characters*}",
     );
+  });
+
+  it("shows the onboarding booklet while auth session is still pending", async () => {
+    mockUseSession.mockReturnValue({ data: null, isPending: true });
+
+    renderWithProviders(<HomePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Start with one image")).toBeInTheDocument();
+    });
   });
 
   it("renders the TAAFT badge only when enabled by the root route", () => {
