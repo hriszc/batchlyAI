@@ -129,7 +129,9 @@ describe("unifiedPoll", () => {
       ok: true,
       json: () =>
         Promise.resolve({
-          results: [{ id: "id1", status: "succeeded", urls: ["https://cdn.test/out.mp4"], error: null }],
+          results: [
+            { id: "id1", status: "succeeded", urls: ["https://cdn.test/out.mp4"], error: null },
+          ],
         }),
     }) as unknown as typeof fetch;
 
