@@ -284,14 +284,7 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
   const [hydrated, setHydrated] = useState(false);
   const [shareMode, setShareMode] = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const [showOnboardingCard, setShowOnboardingCard] = useState(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      return localStorage.getItem(ONBOARDING_CARD_DISMISSED_KEY) !== "1";
-    } catch {
-      return true;
-    }
-  });
+  const [showOnboardingCard, setShowOnboardingCard] = useState(true);
   const [onboardingStep, setOnboardingStep] = useState(0);
 
   const handlePublish = useCallback(async () => {
@@ -385,7 +378,7 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
     [onboardingStep],
   );
   const showOnboardingGuide =
-    hydrated && showOnboardingCard && !state.promptTemplate.trim() && state.results.length === 0;
+    showOnboardingCard && !state.promptTemplate.trim() && state.results.length === 0;
 
   const dismissOnboardingCard = useCallback(() => {
     setShowOnboardingCard(false);
@@ -404,6 +397,11 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
     // when auth state resolves before the page finishes hydrating.
     // oxlint-disable-next-line react-hooks-js/set-state-in-effect
     setHydrated(true);
+    try {
+      setShowOnboardingCard(localStorage.getItem(ONBOARDING_CARD_DISMISSED_KEY) !== "1");
+    } catch {
+      setShowOnboardingCard(true);
+    }
   }, []);
 
   // Restore pending prompt from sessionStorage (preserved across login redirect)
@@ -546,7 +544,9 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
     <main>
       <section
         className={`mx-auto max-w-[980px] px-4 ${
-          hasResults ? "pt-8 pb-8" : "flex min-h-[100svh] flex-col justify-center py-10 sm:py-14"
+          hasResults || showOnboardingGuide
+            ? "py-8 sm:py-10"
+            : "flex min-h-[100svh] flex-col justify-center py-10 sm:py-14"
         }`}
       >
         <div className="mb-2 flex justify-center">
@@ -566,21 +566,10 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
           {t("siteDescription")}
         </p>
 
-        <GeneratorCard
-          state={state}
-          actions={actions}
-          onRequireAuth={authGate.checkAuth}
-          canGuestGenerate={canGuestGenerate}
-          canExpandVars={isLoggedIn}
-          isGuest={canGuestGenerate}
-          availableCredits={effectiveCredits}
-          isSessionReady={sessionReady}
-        />
-
         {showOnboardingGuide && (
           <aside
             aria-label={t("onboardingEyebrow")}
-            className="mt-5 overflow-hidden rounded-lg border bg-background shadow-sm"
+            className="mb-5 overflow-hidden rounded-lg border bg-background shadow-sm"
           >
             <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_360px]">
               <div className="p-3 sm:p-4">
@@ -671,6 +660,17 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
             </div>
           </aside>
         )}
+
+        <GeneratorCard
+          state={state}
+          actions={actions}
+          onRequireAuth={authGate.checkAuth}
+          canGuestGenerate={canGuestGenerate}
+          canExpandVars={isLoggedIn}
+          isGuest={canGuestGenerate}
+          availableCredits={effectiveCredits}
+          isSessionReady={sessionReady}
+        />
 
         {!state.promptTemplate.trim() && state.results.length === 0 && (
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
