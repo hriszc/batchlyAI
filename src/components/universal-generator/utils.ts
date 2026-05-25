@@ -18,6 +18,14 @@ export function replaceAiBlock(template: string, raw: string, values: string[]):
   return template.replace(raw, `{{${values.join(", ")}}}`);
 }
 
+function splitVariableValues(raw: string): string[] {
+  return raw
+    .replace(/[，、；;|\n\r]+/g, ",")
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean);
+}
+
 export function extractVariableGroups(template: string): VariableGroup[] {
   const regex = /\{\{(.*?)\}\}/g;
   const groups: VariableGroup[] = [];
@@ -25,10 +33,7 @@ export function extractVariableGroups(template: string): VariableGroup[] {
   let match: RegExpExecArray | null;
   while ((match = regex.exec(template)) !== null) {
     const raw = match[1].trim();
-    const values = raw
-      .split(/[,，]/)
-      .map((v) => v.trim())
-      .filter(Boolean);
+    const values = splitVariableValues(raw);
     groups.push({ id: `var_${idx++}`, values });
   }
   return groups;

@@ -19,6 +19,7 @@ import {
   pollReplicatePrediction,
   pollGrsaiResult,
   generateText,
+  parseExpandedValues,
   runExpandLLM,
 } from "@/lib/ai";
 
@@ -552,6 +553,27 @@ describe("runExpandLLM", () => {
     });
     const values = await runExpandLLM("colors");
     expect(values).toEqual(["红色", "蓝色", "绿色", "黄色"]);
+  });
+
+  it("normalizes Chinese punctuation in expand responses", async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          choices: [
+            {
+              message: { content: "小火苗、水蓝蓝、草之精灵、呱呱，帕尔萨斯" },
+              finish_reason: "stop",
+            },
+          ],
+        }),
+    });
+    const values = await runExpandLLM("pokemon-like creatures");
+    expect(values).toEqual(["小火苗", "水蓝蓝", "草之精灵", "呱呱", "帕尔萨斯"]);
+  });
+
+  it("parses mixed separators from expanded text", () => {
+    expect(parseExpandedValues("a、b，c; d\ne")).toEqual(["a", "b", "c", "d", "e"]);
   });
 
   it("does not cap expand responses with max_tokens", async () => {

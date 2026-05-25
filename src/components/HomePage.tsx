@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronLeftIcon, ChevronRightIcon, SparklesIcon, UploadIcon, XIcon } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { LoginCard } from "@/components/LoginCard";
@@ -53,6 +54,9 @@ const STARTER_TEMPLATES = [
 ];
 
 const HOMEPAGE_EXAMPLE_MODEL = "Image Pro";
+const ONBOARDING_CARD_DISMISSED_KEY = "batchlyai:onboarding-card-dismissed";
+const ONBOARDING_EXAMPLE_PROMPT =
+  "Make the person in the image cosplay as {*One Piece characters*}";
 const HOMEPAGE_EXAMPLE_RESULTS = [
   "/examples/one-piece-cosplay/result-1.webp",
   "/examples/one-piece-cosplay/result-2.webp",
@@ -60,6 +64,123 @@ const HOMEPAGE_EXAMPLE_RESULTS = [
   "/examples/one-piece-cosplay/result-4.webp",
   "/examples/one-piece-cosplay/result-5.webp",
 ];
+const ONBOARDING_STEPS = [
+  {
+    visual: "upload",
+    titleKey: "onboardingStepUploadTitle",
+    bodyKey: "onboardingStepUploadBody",
+  },
+  {
+    visual: "expand",
+    titleKey: "onboardingStepExpandTitle",
+    bodyKey: "onboardingStepExpandBody",
+  },
+  {
+    visual: "variables",
+    titleKey: "onboardingStepVariablesTitle",
+    bodyKey: "onboardingStepVariablesBody",
+  },
+  {
+    visual: "results",
+    titleKey: "onboardingStepResultsTitle",
+    bodyKey: "onboardingStepResultsBody",
+  },
+] as const satisfies ReadonlyArray<{
+  visual: "upload" | "expand" | "variables" | "results";
+  titleKey: TranslationKey;
+  bodyKey: TranslationKey;
+}>;
+
+function OnboardingVisual({
+  visual,
+  t,
+}: {
+  visual: (typeof ONBOARDING_STEPS)[number]["visual"];
+  t: (key: TranslationKey) => string;
+}) {
+  if (visual === "upload") {
+    return (
+      <div className="relative h-full min-h-[240px] overflow-hidden rounded-lg border bg-background">
+        <img
+          src="/onboarding/example-input.jpg"
+          alt={t("homepageExampleInputAlt")}
+          width={420}
+          height={420}
+          loading="lazy"
+          decoding="async"
+          className="h-full w-full object-cover"
+        />
+        <div className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-md bg-background/90 px-2.5 py-1.5 text-xs font-medium text-foreground shadow-sm backdrop-blur">
+          <UploadIcon className="size-3.5" />
+          {t("homepageExampleInputLabel")}
+        </div>
+      </div>
+    );
+  }
+
+  if (visual === "expand") {
+    return (
+      <div className="flex h-full min-h-[240px] flex-col justify-center rounded-lg border bg-[radial-gradient(circle_at_top_left,rgba(41,118,255,0.16),transparent_34%),linear-gradient(135deg,hsl(var(--background)),hsl(var(--muted)))] p-5">
+        <div className="mb-5 inline-flex w-fit items-center gap-2 rounded-full border bg-background/80 px-3 py-1.5 text-xs font-semibold text-accent-blue shadow-sm">
+          <SparklesIcon className="size-3.5" />
+          {t("expandAi")}
+        </div>
+        <div className="rounded-lg border bg-background/90 p-4 font-mono text-sm leading-6 text-foreground shadow-sm">
+          {"{*One Piece characters*}"}
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {["Luffy", "Nami", "Zoro", "Chopper"].map((value) => (
+            <span
+              key={value}
+              className="rounded-full border bg-background/85 px-3 py-1.5 text-xs font-medium text-muted-foreground"
+            >
+              {value}
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (visual === "variables") {
+    return (
+      <div className="flex h-full min-h-[240px] flex-col justify-center rounded-lg border bg-muted/35 p-5">
+        <div className="rounded-lg border bg-background p-4 font-mono text-sm leading-6 break-words text-foreground shadow-sm">
+          {"{{Luffy, Nami, Zoro, Chopper}}"}
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          {["Luffy", "Nami", "Zoro", "Chopper"].map((value, index) => (
+            <div key={value} className="rounded-md border bg-background px-3 py-2 shadow-sm">
+              <div className="text-[11px] font-medium text-muted-foreground">#{index + 1}</div>
+              <div className="text-sm font-semibold text-foreground">{value}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid h-full min-h-[240px] grid-cols-2 gap-2 rounded-lg border bg-background p-2">
+      {[
+        "/onboarding/example-output-1.jpg",
+        "/onboarding/example-output-2.jpg",
+        "/onboarding/example-output-3.jpg",
+      ].map((src, index) => (
+        <img
+          key={src}
+          src={src}
+          alt={t("homepageExampleOutputAlt")}
+          width={560}
+          height={315}
+          loading="lazy"
+          decoding="async"
+          className={`h-full w-full rounded-md object-cover ${index === 0 ? "col-span-2" : ""}`}
+        />
+      ))}
+    </div>
+  );
+}
 
 function HomepageExample({ t }: { t: (key: TranslationKey) => string }) {
   return (
@@ -163,6 +284,8 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
   const [hydrated, setHydrated] = useState(false);
   const [shareMode, setShareMode] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [showOnboardingCard, setShowOnboardingCard] = useState(false);
+  const [onboardingStep, setOnboardingStep] = useState(0);
 
   const handlePublish = useCallback(async () => {
     if (publishing || state.results.length === 0) return;
@@ -250,6 +373,24 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
   const expectedUnitsPerCombination = activeModel?.category === "video" ? 1 : state.quantity;
   const { setPromptTemplate, updateValue, setAspectRatio, setModel } = actions;
   const homepageFaq = getHomepageFaq(language);
+  const onboardingCurrentStep = useMemo(
+    () => ONBOARDING_STEPS[onboardingStep] ?? ONBOARDING_STEPS[0],
+    [onboardingStep],
+  );
+  const showOnboardingGuide =
+    showOnboardingCard && !state.promptTemplate.trim() && state.results.length === 0;
+
+  const dismissOnboardingCard = useCallback(() => {
+    setShowOnboardingCard(false);
+    try {
+      localStorage.setItem(ONBOARDING_CARD_DISMISSED_KEY, "1");
+    } catch {}
+  }, []);
+
+  const handleUseOnboardingExample = useCallback(() => {
+    setPromptTemplate(ONBOARDING_EXAMPLE_PROMPT);
+    dismissOnboardingCard();
+  }, [dismissOnboardingCard, setPromptTemplate]);
 
   useEffect(() => {
     // Keep the first client render aligned with SSR to avoid hydration remounts
@@ -257,6 +398,14 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
     // oxlint-disable-next-line react-hooks-js/set-state-in-effect
     setHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (!sessionReady) return;
+    try {
+      if (localStorage.getItem(ONBOARDING_CARD_DISMISSED_KEY) === "1") return;
+    } catch {}
+    setShowOnboardingCard(true);
+  }, [sessionReady]);
 
   // Restore pending prompt from sessionStorage (preserved across login redirect)
   useEffect(() => {
@@ -428,6 +577,101 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
           availableCredits={effectiveCredits}
           isSessionReady={sessionReady}
         />
+
+        {showOnboardingGuide && (
+          <aside
+            aria-label={t("onboardingEyebrow")}
+            className="mt-5 overflow-hidden rounded-lg border bg-background shadow-sm"
+          >
+            <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_360px]">
+              <div className="p-3 sm:p-4">
+                <OnboardingVisual visual={onboardingCurrentStep.visual} t={t} />
+              </div>
+              <div className="flex min-h-[260px] flex-col border-t p-5 lg:border-t-0 lg:border-l">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div className="text-xs font-semibold tracking-[0.18em] text-accent-blue uppercase">
+                    {t("onboardingEyebrow")}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={dismissOnboardingCard}
+                    aria-label={t("settingsClose")}
+                    className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  >
+                    <XIcon className="size-4" />
+                  </button>
+                </div>
+
+                <div className="text-xs font-medium text-muted-foreground">
+                  {onboardingStep + 1} / {ONBOARDING_STEPS.length}
+                </div>
+                <h2 className="mt-2 text-2xl leading-tight font-semibold tracking-[-0.02em] text-foreground">
+                  {t(onboardingCurrentStep.titleKey)}
+                </h2>
+                <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                  {t(onboardingCurrentStep.bodyKey)}
+                </p>
+                <div className="mt-4 rounded-lg border bg-muted/35 p-3 font-mono text-xs leading-5 break-words text-foreground">
+                  {ONBOARDING_EXAMPLE_PROMPT}
+                </div>
+
+                <div className="mt-auto pt-5">
+                  <div className="mb-4 flex items-center gap-2">
+                    {ONBOARDING_STEPS.map((step, index) => (
+                      <button
+                        key={step.titleKey}
+                        type="button"
+                        onClick={() => setOnboardingStep(index)}
+                        aria-label={`${t("onboardingGoToStep")} ${index + 1}`}
+                        aria-current={index === onboardingStep ? "step" : undefined}
+                        className={`h-2 rounded-full transition-all ${
+                          index === onboardingStep
+                            ? "w-7 bg-accent-blue"
+                            : "w-2 bg-muted-foreground/25 hover:bg-muted-foreground/45"
+                        }`}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setOnboardingStep((step) => Math.max(0, step - 1))}
+                      disabled={onboardingStep === 0}
+                      className="inline-flex h-10 items-center gap-2 rounded-md border bg-background px-3 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+                    >
+                      <ChevronLeftIcon className="size-4" />
+                      {t("onboardingPrevious")}
+                    </button>
+                    {onboardingStep === ONBOARDING_STEPS.length - 1 ? (
+                      <button
+                        type="button"
+                        onClick={handleUseOnboardingExample}
+                        className="inline-flex h-10 items-center gap-2 rounded-md bg-foreground px-4 text-sm font-semibold text-background transition-opacity hover:opacity-90"
+                      >
+                        <SparklesIcon className="size-4" />
+                        {t("onboardingUseExample")}
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setOnboardingStep((step) =>
+                            Math.min(ONBOARDING_STEPS.length - 1, step + 1),
+                          )
+                        }
+                        className="inline-flex h-10 items-center gap-2 rounded-md bg-foreground px-4 text-sm font-semibold text-background transition-opacity hover:opacity-90"
+                      >
+                        {t("onboardingNext")}
+                        <ChevronRightIcon className="size-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </aside>
+        )}
 
         {!state.promptTemplate.trim() && state.results.length === 0 && (
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">

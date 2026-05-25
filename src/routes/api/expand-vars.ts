@@ -1,9 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { runExpandLLM } from "@/lib/ai";
+import { parseExpandedValues, runExpandLLM } from "@/lib/ai";
 import { jsonResponse, requireValidOrigin } from "@/lib/api-helpers";
 import { createAuth } from "@/lib/auth/auth";
 import { getExpandCache, setExpandCache } from "@/lib/cache/prompt-cache";
+
+function normalizeExpandedValues(values: string[]): string[] {
+  return values.flatMap((value) => parseExpandedValues(value));
+}
 
 export async function handleExpandVars(request: Request): Promise<Response> {
   const originError = requireValidOrigin(request);
@@ -42,11 +46,11 @@ export async function handleExpandVars(request: Request): Promise<Response> {
     try {
       const cached = await getExpandCache(trimmed);
       if (cached) {
-        results[desc] = cached;
+        results[desc] = normalizeExpandedValues(cached);
         continue;
       }
 
-      const expanded = await runExpandLLM(trimmed);
+      const expanded = normalizeExpandedValues(await runExpandLLM(trimmed));
       await setExpandCache(trimmed, expanded);
       results[desc] = expanded;
     } catch (err) {

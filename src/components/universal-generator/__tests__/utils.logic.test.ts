@@ -87,6 +87,12 @@ describe("extractVariableGroups", () => {
     ]);
   });
 
+  it("treats Chinese punctuation as variable separators", () => {
+    expect(extractVariableGroups("cos{{小火苗、水蓝蓝、草之精灵，呱呱}}")).toEqual([
+      { id: "var_0", values: ["小火苗", "水蓝蓝", "草之精灵", "呱呱"] },
+    ]);
+  });
+
   it("handles template with text before and after variables", () => {
     expect(extractVariableGroups("A {{red, blue}} car in {{day, night}} time")).toEqual([
       { id: "var_0", values: ["red", "blue"] },
