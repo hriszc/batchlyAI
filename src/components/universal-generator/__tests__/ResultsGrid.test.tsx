@@ -25,6 +25,13 @@ const errorResult: GeneratedResult = {
   status: "error",
 };
 
+const videoResult: GeneratedResult = {
+  ...imageResult,
+  id: "r3",
+  imageUrl: "https://example.com/video.mp4",
+  mediaType: "video",
+};
+
 const sampleResults: GeneratedResult[] = [imageResult, errorResult];
 
 describe("ResultsGrid", () => {
@@ -98,29 +105,70 @@ describe("ResultsGrid", () => {
     expect(screen.getByText(/Results saved/)).toBeInTheDocument();
   });
 
-  // --- Share button ---
-  it("renders share button when onShare provided", () => {
-    const onShare = vi.fn();
+  // --- Share buttons ---
+  it("renders image and video share buttons when handlers are provided", () => {
+    const onShareImage = vi.fn();
+    const onShareVideo = vi.fn();
     renderWithProviders(
-      <ResultsGrid results={[imageResult]} isGenerating={false} onShare={onShare} />,
+      <ResultsGrid
+        results={[imageResult]}
+        isGenerating={false}
+        onShareImage={onShareImage}
+        onShareVideo={onShareVideo}
+      />,
     );
-    const btn = screen.getByTitle("Share Results");
-    expect(btn).toBeInTheDocument();
+    expect(screen.getByTitle("Share Image")).toBeInTheDocument();
+    expect(screen.getByTitle("Share Video")).toBeInTheDocument();
   });
 
-  it("clicking share button calls onShare", async () => {
-    const onShare = vi.fn();
+  it("clicking share buttons calls the matching handlers", async () => {
+    const onShareImage = vi.fn();
+    const onShareVideo = vi.fn();
     renderWithProviders(
-      <ResultsGrid results={[imageResult]} isGenerating={false} onShare={onShare} />,
+      <ResultsGrid
+        results={[imageResult]}
+        isGenerating={false}
+        onShareImage={onShareImage}
+        onShareVideo={onShareVideo}
+      />,
     );
-    await userEvent.click(screen.getByTitle("Share Results"));
-    expect(onShare).toHaveBeenCalledOnce();
+    await userEvent.click(screen.getByTitle("Share Image"));
+    expect(onShareImage).toHaveBeenCalledOnce();
+    expect(onShareVideo).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByTitle("Share Video"));
+    expect(onShareVideo).toHaveBeenCalledOnce();
   });
 
-  it("does not show share button during generation", () => {
-    const onShare = vi.fn();
-    renderWithProviders(<ResultsGrid results={[]} isGenerating={true} onShare={onShare} />);
-    expect(screen.queryByTitle("Share Results")).not.toBeInTheDocument();
+  it("does not show video share button without completed media", () => {
+    const onShareVideo = vi.fn();
+    renderWithProviders(
+      <ResultsGrid results={[errorResult]} isGenerating={false} onShareVideo={onShareVideo} />,
+    );
+    expect(screen.queryByTitle("Share Video")).not.toBeInTheDocument();
+  });
+
+  it("shows video share button for completed video media", () => {
+    const onShareVideo = vi.fn();
+    renderWithProviders(
+      <ResultsGrid results={[videoResult]} isGenerating={false} onShareVideo={onShareVideo} />,
+    );
+    expect(screen.getByTitle("Share Video")).toBeInTheDocument();
+  });
+
+  it("does not show share buttons during generation", () => {
+    const onShareImage = vi.fn();
+    const onShareVideo = vi.fn();
+    renderWithProviders(
+      <ResultsGrid
+        results={[]}
+        isGenerating={true}
+        onShareImage={onShareImage}
+        onShareVideo={onShareVideo}
+      />,
+    );
+    expect(screen.queryByTitle("Share Image")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("Share Video")).not.toBeInTheDocument();
   });
 
   // --- Download All button ---

@@ -7,6 +7,10 @@ vi.mock("../universal-generator/ShareScreenshot", () => ({
   ShareScreenshot: () => null,
 }));
 
+vi.mock("../universal-generator/ShareVideo", () => ({
+  ShareVideo: () => null,
+}));
+
 const mockUseSession = vi.fn();
 
 vi.mock("@/lib/auth/auth-client", () => ({

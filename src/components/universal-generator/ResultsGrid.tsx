@@ -1,4 +1,4 @@
-import { Share2Icon, DownloadIcon, Loader2Icon } from "lucide-react";
+import { Share2Icon, DownloadIcon, Loader2Icon, VideoIcon } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -11,7 +11,8 @@ interface ResultsGridProps {
   isGenerating: boolean;
   totalExpected?: number;
   showWatermark?: boolean;
-  onShare?: () => void;
+  onShareImage?: () => void;
+  onShareVideo?: () => void;
   onPublish?: () => void;
   isPublishing?: boolean;
 }
@@ -65,7 +66,8 @@ export function ResultsGrid({
   isGenerating,
   showWatermark = false,
   totalExpected,
-  onShare,
+  onShareImage,
+  onShareVideo,
   onPublish,
   isPublishing = false,
 }: ResultsGridProps) {
@@ -127,6 +129,7 @@ export function ResultsGrid({
   const downloadableCount = displayResults.filter(
     (r) => r.status === "complete" && (r.imageUrl || r.textContent),
   ).length;
+  const shareableMediaCount = results.filter((r) => r.status === "complete" && r.imageUrl).length;
   const showActions = !isGenerating && results.length > 0;
   const skeletonCount = isGenerating
     ? Math.min(6, Math.max(0, (totalExpected ?? 6) - results.length))
@@ -139,15 +142,29 @@ export function ResultsGrid({
           {t("results")}
         </h2>
         {showActions && (
-          <div className="flex items-center gap-1">
-            {onShare && (
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {onShareImage && (
               <button
                 type="button"
-                onClick={onShare}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg border bg-muted/30 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                title={t("shareResultsAction")}
+                onClick={onShareImage}
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg border bg-muted/30 px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                aria-label={t("shareImage")}
+                title={t("shareImage")}
               >
                 <Share2Icon className="size-4" />
+                <span>{t("shareImage")}</span>
+              </button>
+            )}
+            {onShareVideo && shareableMediaCount > 0 && (
+              <button
+                type="button"
+                onClick={onShareVideo}
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg border bg-muted/30 px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                aria-label={t("shareVideo")}
+                title={t("shareVideo")}
+              >
+                <VideoIcon className="size-4" />
+                <span>{t("shareVideo")}</span>
               </button>
             )}
             {onPublish && publishableCount > 0 && (
