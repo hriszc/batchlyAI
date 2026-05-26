@@ -15,6 +15,7 @@ import { GeneratorCard } from "@/components/universal-generator/GeneratorCard";
 import { MODELS } from "@/components/universal-generator/models";
 import { ResultsGrid } from "@/components/universal-generator/ResultsGrid";
 import { ShareScreenshot } from "@/components/universal-generator/ShareScreenshot";
+import { ShareVideo } from "@/components/universal-generator/ShareVideo";
 import { useGeneratorState } from "@/components/universal-generator/useGeneratorState";
 import { computePromptCombinations } from "@/components/universal-generator/utils";
 import { useAuthGate } from "@/components/useAuthGate";
@@ -284,7 +285,8 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
   const resultsRef = useRef<HTMLDivElement>(null);
   const { language, setLanguage, t } = useLanguage();
   const [hydrated, setHydrated] = useState(false);
-  const [shareMode, setShareMode] = useState(false);
+  const [shareImageMode, setShareImageMode] = useState(false);
+  const [shareVideoMode, setShareVideoMode] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [showOnboardingCard, setShowOnboardingCard] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
@@ -715,9 +717,13 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
               expectedUnitsPerCombination
             }
             showWatermark={showWatermark}
-            onShare={() => {
+            onShareImage={() => {
               if (state.results.length === 0) return;
-              setShareMode(true);
+              setShareImageMode(true);
+            }}
+            onShareVideo={() => {
+              if (state.results.length === 0) return;
+              setShareVideoMode(true);
             }}
             onPublish={isLoggedIn ? handlePublish : undefined}
             isPublishing={publishing}
@@ -754,7 +760,7 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
         />
       </section>
 
-      {shareMode && (
+      {shareImageMode && (
         <ShareScreenshot
           promptTemplate={state.promptTemplate}
           originalPromptTemplate={state.originalPromptTemplate}
@@ -762,13 +768,32 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
           variableGroups={state.variableGroups}
           results={state.results}
           onComplete={() => {
-            setShareMode(false);
+            setShareImageMode(false);
             toast.success(t("shareSuccess"));
           }}
           onError={(msg) => {
-            setShareMode(false);
+            setShareImageMode(false);
             toast.error(t("shareFailed"));
             console.error("[share]", msg);
+          }}
+        />
+      )}
+
+      {shareVideoMode && (
+        <ShareVideo
+          promptTemplate={state.promptTemplate}
+          originalPromptTemplate={state.originalPromptTemplate}
+          sourceImageUrls={sourceImageUrls}
+          variableGroups={state.variableGroups}
+          results={state.results}
+          onComplete={() => {
+            setShareVideoMode(false);
+            toast.success(t("shareVideoSuccess"));
+          }}
+          onError={(msg) => {
+            setShareVideoMode(false);
+            toast.error(msg || t("shareVideoFailed"));
+            console.error("[share-video]", msg);
           }}
         />
       )}
