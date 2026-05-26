@@ -289,6 +289,12 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
   const [showOnboardingCard, setShowOnboardingCard] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
 
+  const sourceImageUrls = useMemo(
+    () =>
+      state.attachedFiles.filter((file) => !file.uploading && file.url).map((file) => file.url!),
+    [state.attachedFiles],
+  );
+
   const handlePublish = useCallback(async () => {
     if (publishing || state.results.length === 0) return;
     const coverUrl = state.results.find((r) => r.imageUrl)?.imageUrl;
@@ -304,6 +310,7 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
         coverUrl,
         resultUrls,
         promptTemplate: state.promptTemplate,
+        originalPromptTemplate: state.originalPromptTemplate,
         variableGroups: JSON.stringify(state.variableGroups),
         model: state.model,
         aspectRatio: state.aspectRatio,
@@ -355,6 +362,7 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
   }, [
     publishing,
     state.promptTemplate,
+    state.originalPromptTemplate,
     state.results,
     state.variableGroups,
     state.model,
@@ -749,6 +757,8 @@ export function HomePage({ forceLanguage, showTaaftBadge = false }: HomePageProp
       {shareMode && (
         <ShareScreenshot
           promptTemplate={state.promptTemplate}
+          originalPromptTemplate={state.originalPromptTemplate}
+          sourceImageUrls={sourceImageUrls}
           variableGroups={state.variableGroups}
           results={state.results}
           onComplete={() => {

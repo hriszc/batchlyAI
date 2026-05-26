@@ -61,6 +61,7 @@ export const work = sqliteTable(
     description: text("description"),
     category: text("category"),
     promptTemplate: text("prompt_template").notNull(),
+    originalPromptTemplate: text("original_prompt_template"),
     variableGroups: text("variable_groups").notNull(),
     coverUrl: text("cover_url").notNull(),
     resultUrls: text("result_urls").notNull(),

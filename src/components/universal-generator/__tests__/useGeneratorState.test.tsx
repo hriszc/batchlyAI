@@ -51,6 +51,39 @@ describe("useGeneratorState", () => {
     expect(result.current.state.promptTemplate).toBe("hello world");
   });
 
+  it("setExpandedPromptTemplate keeps the original prompt used for AI expansion", () => {
+    const { result } = renderHook(() => useGeneratorState(), {
+      wrapper: createWrapper(),
+    });
+
+    act(() => {
+      result.current.actions.setExpandedPromptTemplate(
+        "A {{cat, dog}} in watercolor style",
+        "A {*pet*} in watercolor style",
+      );
+    });
+
+    expect(result.current.state.promptTemplate).toBe("A {{cat, dog}} in watercolor style");
+    expect(result.current.state.originalPromptTemplate).toBe("A {*pet*} in watercolor style");
+    expect(result.current.state.variableGroups).toEqual([{ id: "var_0", values: ["cat", "dog"] }]);
+  });
+
+  it("setPromptTemplate clears the original prompt after a manual edit", () => {
+    const { result } = renderHook(() => useGeneratorState(), {
+      wrapper: createWrapper(),
+    });
+
+    act(() => {
+      result.current.actions.setExpandedPromptTemplate("A {{cat, dog}}", "A {*pet*}");
+    });
+    act(() => {
+      result.current.actions.setPromptTemplate("A {{bird}}");
+    });
+
+    expect(result.current.state.promptTemplate).toBe("A {{bird}}");
+    expect(result.current.state.originalPromptTemplate).toBeNull();
+  });
+
   it("setPromptTemplate clears error", () => {
     const { result } = renderHook(() => useGeneratorState(), {
       wrapper: createWrapper(),

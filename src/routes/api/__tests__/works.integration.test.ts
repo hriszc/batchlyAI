@@ -111,6 +111,7 @@ describe("handlePostWork", () => {
         coverUrl: "https://temp.example.com/cover.png",
         resultUrls: ["https://temp.example.com/cover.png", "https://temp.example.com/extra.png"],
         promptTemplate: "A {{cat}}",
+        originalPromptTemplate: "A {*pet*}",
         variableGroups: "[]",
         model: "z-image-fast",
         aspectRatio: "9:16",
@@ -121,11 +122,12 @@ describe("handlePostWork", () => {
     expect(mocks.mockMirrorImageToR2).toHaveBeenCalledTimes(2);
     expect(mocks.mockGenerateExploreMetadata).toHaveBeenCalledWith(
       expect.objectContaining({
-        prompt: "A {{cat}}",
+        prompt: "A {*pet*}",
         model: "z-image-fast",
         aspectRatio: "9:16",
       }),
     );
+    expect(db.__state.insertedWork?.originalPromptTemplate).toBe("A {*pet*}");
     expect(db.__state.insertedWork?.title).toBe("Studio Product Shot");
     expect(db.__state.insertedWork?.description).toContain("studio product shot");
     expect(db.__state.insertedWork?.category).toBe("ecommerce");

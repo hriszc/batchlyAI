@@ -14,6 +14,7 @@ export interface ExpandActions {
 export function useExpandVariables(
   promptTemplate: string,
   setPromptTemplate: (value: string) => void,
+  setExpandedPromptTemplate: (value: string, originalPromptTemplate: string) => void,
 ): ExpandActions {
   const [isExpanding, setIsExpanding] = useState(false);
   const previousRef = useRef<string | null>(null);
@@ -63,7 +64,7 @@ export function useExpandVariables(
       }
 
       if (anyExpanded) {
-        setPromptTemplate(updated);
+        setExpandedPromptTemplate(updated, promptTemplate);
         setHasExpanded(true);
       }
     } catch (err) {
@@ -72,7 +73,7 @@ export function useExpandVariables(
     } finally {
       setIsExpanding(false);
     }
-  }, [expandBlocks, promptTemplate, setPromptTemplate, isExpanding]);
+  }, [expandBlocks, promptTemplate, setExpandedPromptTemplate, isExpanding]);
 
   const undoExpand = useCallback(() => {
     if (previousRef.current !== null) {

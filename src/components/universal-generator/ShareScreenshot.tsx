@@ -6,11 +6,15 @@ import type { GeneratedResult, VariableGroup } from "./types";
 
 interface ShareScreenshotProps {
   promptTemplate: string;
+  originalPromptTemplate?: string | null;
+  sourceImageUrls?: string[];
   variableGroups: VariableGroup[];
   results: GeneratedResult[];
   onComplete: () => void;
   onError: (msg: string) => void;
 }
+
+const EMPTY_SOURCE_IMAGE_URLS: string[] = [];
 
 async function imageUrlToDataUri(url: string): Promise<string> {
   const resp = await fetch(url);
@@ -85,6 +89,8 @@ async function saveOrShareBlob(blob: Blob, filename: string): Promise<void> {
 
 export function ShareScreenshot({
   promptTemplate,
+  originalPromptTemplate,
+  sourceImageUrls = EMPTY_SOURCE_IMAGE_URLS,
   variableGroups,
   results,
   onComplete,
@@ -93,14 +99,26 @@ export function ShareScreenshot({
   const cardRef = useRef<HTMLDivElement>(null);
   const { t } = useLanguage();
   const [dataUris, setDataUris] = useState<Record<string, string>>({});
+  const [sourceDataUris, setSourceDataUris] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [captured, setCaptured] = useState(false);
+  const cleanedOriginalPrompt = originalPromptTemplate?.trim() || "";
+  const showOriginalPrompt =
+    cleanedOriginalPrompt.length > 0 && cleanedOriginalPrompt !== promptTemplate;
 
-  // 1. Convert all result images to data URIs
+  // 1. Convert all result and source images to data URIs
   useEffect(() => {
     let cancelled = false;
     async function loadImages() {
       const uris: Record<string, string> = {};
+      const sourceUris: string[] = [];
+      for (const url of sourceImageUrls) {
+        try {
+          sourceUris.push(await imageUrlToDataUri(url));
+        } catch {
+          sourceUris.push(url);
+        }
+      }
       for (const r of results) {
         if (!r.imageUrl) continue;
         try {
@@ -112,6 +130,7 @@ export function ShareScreenshot({
       }
       if (!cancelled) {
         setDataUris(uris);
+        setSourceDataUris(sourceUris);
         setLoading(false);
       }
     }
@@ -119,7 +138,7 @@ export function ShareScreenshot({
     return () => {
       cancelled = true;
     };
-  }, [results]);
+  }, [results, sourceImageUrls]);
 
   // 2. After DOM renders with data URIs, capture with html2canvas
   useEffect(() => {
@@ -223,9 +242,20 @@ export function ShareScreenshot({
         {/* Prompt */}
         <div className="px-10 py-6">
           <h3 className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
-            {t("sharePromptTemplate")}
+            {showOriginalPrompt ? t("shareOriginalPrompt") : t("sharePromptTemplate")}
           </h3>
-          <p className="mb-4 text-base leading-relaxed text-gray-800">{promptTemplate}</p>
+          <p className="mb-4 text-base leading-relaxed text-gray-800">
+            {showOriginalPrompt ? cleanedOriginalPrompt : promptTemplate}
+          </p>
+
+          {showOriginalPrompt && (
+            <>
+              <h3 className="mb-2 text-xs font-semibold tracking-wide text-gray-400 uppercase">
+                {t("shareExpandedPrompt")}
+              </h3>
+              <p className="mb-4 text-sm leading-relaxed text-gray-600">{promptTemplate}</p>
+            </>
+          )}
 
           {variableGroups.filter((g) => g.values.length > 0).length > 0 && (
             <div>
@@ -245,6 +275,29 @@ export function ShareScreenshot({
             </div>
           )}
         </div>
+
+        {sourceDataUris.length > 0 && (
+          <div className="px-10 pb-6">
+            <h3 className="mb-4 text-xs font-semibold tracking-wide text-gray-400 uppercase">
+              {t("shareSourceImages", { count: sourceDataUris.length })}
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              {sourceDataUris.map((src, index) => (
+                <div
+                  key={`${src}-${index}`}
+                  className="overflow-hidden rounded-lg border bg-gray-50"
+                >
+                  <img
+                    src={src}
+                    alt={t("sourceImageAlt", { index: index + 1 })}
+                    crossOrigin="anonymous"
+                    className="w-full"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Results */}
         <div className="px-10 pb-10">

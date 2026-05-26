@@ -117,6 +117,13 @@ function WorkDetailPage() {
   };
 
   const resultUrls = (data.resultUrls as string[]) || [];
+  const originalPromptTemplate =
+    typeof data.originalPromptTemplate === "string" && data.originalPromptTemplate.trim()
+      ? data.originalPromptTemplate.trim()
+      : null;
+  const hasOriginalPrompt =
+    !!originalPromptTemplate && originalPromptTemplate !== data.promptTemplate;
+  const promptToCopy = originalPromptTemplate || data.promptTemplate;
 
   return (
     <main className="mx-auto max-w-[980px] px-4 py-8">
@@ -157,7 +164,7 @@ function WorkDetailPage() {
         </button>
         <button
           onClick={() => {
-            void navigator.clipboard.writeText(data.promptTemplate);
+            void navigator.clipboard.writeText(promptToCopy);
             toast.success(t("copied"));
           }}
           className="inline-flex items-center gap-1.5 rounded-lg bg-muted/30 px-3 py-2 text-sm text-muted-foreground"
@@ -170,9 +177,24 @@ function WorkDetailPage() {
         <summary className="cursor-pointer text-sm text-muted-foreground">
           {t("viewPromptTemplate")}
         </summary>
+        {hasOriginalPrompt && (
+          <div className="mt-3 text-xs font-medium text-muted-foreground">
+            {t("originalPrompt")}
+          </div>
+        )}
         <pre className="mt-2 rounded-lg bg-muted/20 p-3 text-xs whitespace-pre-wrap">
-          {data.promptTemplate}
+          {hasOriginalPrompt ? originalPromptTemplate : data.promptTemplate}
         </pre>
+        {hasOriginalPrompt && (
+          <>
+            <div className="mt-3 text-xs font-medium text-muted-foreground">
+              {t("expandedPrompt")}
+            </div>
+            <pre className="mt-2 rounded-lg bg-muted/20 p-3 text-xs whitespace-pre-wrap">
+              {data.promptTemplate}
+            </pre>
+          </>
+        )}
       </details>
 
       <h2 className="mt-8 mb-4 text-lg font-semibold">{t("results")}</h2>

@@ -4,6 +4,7 @@ import { serializeVariableGroupsIntoTemplate, syncVariableGroupsFromTemplate } f
 
 export const initialState: GeneratorState = {
   promptTemplate: "",
+  originalPromptTemplate: null,
   variableGroups: [],
   results: [],
   isGenerating: false,
@@ -24,7 +25,19 @@ export function reducer(state: GeneratorState, action: GeneratorAction): Generat
       return {
         ...state,
         promptTemplate: action.payload,
+        originalPromptTemplate: null,
         variableGroups: syncVariableGroupsFromTemplate(action.payload, state.variableGroups),
+      };
+
+    case "SET_EXPANDED_PROMPT_TEMPLATE":
+      return {
+        ...state,
+        promptTemplate: action.payload.promptTemplate,
+        originalPromptTemplate: action.payload.originalPromptTemplate,
+        variableGroups: syncVariableGroupsFromTemplate(
+          action.payload.promptTemplate,
+          state.variableGroups,
+        ),
       };
 
     case "SYNC_GROUPS_FROM_TEMPLATE": {

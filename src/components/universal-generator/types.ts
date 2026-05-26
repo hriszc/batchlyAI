@@ -51,6 +51,7 @@ export const VIDEO_DURATION_SECONDS: Record<VideoDuration, number> = {
 
 export interface GeneratorState {
   promptTemplate: string;
+  originalPromptTemplate: string | null;
   variableGroups: VariableGroup[];
   results: GeneratedResult[];
   isGenerating: boolean;
@@ -67,6 +68,10 @@ export interface GeneratorState {
 
 export type GeneratorAction =
   | { type: "SET_PROMPT_TEMPLATE"; payload: string }
+  | {
+      type: "SET_EXPANDED_PROMPT_TEMPLATE";
+      payload: { promptTemplate: string; originalPromptTemplate: string };
+    }
   | { type: "SYNC_GROUPS_FROM_TEMPLATE" }
   | { type: "SET_QUANTITY"; payload: number }
   | { type: "SET_ASPECT_RATIO"; payload: string }

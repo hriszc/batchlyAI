@@ -136,6 +136,14 @@ export function useGeneratorState() {
     dispatch({ type: "SET_ERROR", payload: null });
   }, []);
 
+  const setExpandedPromptTemplate = useCallback((value: string, originalPromptTemplate: string) => {
+    dispatch({
+      type: "SET_EXPANDED_PROMPT_TEMPLATE",
+      payload: { promptTemplate: value, originalPromptTemplate },
+    });
+    dispatch({ type: "SET_ERROR", payload: null });
+  }, []);
+
   const setQuantity = useCallback((value: number) => {
     dispatch({ type: "SET_QUANTITY", payload: value });
   }, []);
@@ -585,6 +593,7 @@ export function useGeneratorState() {
     state,
     actions: {
       setPromptTemplate,
+      setExpandedPromptTemplate,
       setQuantity,
       setAspectRatio,
       setModel,
