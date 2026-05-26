@@ -10,6 +10,7 @@ import type { GeneratorState } from "../types";
 
 const mockActions = {
   setPromptTemplate: vi.fn(),
+  setExpandedPromptTemplate: vi.fn(),
   setQuantity: vi.fn(),
   setAspectRatio: vi.fn(),
   setModel: vi.fn(),
@@ -26,6 +27,7 @@ const mockActions = {
 
 const baseState: GeneratorState = {
   promptTemplate: "",
+  originalPromptTemplate: null,
   variableGroups: [],
   results: [],
   isGenerating: false,

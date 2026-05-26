@@ -25,6 +25,7 @@ interface GeneratorCardProps {
   state: GeneratorState;
   actions: {
     setPromptTemplate: (value: string) => void;
+    setExpandedPromptTemplate: (value: string, originalPromptTemplate: string) => void;
     setQuantity: (value: number) => void;
     setAspectRatio: (value: string) => void;
     setModel: (value: string) => void;
@@ -61,7 +62,11 @@ export function GeneratorCard({
   const { t } = useLanguage();
   const insufficientCreditsMessage = t("insufficientCreditsTitle");
 
-  const expand = useExpandVariables(state.promptTemplate, actions.setPromptTemplate);
+  const expand = useExpandVariables(
+    state.promptTemplate,
+    actions.setPromptTemplate,
+    actions.setExpandedPromptTemplate,
+  );
 
   const handlePromptInput = useCallback(
     (value: string) => {

@@ -16,6 +16,7 @@ export function createVariableGroup(overrides?: Partial<VariableGroup>): Variabl
 export function createGeneratorState(overrides?: Partial<GeneratorState>): GeneratorState {
   return {
     promptTemplate: "",
+    originalPromptTemplate: null,
     variableGroups: [],
     results: [],
     isGenerating: false,

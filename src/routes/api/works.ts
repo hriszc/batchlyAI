@@ -93,6 +93,7 @@ export async function handlePostWork(request: Request): Promise<Response> {
       coverUrl: string;
       resultUrls?: string[];
       promptTemplate: string;
+      originalPromptTemplate?: string | null;
       variableGroups: string;
       model: string;
       aspectRatio?: string;
@@ -107,6 +108,9 @@ export async function handlePostWork(request: Request): Promise<Response> {
     if (body.promptTemplate.length > 5000) {
       return jsonResponse({ error: "Prompt template too long" }, 400);
     }
+    if (body.originalPromptTemplate && body.originalPromptTemplate.length > 5000) {
+      return jsonResponse({ error: "Original prompt template too long" }, 400);
+    }
     if (body.resultUrls && body.resultUrls.length > 20) {
       return jsonResponse({ error: "Too many result URLs" }, 400);
     }
@@ -114,6 +118,7 @@ export async function handlePostWork(request: Request): Promise<Response> {
 
     const now = Math.floor(Date.now() / 1000);
     const id = crypto.randomUUID();
+    const originalPromptTemplate = body.originalPromptTemplate?.trim() || null;
     const coverIndex = body.resultUrls?.indexOf(body.coverUrl) ?? -1;
     const resultUrls = body.resultUrls?.length
       ? await Promise.all(
@@ -125,7 +130,7 @@ export async function handlePostWork(request: Request): Promise<Response> {
       resultUrls[0] ||
       (await mirrorImageToR2(body.coverUrl, `works/${id}/cover.png`));
     const metadata = await generateExploreMetadata({
-      prompt: body.promptTemplate,
+      prompt: originalPromptTemplate || body.promptTemplate,
       model: body.model,
       aspectRatio: body.aspectRatio,
       title: body.title,
@@ -144,6 +149,7 @@ export async function handlePostWork(request: Request): Promise<Response> {
       coverUrl,
       resultUrls: JSON.stringify(resultUrls.length ? resultUrls : [coverUrl]),
       promptTemplate: body.promptTemplate,
+      originalPromptTemplate,
       variableGroups: body.variableGroups || "{}",
       model: body.model,
       generationId: body.generationId || null,

@@ -19,6 +19,14 @@ describe("reducer", () => {
       expect(next.promptTemplate).toBe("hello");
     });
 
+    it("clears originalPromptTemplate when replacing the prompt", () => {
+      const next = reducer(state({ originalPromptTemplate: "original" }), {
+        type: "SET_PROMPT_TEMPLATE",
+        payload: "hello",
+      });
+      expect(next.originalPromptTemplate).toBeNull();
+    });
+
     it("synchronizes variable groups from the prompt", () => {
       const next = reducer(
         state({
@@ -39,6 +47,21 @@ describe("reducer", () => {
       });
       expect(next.model).toBe(initialState.model);
       expect(next.quantity).toBe(initialState.quantity);
+    });
+  });
+
+  describe("SET_EXPANDED_PROMPT_TEMPLATE", () => {
+    it("stores both original and expanded prompt templates", () => {
+      const next = reducer(initialState, {
+        type: "SET_EXPANDED_PROMPT_TEMPLATE",
+        payload: {
+          originalPromptTemplate: "A {*pet*}",
+          promptTemplate: "A {{cat, dog}}",
+        },
+      });
+      expect(next.originalPromptTemplate).toBe("A {*pet*}");
+      expect(next.promptTemplate).toBe("A {{cat, dog}}");
+      expect(next.variableGroups).toEqual([{ id: "var_0", values: ["cat", "dog"] }]);
     });
   });
 
