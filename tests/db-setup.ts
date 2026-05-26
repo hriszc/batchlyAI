@@ -130,6 +130,7 @@ export function applyMigrations(db: ReturnType<typeof createTestDb>) {
     "description" text,
     "category" text,
     "prompt_template" text NOT NULL,
+    "original_prompt_template" text,
     "variable_groups" text NOT NULL,
     "cover_url" text NOT NULL,
     "result_urls" text NOT NULL,
