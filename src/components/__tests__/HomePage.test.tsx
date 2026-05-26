@@ -82,9 +82,9 @@ describe("HomePage", () => {
 
   it("renders the Image Pro homepage example", () => {
     renderWithProviders(<HomePage />);
-    expect(screen.getByText("One short prompt. Five cinematic results.")).toBeInTheDocument();
+    expect(screen.getByText("One short prompt. Five anime couple looks.")).toBeInTheDocument();
     expect(
-      screen.getAllByText("Make the person in the image cosplay as {*One Piece characters*}")[0],
+      screen.getAllByText("Make the person in the image cosplay as {*anime couples*}")[0],
     ).toBeInTheDocument();
     expect(screen.getByText("Image Pro")).toBeInTheDocument();
   });
@@ -107,7 +107,7 @@ describe("HomePage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Use this example" }));
     expect(screen.getByPlaceholderText(/Describe your image/)).toHaveValue(
-      "Make the person in the image cosplay as {*One Piece characters*}",
+      "Make the person in the image cosplay as {*anime couples*}",
     );
   });
 
