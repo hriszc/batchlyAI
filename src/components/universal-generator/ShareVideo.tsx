@@ -31,6 +31,16 @@ interface VideoAssetSet {
   results: ResultAsset[];
 }
 
+type ShareVideoProgressPhase = "loading" | "recording" | "saving";
+
+interface ShareVideoProgress {
+  phase: ShareVideoProgressPhase;
+  percent: number;
+  etaSeconds?: number;
+  loaded?: number;
+  total?: number;
+}
+
 interface ShareVideoLabels {
   originalPrompt: string;
   result: string;
@@ -44,12 +54,21 @@ const VIDEO_HEIGHT = 1920;
 const VIDEO_FPS = 30;
 const INTRO_SECONDS = 1.4;
 const OUTRO_SECONDS = 1.1;
+const MEDIA_FETCH_TIMEOUT_MS = 20_000;
+const MEDIA_LOAD_TIMEOUT_MS = 15_000;
+const RECORDING_TIMEOUT_BUFFER_MS = 5_000;
 
 async function urlToObjectUrl(url: string): Promise<string> {
-  const resp = await fetch(url);
-  if (!resp.ok) throw new Error(`Image request failed: ${resp.status}`);
-  const blob = await resp.blob();
-  return URL.createObjectURL(blob);
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), MEDIA_FETCH_TIMEOUT_MS);
+  try {
+    const resp = await fetch(url, { signal: controller.signal });
+    if (!resp.ok) throw new Error(`Image request failed: ${resp.status}`);
+    const blob = await resp.blob();
+    return URL.createObjectURL(blob);
+  } finally {
+    window.clearTimeout(timeout);
+  }
 }
 
 async function loadImage(url: string): Promise<ImageAsset | null> {
@@ -59,8 +78,18 @@ async function loadImage(url: string): Promise<ImageAsset | null> {
     const image = new Image();
     image.decoding = "async";
     await new Promise<void>((resolve, reject) => {
-      image.onload = () => resolve();
-      image.onerror = () => reject(new Error("Image failed to load"));
+      const timeout = window.setTimeout(
+        () => reject(new Error("Image load timed out")),
+        MEDIA_LOAD_TIMEOUT_MS,
+      );
+      image.onload = () => {
+        window.clearTimeout(timeout);
+        resolve();
+      };
+      image.onerror = () => {
+        window.clearTimeout(timeout);
+        reject(new Error("Image failed to load"));
+      };
       image.src = objectUrl!;
     });
     return {
@@ -84,8 +113,18 @@ async function loadVideoPoster(url: string): Promise<ImageAsset | null> {
     video.playsInline = true;
     video.preload = "auto";
     await new Promise<void>((resolve, reject) => {
-      video.onloadeddata = () => resolve();
-      video.onerror = () => reject(new Error("Video failed to load"));
+      const timeout = window.setTimeout(
+        () => reject(new Error("Video load timed out")),
+        MEDIA_LOAD_TIMEOUT_MS,
+      );
+      video.onloadeddata = () => {
+        window.clearTimeout(timeout);
+        resolve();
+      };
+      video.onerror = () => {
+        window.clearTimeout(timeout);
+        reject(new Error("Video failed to load"));
+      };
       video.src = objectUrl!;
       video.load();
     });
@@ -120,17 +159,32 @@ async function loadMediaAsset(
 async function loadAssets(
   sourceImageUrls: string[],
   results: GeneratedResult[],
+  onProgress?: (loaded: number, total: number) => void,
 ): Promise<VideoAssetSet> {
-  const sources = (
-    await Promise.all(sourceImageUrls.slice(0, 2).map((url) => loadImage(url)))
-  ).filter((asset): asset is ImageAsset => !!asset);
+  const sourceUrls = sourceImageUrls.slice(0, 2);
+  const completeResults = results
+    .filter((result) => result.status === "complete" && result.imageUrl)
+    .slice(0, 8);
+  const total = sourceUrls.length + completeResults.length;
+  let loaded = 0;
+  onProgress?.(loaded, total);
 
-  const completeResults = results.filter(
-    (result) => result.status === "complete" && result.imageUrl,
+  async function trackLoad<T>(promise: Promise<T>): Promise<T> {
+    try {
+      return await promise;
+    } finally {
+      loaded += 1;
+      onProgress?.(loaded, total);
+    }
+  }
+
+  const sources = (await Promise.all(sourceUrls.map((url) => trackLoad(loadImage(url))))).filter(
+    (asset): asset is ImageAsset => !!asset,
   );
+
   const resultAssets = await Promise.all(
-    completeResults.slice(0, 8).map(async (result) => {
-      const asset = await loadMediaAsset(result.imageUrl!, result.mediaType);
+    completeResults.map(async (result) => {
+      const asset = await trackLoad(loadMediaAsset(result.imageUrl!, result.mediaType));
       if (!asset) return null;
       return {
         ...asset,
@@ -373,13 +427,28 @@ function canvasToVideoBlob(
   labels: ShareVideoLabels,
   mimeType: string,
   durationSeconds: number,
+  onProgress?: (elapsedSeconds: number, durationSeconds: number) => void,
 ): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    const stream = canvas.captureStream(VIDEO_FPS);
+    let stream = canvas.captureStream(0);
+    let videoTrack = stream.getVideoTracks()[0] as
+      | (MediaStreamTrack & { requestFrame?: () => void })
+      | undefined;
+    if (!videoTrack?.requestFrame) {
+      stream.getTracks().forEach((track) => track.stop());
+      stream = canvas.captureStream(VIDEO_FPS);
+      videoTrack = stream.getVideoTracks()[0] as
+        | (MediaStreamTrack & { requestFrame?: () => void })
+        | undefined;
+    }
     const recorder = new MediaRecorder(stream, { mimeType });
     const chunks: BlobPart[] = [];
-    let animationFrame = 0;
-    let startedAt = 0;
+    const totalFrames = Math.max(1, Math.ceil(durationSeconds * VIDEO_FPS));
+    const progressFrameInterval = Math.max(1, Math.floor(VIDEO_FPS / 4));
+    let frame = 0;
+    let frameTimer = 0;
+    let timeoutTimer = 0;
+    let settled = false;
     const ctx = canvas.getContext("2d");
     if (!ctx) {
       reject(new Error("Canvas unavailable"));
@@ -387,39 +456,67 @@ function canvasToVideoBlob(
     }
 
     const cleanup = () => {
-      cancelAnimationFrame(animationFrame);
+      window.clearTimeout(frameTimer);
+      window.clearTimeout(timeoutTimer);
       stream.getTracks().forEach((track) => track.stop());
+    };
+
+    const settleReject = (error: Error) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(error);
+    };
+
+    const stopRecorder = () => {
+      if (settled || recorder.state === "inactive") return;
+      recorder.stop();
     };
 
     recorder.ondataavailable = (event) => {
       if (event.data.size > 0) chunks.push(event.data);
     };
     recorder.onerror = () => {
-      cleanup();
-      reject(new Error("Video recording failed"));
+      settleReject(new Error("Video recording failed"));
     };
     recorder.onstop = () => {
+      if (settled) return;
+      settled = true;
       cleanup();
+      if (chunks.length === 0) {
+        reject(new Error("Video recording produced no data"));
+        return;
+      }
       resolve(new Blob(chunks, { type: mimeType }));
     };
 
-    const render = (now: number) => {
-      if (!startedAt) startedAt = now;
-      const elapsed = (now - startedAt) / 1000;
-      drawFrame(ctx, assets, prompt, labels, Math.min(elapsed, durationSeconds), durationSeconds);
-      if (elapsed >= durationSeconds) {
-        recorder.stop();
+    const renderNextFrame = () => {
+      if (settled) return;
+      const elapsed = Math.min(frame / VIDEO_FPS, durationSeconds);
+      drawFrame(ctx, assets, prompt, labels, elapsed, durationSeconds);
+      videoTrack?.requestFrame?.();
+      if (frame % progressFrameInterval === 0 || frame >= totalFrames) {
+        onProgress?.(elapsed, durationSeconds);
+      }
+      if (frame >= totalFrames) {
+        stopRecorder();
         return;
       }
-      animationFrame = requestAnimationFrame(render);
+      frame += 1;
+      frameTimer = window.setTimeout(renderNextFrame, 1000 / VIDEO_FPS);
     };
 
     try {
-      recorder.start();
-      animationFrame = requestAnimationFrame(render);
+      drawFrame(ctx, assets, prompt, labels, 0, durationSeconds);
+      videoTrack?.requestFrame?.();
+      recorder.start(1000);
+      timeoutTimer = window.setTimeout(
+        stopRecorder,
+        durationSeconds * 1000 + RECORDING_TIMEOUT_BUFFER_MS,
+      );
+      renderNextFrame();
     } catch (err) {
-      cleanup();
-      reject(err instanceof Error ? err : new Error("Video recording failed"));
+      settleReject(err instanceof Error ? err : new Error("Video recording failed"));
     }
   });
 }
@@ -450,6 +547,10 @@ async function saveOrShareVideoBlob(
   window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
 
+function clampPercent(value: number): number {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
 export function ShareVideo({
   promptTemplate,
   originalPromptTemplate,
@@ -461,6 +562,10 @@ export function ShareVideo({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { t } = useLanguage();
   const [isPreparing, setIsPreparing] = useState(true);
+  const [progress, setProgress] = useState<ShareVideoProgress>({
+    phase: "loading",
+    percent: 0,
+  });
   const cleanedOriginalPrompt = originalPromptTemplate?.trim() || "";
   const displayPrompt = cleanedOriginalPrompt || promptTemplate;
 
@@ -476,13 +581,39 @@ export function ShareVideo({
         return;
       }
 
-      assets = await loadAssets(sourceImageUrls, results);
+      const expectedResultCount = results.filter(
+        (result) => result.status === "complete" && result.imageUrl,
+      ).length;
+      const expectedDurationSeconds = getShareVideoDurationSeconds(expectedResultCount);
+      const loadingStartedAt = performance.now();
+      assets = await loadAssets(sourceImageUrls, results, (loaded, total) => {
+        if (cancelled) return;
+        const mediaProgress = total > 0 ? loaded / total : 1;
+        const elapsedSeconds = Math.max(0.1, (performance.now() - loadingStartedAt) / 1000);
+        const loadingEtaSeconds =
+          total > 0 && loaded > 0 && loaded < total
+            ? Math.ceil((elapsedSeconds / loaded) * (total - loaded))
+            : 0;
+        setProgress({
+          phase: "loading",
+          percent: clampPercent(2 + mediaProgress * 18),
+          etaSeconds: Math.max(loadingEtaSeconds + expectedDurationSeconds, 1),
+          loaded,
+          total,
+        });
+      });
       if (cancelled) return;
       if (assets.results.length === 0) {
         onError(t("shareVideoNoImages"));
         return;
       }
 
+      const durationSeconds = getShareVideoDurationSeconds(assets.results.length);
+      setProgress({
+        phase: "recording",
+        percent: 20,
+        etaSeconds: Math.ceil(durationSeconds),
+      });
       const blob = await canvasToVideoBlob(
         canvas,
         assets,
@@ -494,9 +625,18 @@ export function ShareVideo({
           madeWith: t("shareVideoMadeWith"),
         },
         mime.mimeType,
-        getShareVideoDurationSeconds(assets.results.length),
+        durationSeconds,
+        (elapsedSeconds, totalSeconds) => {
+          if (cancelled) return;
+          setProgress({
+            phase: "recording",
+            percent: clampPercent(20 + (elapsedSeconds / totalSeconds) * 75),
+            etaSeconds: Math.max(1, Math.ceil(totalSeconds - elapsedSeconds)),
+          });
+        },
       );
       if (cancelled) return;
+      setProgress({ phase: "saving", percent: 98, etaSeconds: 1 });
       await saveOrShareVideoBlob(blob, mime.extension, `batchlyai-${Date.now()}`);
       if (cancelled) return;
       setIsPreparing(false);
@@ -515,13 +655,52 @@ export function ShareVideo({
     };
   }, [displayPrompt, onComplete, onError, results, sourceImageUrls, t]);
 
+  const progressPercent = clampPercent(progress.percent);
+  const phaseLabel =
+    progress.phase === "loading"
+      ? t("shareVideoLoadingAssets")
+      : progress.phase === "recording"
+        ? t("shareVideoRecording")
+        : t("shareVideoSaving");
+  const etaLabel =
+    progress.etaSeconds && progress.etaSeconds > 1
+      ? t("shareVideoEta", { seconds: progress.etaSeconds })
+      : t("shareVideoAlmostDone");
+  const loadedLabel =
+    progress.phase === "loading" && progress.total
+      ? ` · ${progress.loaded ?? 0}/${progress.total}`
+      : "";
+
   return (
     <div className="fixed top-0 left-0 z-[9999] flex h-full w-full items-center justify-center bg-black/40 backdrop-blur-sm">
       <canvas ref={canvasRef} width={VIDEO_WIDTH} height={VIDEO_HEIGHT} className="hidden" />
       {isPreparing && (
-        <div className="rounded-2xl bg-card p-8 text-center shadow-lg">
+        <div className="w-[min(360px,calc(100vw-32px))] rounded-2xl bg-card p-7 text-left shadow-lg">
           <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-accent-blue border-t-transparent" />
-          <p className="text-sm text-foreground">{t("shareVideoLoading")}</p>
+          <div className="text-center">
+            <p className="text-sm font-medium text-foreground">{t("shareVideoLoading")}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {phaseLabel}
+              {loadedLabel}
+            </p>
+          </div>
+          <div
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={progressPercent}
+            aria-label={t("shareVideoProgress", { percent: progressPercent })}
+            className="mt-5 h-2.5 overflow-hidden rounded-full bg-muted"
+          >
+            <div
+              className="h-full rounded-full bg-accent-blue transition-[width] duration-300"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+          <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
+            <span>{t("shareVideoProgress", { percent: progressPercent })}</span>
+            <span>{etaLabel}</span>
+          </div>
         </div>
       )}
     </div>
