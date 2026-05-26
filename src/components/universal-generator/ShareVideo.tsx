@@ -41,6 +41,12 @@ interface ShareVideoProgress {
   total?: number;
 }
 
+interface ShareVideoSnapshot {
+  displayPrompt: string;
+  sourceImageUrls: string[];
+  results: GeneratedResult[];
+}
+
 interface ShareVideoLabels {
   originalPrompt: string;
   result: string;
@@ -561,6 +567,7 @@ export function ShareVideo({
 }: ShareVideoProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { t } = useLanguage();
+  const callbacksRef = useRef({ onComplete, onError, t });
   const [isPreparing, setIsPreparing] = useState(true);
   const [progress, setProgress] = useState<ShareVideoProgress>({
     phase: "loading",
@@ -568,25 +575,44 @@ export function ShareVideo({
   });
   const cleanedOriginalPrompt = originalPromptTemplate?.trim() || "";
   const displayPrompt = cleanedOriginalPrompt || promptTemplate;
+  const exportSnapshotRef = useRef<ShareVideoSnapshot | null>(null);
+  if (exportSnapshotRef.current == null) {
+    exportSnapshotRef.current = {
+      displayPrompt,
+      sourceImageUrls,
+      results,
+    };
+  }
+
+  useEffect(() => {
+    callbacksRef.current = { onComplete, onError, t };
+  }, [onComplete, onError, t]);
 
   useEffect(() => {
     let cancelled = false;
     let assets: VideoAssetSet | null = null;
 
     async function createVideo() {
+      const snapshot = exportSnapshotRef.current;
       const canvas = canvasRef.current;
       const mime = pickShareVideoMimeType();
+      const translate = callbacksRef.current.t;
+      const reportError = callbacksRef.current.onError;
+      if (!snapshot) {
+        reportError(translate("shareVideoFailed"));
+        return;
+      }
       if (!canvas || !("captureStream" in canvas) || !mime) {
-        onError(t("shareVideoUnsupported"));
+        reportError(translate("shareVideoUnsupported"));
         return;
       }
 
-      const expectedResultCount = results.filter(
+      const expectedResultCount = snapshot.results.filter(
         (result) => result.status === "complete" && result.imageUrl,
       ).length;
       const expectedDurationSeconds = getShareVideoDurationSeconds(expectedResultCount);
       const loadingStartedAt = performance.now();
-      assets = await loadAssets(sourceImageUrls, results, (loaded, total) => {
+      assets = await loadAssets(snapshot.sourceImageUrls, snapshot.results, (loaded, total) => {
         if (cancelled) return;
         const mediaProgress = total > 0 ? loaded / total : 1;
         const elapsedSeconds = Math.max(0.1, (performance.now() - loadingStartedAt) / 1000);
@@ -604,7 +630,7 @@ export function ShareVideo({
       });
       if (cancelled) return;
       if (assets.results.length === 0) {
-        onError(t("shareVideoNoImages"));
+        callbacksRef.current.onError(callbacksRef.current.t("shareVideoNoImages"));
         return;
       }
 
@@ -617,12 +643,12 @@ export function ShareVideo({
       const blob = await canvasToVideoBlob(
         canvas,
         assets,
-        displayPrompt,
+        snapshot.displayPrompt,
         {
-          originalPrompt: t("shareOriginalPrompt"),
-          result: t("shareVideoResult"),
-          tagline: t("shareVideoTagline"),
-          madeWith: t("shareVideoMadeWith"),
+          originalPrompt: translate("shareOriginalPrompt"),
+          result: translate("shareVideoResult"),
+          tagline: translate("shareVideoTagline"),
+          madeWith: translate("shareVideoMadeWith"),
         },
         mime.mimeType,
         durationSeconds,
@@ -640,12 +666,14 @@ export function ShareVideo({
       await saveOrShareVideoBlob(blob, mime.extension, `batchlyai-${Date.now()}`);
       if (cancelled) return;
       setIsPreparing(false);
-      onComplete();
+      callbacksRef.current.onComplete();
     }
 
     void createVideo().catch((err) => {
       if (!cancelled) {
-        onError(err instanceof Error ? err.message : t("shareVideoFailed"));
+        callbacksRef.current.onError(
+          err instanceof Error ? err.message : callbacksRef.current.t("shareVideoFailed"),
+        );
       }
     });
 
@@ -653,7 +681,7 @@ export function ShareVideo({
       cancelled = true;
       if (assets) disposeAssets(assets);
     };
-  }, [displayPrompt, onComplete, onError, results, sourceImageUrls, t]);
+  }, []);
 
   const progressPercent = clampPercent(progress.percent);
   const phaseLabel =
