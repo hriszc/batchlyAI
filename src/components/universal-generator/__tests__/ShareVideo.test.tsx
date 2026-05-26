@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 
 import { renderWithProviders } from "#test/test-utils";
@@ -71,5 +71,35 @@ describe("ShareVideo", () => {
       />,
     );
     expect(screen.getByText(/preparing video/i)).toBeInTheDocument();
+  });
+
+  it("does not restart export when parent callbacks change identity", async () => {
+    const firstError = vi.fn();
+    const secondError = vi.fn();
+    const { rerender } = renderWithProviders(
+      <ShareVideo
+        promptTemplate="A {{cat}}"
+        variableGroups={mockGroups}
+        results={mockResults}
+        onComplete={vi.fn()}
+        onError={firstError}
+      />,
+    );
+
+    await waitFor(() => expect(firstError).toHaveBeenCalledOnce());
+
+    rerender(
+      <ShareVideo
+        promptTemplate="A {{cat}}"
+        variableGroups={mockGroups}
+        results={mockResults}
+        onComplete={vi.fn()}
+        onError={secondError}
+      />,
+    );
+
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+    expect(firstError).toHaveBeenCalledOnce();
+    expect(secondError).not.toHaveBeenCalled();
   });
 });
