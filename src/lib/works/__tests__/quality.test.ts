@@ -37,6 +37,21 @@ describe("work quality helpers", () => {
     );
   });
 
+  it("counts expanded variable values when deciding whether a prompt is substantial", () => {
+    const variableWork = {
+      ...baseWork,
+      title: "Dangerous Jobs Variations",
+      description: "A generated set that explores several dangerous job concepts from one prompt.",
+      promptTemplate: "改为{{伐木工, 渔民, 飞行员, 建筑工人, 矿工}}",
+      originalPromptTemplate: "改为{*最危险的5种职业*}",
+      variableGroups: JSON.stringify([
+        { id: "var_0", values: ["伐木工", "渔民", "飞行员", "建筑工人", "矿工"] },
+      ]),
+    };
+
+    expect(getWorkNoindexReason(variableWork)).toBeNull();
+  });
+
   it("parses persisted JSON fields safely", () => {
     expect(parseWorkResultUrls(baseWork.resultUrls)).toEqual([
       "/api/generation-files/works/work-1/0.png",
