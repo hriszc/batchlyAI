@@ -128,6 +128,7 @@ export function applyMigrations(db: ReturnType<typeof createTestDb>) {
     "generation_id" text REFERENCES "generation"("id"),
     "title" text NOT NULL,
     "description" text,
+    "use_case" text,
     "category" text,
     "prompt_template" text NOT NULL,
     "original_prompt_template" text,
