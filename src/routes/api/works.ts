@@ -9,6 +9,7 @@ import { mirrorImageToR2 } from "@/lib/cloudflare/r2";
 import { getDb } from "@/lib/db";
 import { work } from "@/lib/db/schema/data-flywheel.schema";
 import { generateExploreMetadata } from "@/lib/explore-metadata";
+import { isIndexableWork } from "@/lib/works/quality";
 
 export async function handleGetWorks(request: Request): Promise<Response> {
   const binding = getD1Binding();
@@ -57,12 +58,17 @@ export async function handleGetWorks(request: Request): Promise<Response> {
       .limit(limit)
       .offset(offset);
 
+    const works = rows.map((w) => ({
+      ...w,
+      variableGroups: JSON.parse(w.variableGroups),
+      resultUrls: JSON.parse(w.resultUrls),
+    }));
+    const publicWorks = userId ? works : works.filter((item) => isIndexableWork(item));
+
     return jsonResponse(
       {
-        works: rows.map((w) => ({
+        works: publicWorks.map((w) => ({
           ...w,
-          variableGroups: JSON.parse(w.variableGroups),
-          resultUrls: JSON.parse(w.resultUrls),
         })),
       },
       200,

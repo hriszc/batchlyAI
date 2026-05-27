@@ -9,9 +9,19 @@ import { authClient } from "@/lib/auth/auth-client";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { createPageMeta } from "@/lib/seo/meta";
 import { creativeWorkLd } from "@/lib/seo/structured-data";
+import {
+  buildWorkSeoDescription,
+  getCategoryDisplayName,
+  getModelDisplayName,
+  getWorkNoindexReason,
+  getWorkPrimaryPrompt,
+  getWorkUseCase,
+  parseVariableGroups,
+  parseWorkResultUrls,
+} from "@/lib/works/quality";
 
 const loadWork = createServerFn({ method: "GET" }).handler(async ({ data: workId }) => {
-  const { eq } = await import("drizzle-orm");
+  const { and, desc, eq, ne } = await import("drizzle-orm");
   const { getDb } = await import("@/lib/db");
   const { work } = await import("@/lib/db/schema/data-flywheel.schema");
   const { user } = await import("@/lib/db/schema/auth.schema");
@@ -30,11 +40,30 @@ const loadWork = createServerFn({ method: "GET" }).handler(async ({ data: workId
     .where(eq(work.id, workId));
   if (!row) return null;
 
+  const relatedConditions = [eq(work.isPublished, 1), ne(work.id, workId)];
+  if (row.w.category) relatedConditions.push(eq(work.category, row.w.category));
+
+  const relatedRows = await db
+    .select({ w: work })
+    .from(work)
+    .where(and(...relatedConditions))
+    .orderBy(desc(work.likeCount), desc(work.publishedAt))
+    .limit(8);
+  const relatedWorks = relatedRows
+    .map((item) => item.w)
+    .filter((item) => !getWorkNoindexReason(item))
+    .slice(0, 4);
+
+  const resultUrls = parseWorkResultUrls(row.w.resultUrls);
+  const variableGroups = parseVariableGroups(row.w.variableGroups);
+
   return {
     ...row.w,
     authorName: row.author?.name || "Unknown",
-    variableGroups: JSON.parse(row.w.variableGroups),
-    resultUrls: JSON.parse(row.w.resultUrls),
+    variableGroups,
+    resultUrls,
+    relatedWorks,
+    noindexReason: getWorkNoindexReason({ ...row.w, resultUrls }),
   };
 });
 
@@ -55,16 +84,19 @@ export const Route = createFileRoute("/works/$workId")({
         links: [{ rel: "canonical", href: "https://batchlyai.com/discover" }],
       };
     }
+    const description = buildWorkSeoDescription(loaderData);
+    const noIndex = !!loaderData.noindexReason;
     const seo = createPageMeta({
       title: `${loaderData.title} — BatchlyAI`,
-      description: loaderData.description || loaderData.title,
+      description,
       path: `/works/${loaderData.id}`,
       locale: "en",
       ogImage: loaderData.coverUrl,
       ogType: "article",
+      noIndex,
       jsonLd: creativeWorkLd({
         title: loaderData.title,
-        description: loaderData.description || "",
+        description,
         url: `https://batchlyai.com/works/${loaderData.id}`,
         image: loaderData.coverUrl,
         authorName: loaderData.authorName,
@@ -117,13 +149,18 @@ function WorkDetailPage() {
   };
 
   const resultUrls = (data.resultUrls as string[]) || [];
-  const originalPromptTemplate =
-    typeof data.originalPromptTemplate === "string" && data.originalPromptTemplate.trim()
-      ? data.originalPromptTemplate.trim()
-      : null;
+  const relatedWorks = data.relatedWorks || [];
+  const variableGroups = data.variableGroups || [];
+  const originalPromptTemplate = getWorkPrimaryPrompt({
+    originalPromptTemplate: data.originalPromptTemplate,
+    promptTemplate: null,
+  });
   const hasOriginalPrompt =
     !!originalPromptTemplate && originalPromptTemplate !== data.promptTemplate;
   const promptToCopy = originalPromptTemplate || data.promptTemplate;
+  const modelName = getModelDisplayName(data.model);
+  const categoryName = getCategoryDisplayName(data.category);
+  const useCase = getWorkUseCase(data);
 
   return (
     <main className="mx-auto max-w-[980px] px-4 py-8">
@@ -141,13 +178,41 @@ function WorkDetailPage() {
       />
 
       <h1 className="text-2xl font-bold text-foreground">{data.title}</h1>
+      {data.description && (
+        <p className="mt-3 max-w-3xl text-base leading-7 text-muted-foreground">
+          {data.description}
+        </p>
+      )}
       <div className="mt-2 flex items-center gap-3 text-sm text-muted-foreground">
         <span>{data.authorName}</span>
         {data.category && (
-          <span className="rounded bg-muted/50 px-1.5 py-0.5 text-xs">{data.category}</span>
+          <span className="rounded bg-muted/50 px-1.5 py-0.5 text-xs">{categoryName}</span>
         )}
         {data.publishedAt && <span>{new Date(data.publishedAt * 1000).toLocaleDateString()}</span>}
       </div>
+
+      <section className="mt-6 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-lg border bg-card p-4">
+          <p className="text-xs font-medium text-muted-foreground">{t("model")}</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">{modelName}</p>
+        </div>
+        <div className="rounded-lg border bg-card p-4">
+          <p className="text-xs font-medium text-muted-foreground">{t("workCategory")}</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">{categoryName}</p>
+        </div>
+        <div className="rounded-lg border bg-card p-4">
+          <p className="text-xs font-medium text-muted-foreground">{t("results")}</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">
+            {resultUrls.length} {t("shareResultsUnit")}
+          </p>
+        </div>
+      </section>
+
+      <section className="mt-6 rounded-xl border bg-card p-5">
+        <h2 className="text-lg font-semibold text-foreground">{t("workUseCase")}</h2>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">{useCase}</p>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">{t("remixWorkDescription")}</p>
+      </section>
 
       <div className="mt-6 flex items-center gap-4">
         <button
@@ -173,10 +238,8 @@ function WorkDetailPage() {
         </button>
       </div>
 
-      <details className="mt-4">
-        <summary className="cursor-pointer text-sm text-muted-foreground">
-          {t("viewPromptTemplate")}
-        </summary>
+      <section className="mt-6">
+        <h2 className="text-lg font-semibold text-foreground">{t("promptForThisWork")}</h2>
         {hasOriginalPrompt && (
           <div className="mt-3 text-xs font-medium text-muted-foreground">
             {t("originalPrompt")}
@@ -195,7 +258,23 @@ function WorkDetailPage() {
             </pre>
           </>
         )}
-      </details>
+      </section>
+
+      {variableGroups.length > 0 && (
+        <section className="mt-6">
+          <h2 className="text-lg font-semibold text-foreground">{t("variableValues")}</h2>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {variableGroups.map((group, index) => (
+              <div key={group.id} className="rounded-lg border bg-card p-4">
+                <p className="text-xs font-medium text-muted-foreground">
+                  {t("groupLabel", { index: index + 1 })}
+                </p>
+                <p className="mt-2 text-sm text-foreground">{group.values.join(", ")}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <h2 className="mt-8 mb-4 text-lg font-semibold">{t("results")}</h2>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
@@ -208,6 +287,32 @@ function WorkDetailPage() {
           />
         ))}
       </div>
+
+      {relatedWorks.length > 0 && (
+        <section className="mt-10">
+          <h2 className="mb-4 text-lg font-semibold text-foreground">{t("relatedWorks")}</h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {relatedWorks.map((work) => (
+              <a
+                key={work.id}
+                href={`/works/${work.id}`}
+                className="group overflow-hidden rounded-lg border bg-card"
+              >
+                <img
+                  src={work.coverUrl}
+                  alt={work.title}
+                  loading="lazy"
+                  decoding="async"
+                  className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
+                />
+                <div className="p-3">
+                  <p className="line-clamp-2 text-sm font-medium text-foreground">{work.title}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
     </main>
   );
 }
