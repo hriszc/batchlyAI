@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { hreflangLinks } from "@/lib/seo/hreflang";
@@ -140,14 +140,44 @@ export function DiscoverPage() {
   const { tab } = Route.useSearch();
   const loaderData = Route.useLoaderData();
   const activeTab = tab ?? "hot";
+  const serverWorks = loaderData.works as WorkCard[];
+  const serverTemplates = loaderData.templates as TemplateCard[];
   const [hiddenWorks, setHiddenWorks] = useState<{ tab: DiscoverTab; ids: Set<string> }>(() => ({
     tab: activeTab,
     ids: new Set(),
   }));
+  const [clientFallback, setClientFallback] = useState<{
+    tab: DiscoverTab;
+    works: WorkCard[];
+    templates: TemplateCard[];
+  } | null>(null);
+
+  useEffect(() => {
+    if (activeTab !== "templates" || serverTemplates.length > 0) return;
+
+    let cancelled = false;
+    void fetch("/api/templates?limit=20")
+      .then((r) => r.json() as Promise<{ templates: TemplateCard[] }>)
+      .then((data) => {
+        if (!cancelled) {
+          setClientFallback({ tab: activeTab, works: [], templates: data.templates || [] });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setClientFallback({ tab: activeTab, works: [], templates: [] });
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, serverTemplates.length]);
 
   const hiddenWorkIds = hiddenWorks.tab === activeTab ? hiddenWorks.ids : new Set<string>();
-  const visibleWorks = (loaderData.works as WorkCard[]).filter((w) => !hiddenWorkIds.has(w.id));
-  const templates = loaderData.templates as TemplateCard[];
+  const fallback = clientFallback?.tab === activeTab ? clientFallback : null;
+  const visibleWorks = (fallback?.works.length ? fallback.works : serverWorks).filter(
+    (w) => !hiddenWorkIds.has(w.id),
+  );
+  const templates = fallback?.templates.length ? fallback.templates : serverTemplates;
 
   return (
     <main className="mx-auto max-w-[980px] px-4 py-8">
