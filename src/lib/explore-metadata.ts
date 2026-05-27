@@ -21,6 +21,7 @@ export interface ExploreMetadataInput {
 export interface ExploreMetadata {
   name: string;
   description: string;
+  useCase: string;
   category: ExploreCategory;
   previewImageUrl: string | null;
 }
@@ -201,6 +202,33 @@ function inferDescription(prompt: string, name: string, category: ExploreCategor
   }
 }
 
+function inferUseCase(prompt: string, name: string, category: ExploreCategory): string {
+  const scene = name.toLowerCase();
+  const topic = stripPromptTemplateMarkers(prompt).slice(0, 120);
+  switch (category) {
+    case "ecommerce":
+      return topic
+        ? `This ${scene} helps teams turn ${topic} into product-page visuals, storefront assets, and ad creatives with a reusable prompt structure.`
+        : `This ${scene} helps teams create product-page visuals, storefront assets, and ad creatives with a reusable prompt structure.`;
+    case "social-media":
+      return topic
+        ? `This ${scene} helps creators adapt ${topic} into posts, stories, thumbnails, and short-form campaign ideas.`
+        : `This ${scene} helps creators produce posts, stories, thumbnails, and short-form campaign ideas.`;
+    case "marketing":
+      return topic
+        ? `This ${scene} helps marketers explore ad concepts, launch visuals, and brand promotion ideas around ${topic}.`
+        : `This ${scene} helps marketers explore ad concepts, launch visuals, and brand promotion ideas.`;
+    case "art":
+      return topic
+        ? `This ${scene} helps artists and designers explore character ideas, visual directions, and moodboards based on ${topic}.`
+        : `This ${scene} helps artists and designers explore character ideas, visual directions, and moodboards.`;
+    default:
+      return topic
+        ? `This ${scene} helps users turn ${topic} into a reusable AI generation workflow that can be remixed with new variables.`
+        : `This ${scene} helps users create a reusable AI generation workflow that can be remixed with new variables.`;
+  }
+}
+
 function pickPreviewImageUrl(input: ExploreMetadataInput): string | null {
   const previewCandidates = [
     input.previewImageUrl,
@@ -243,6 +271,12 @@ function cleanDescription(value: string | null | undefined): string | null {
   return cleaned.slice(0, 160) || null;
 }
 
+function cleanUseCase(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const cleaned = collapseWhitespace(value).replace(/\s*[\r\n]+\s*/g, " ");
+  return cleaned.slice(0, 240) || null;
+}
+
 export async function generateExploreMetadata(
   input: ExploreMetadataInput,
 ): Promise<ExploreMetadata> {
@@ -250,6 +284,7 @@ export async function generateExploreMetadata(
   const fallbackName = inferName(prompt || input.title || input.name || "");
   const fallbackCategory = inferCategory(prompt);
   const fallbackDescription = inferDescription(prompt, fallbackName, fallbackCategory);
+  const fallbackUseCase = inferUseCase(prompt, fallbackName, fallbackCategory);
   const fallbackPreviewImageUrl = pickPreviewImageUrl(input);
 
   const nameProvided = cleanName(input.name ?? input.title);
@@ -264,12 +299,13 @@ export async function generateExploreMetadata(
       const response = await generateText({
         prompt: [
           "You write publish-ready metadata for an AI image gallery.",
-          "Return strict JSON only with keys: name, description, category.",
+          "Return strict JSON only with keys: name, description, useCase, category.",
           "Rules:",
+          "- Write in natural English even if the source prompt is not English.",
           "- name: 2-6 words, concrete scene or object name, no abstract adjectives, and include the main searchable subject.",
           "- description: one short sentence, 120-160 characters max, that mentions the use case and relevant keywords.",
+          "- useCase: one practical sentence, 140-220 characters max, explaining who this helps and what problem it solves.",
           "- category: one of ecommerce, art, social-media, marketing, general.",
-          "- Keep the language aligned with the prompt.",
           "- Do not include markdown, code fences, or extra keys.",
           "",
           `Prompt: ${prompt}`,
@@ -290,10 +326,12 @@ export async function generateExploreMetadata(
   const category = normalizeCategory(generated.category) || categoryProvided || fallbackCategory;
   const description =
     cleanDescription(generated.description) || descriptionProvided || fallbackDescription;
+  const useCase = cleanUseCase(generated.useCase) || fallbackUseCase;
 
   return {
     name,
     description,
+    useCase,
     category,
     previewImageUrl: fallbackPreviewImageUrl,
   };

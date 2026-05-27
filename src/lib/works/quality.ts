@@ -1,6 +1,7 @@
 export interface WorkQualityInput {
   title?: string | null;
   description?: string | null;
+  useCase?: string | null;
   category?: string | null;
   promptTemplate?: string | null;
   originalPromptTemplate?: string | null;
@@ -112,6 +113,9 @@ export function getCategoryDisplayName(category: string | null | undefined): str
 }
 
 export function getWorkUseCase(work: WorkQualityInput): string {
+  const generatedUseCase = collapseWhitespace(work.useCase || "");
+  if (generatedUseCase) return generatedUseCase;
+
   const category = work.category || "general";
   const model = getModelDisplayName(work.model);
 

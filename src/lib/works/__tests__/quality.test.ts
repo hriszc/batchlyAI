@@ -4,6 +4,7 @@ import {
   buildWorkSeoDescription,
   extractWorkIdFromPathParam,
   getWorkPath,
+  getWorkUseCase,
   getWorkNoindexReason,
   isIndexableWork,
   parseVariableGroups,
@@ -51,6 +52,12 @@ describe("work quality helpers", () => {
     expect(buildWorkSeoDescription({ ...baseWork, description: "Short" })).toContain("art");
     expect(buildWorkSeoDescription({ ...baseWork, description: "Short" })).toContain(
       "anime couples",
+    );
+  });
+
+  it("uses persisted AI-generated use cases before category fallback copy", () => {
+    expect(getWorkUseCase({ ...baseWork, useCase: "  AI generated use case.  " })).toBe(
+      "AI generated use case.",
     );
   });
 
