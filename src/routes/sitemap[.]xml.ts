@@ -7,6 +7,7 @@ import { getDb } from "@/lib/db";
 import { template as templateTable, work } from "@/lib/db/schema";
 import { examplePages } from "@/lib/seo/geo-content";
 import { seoLandingPages } from "@/lib/seo/landing-pages";
+import { getWorkPath, isIndexableWork } from "@/lib/works/quality";
 
 interface SitemapUrl {
   loc: string;
@@ -15,6 +16,7 @@ interface SitemapUrl {
 }
 
 const BASE_URL = "https://batchlyai.com";
+const SITEMAP_DYNAMIC_URL_LIMIT = 50_000;
 
 function canonicalPathSegment(value: string | null | undefined): string | null {
   const segment = value?.trim();
@@ -90,7 +92,18 @@ async function createSitemapResponse(): Promise<Response> {
   const binding = getD1Binding();
   if (binding) {
     let templates: Array<{ slug: string }> = [];
-    let works: Array<{ id: string }> = [];
+    let works: Array<{
+      id: string;
+      title: string;
+      description: string | null;
+      category: string | null;
+      promptTemplate: string;
+      originalPromptTemplate: string | null;
+      coverUrl: string;
+      resultUrls: string;
+      model: string;
+      isPublished: number | null;
+    }> = [];
 
     try {
       const db = getDb(binding);
@@ -100,13 +113,24 @@ async function createSitemapResponse(): Promise<Response> {
           .from(templateTable)
           .where(eq(templateTable.isPublic, true))
           .orderBy(desc(templateTable.usageCount), desc(templateTable.createdAt))
-          .limit(500),
+          .limit(SITEMAP_DYNAMIC_URL_LIMIT),
         db
-          .select({ id: work.id })
+          .select({
+            id: work.id,
+            title: work.title,
+            description: work.description,
+            category: work.category,
+            promptTemplate: work.promptTemplate,
+            originalPromptTemplate: work.originalPromptTemplate,
+            coverUrl: work.coverUrl,
+            resultUrls: work.resultUrls,
+            model: work.model,
+            isPublished: work.isPublished,
+          })
           .from(work)
           .where(eq(work.isPublished, 1))
           .orderBy(desc(work.publishedAt))
-          .limit(500),
+          .limit(SITEMAP_DYNAMIC_URL_LIMIT),
       ]);
     } catch (error) {
       console.warn("[sitemap] dynamic URLs unavailable", error);
@@ -125,12 +149,12 @@ async function createSitemapResponse(): Promise<Response> {
             ]
           : [];
       }),
-      ...works.flatMap((item) => {
-        const id = canonicalPathSegment(item.id);
-        return id
+      ...works.filter(isIndexableWork).flatMap((item) => {
+        const path = getWorkPath(item);
+        return path
           ? [
               {
-                loc: `${BASE_URL}/works/${id}`,
+                loc: `${BASE_URL}${path}`,
                 changefreq: "weekly" as const,
                 priority: "0.6",
               },

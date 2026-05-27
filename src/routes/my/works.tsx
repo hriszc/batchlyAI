@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth/auth-client";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { createPageMeta } from "@/lib/seo/meta";
+import { getWorkPath } from "@/lib/works/quality";
 
 interface WorkRecord {
   id: string;
@@ -78,7 +79,7 @@ function WorksPage() {
           {works.map((w) => (
             <a
               key={w.id}
-              href={`/works/${w.id}`}
+              href={getWorkPath(w)}
               className="rounded-xl border bg-card p-4 shadow-sm transition-shadow hover:shadow-md"
             >
               <img

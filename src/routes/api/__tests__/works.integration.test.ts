@@ -94,6 +94,8 @@ describe("handlePostWork", () => {
     mocks.mockGenerateExploreMetadata.mockResolvedValue({
       name: "Studio Product Shot",
       description: "Use this studio product shot for product pages and campaigns.",
+      useCase:
+        "This studio product shot helps ecommerce teams create product-page visuals and campaign creatives from one click.",
       category: "ecommerce",
       previewImageUrl: "/api/generation-files/works/test-work/0.png",
     });
@@ -130,6 +132,7 @@ describe("handlePostWork", () => {
     expect(db.__state.insertedWork?.originalPromptTemplate).toBe("A {*pet*}");
     expect(db.__state.insertedWork?.title).toBe("Studio Product Shot");
     expect(db.__state.insertedWork?.description).toContain("studio product shot");
+    expect(db.__state.insertedWork?.useCase).toContain("ecommerce teams");
     expect(db.__state.insertedWork?.category).toBe("ecommerce");
     expect(db.__state.insertedWork?.coverUrl).toContain("/api/generation-files/works/");
     expect(String(db.__state.insertedWork?.resultUrls)).toContain("/api/generation-files/works/");
@@ -138,9 +141,11 @@ describe("handlePostWork", () => {
       resultUrls: string[];
       title: string;
       description: string;
+      useCase: string;
       category: string;
     };
     expect(body.title).toBe("Studio Product Shot");
+    expect(body.useCase).toContain("ecommerce teams");
     expect(body.coverUrl).toContain("/api/generation-files/works/");
     expect(body.resultUrls).toHaveLength(2);
   });

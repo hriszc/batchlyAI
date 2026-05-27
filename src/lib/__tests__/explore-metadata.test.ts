@@ -20,6 +20,8 @@ describe("generateExploreMetadata", () => {
       JSON.stringify({
         name: "Skincare Shelf Scene",
         description: "Use this for skincare product pages and launch campaigns.",
+        useCase:
+          "This scene helps ecommerce teams create product-page visuals, storefront assets, and launch campaign creatives from one reusable prompt.",
         category: "product photography",
       }),
     );
@@ -35,6 +37,8 @@ describe("generateExploreMetadata", () => {
     expect(metadata).toEqual({
       name: "Skincare Shelf Scene",
       description: "Use this for skincare product pages and launch campaigns.",
+      useCase:
+        "This scene helps ecommerce teams create product-page visuals, storefront assets, and launch campaign creatives from one reusable prompt.",
       category: "ecommerce",
       previewImageUrl: "/api/generation-files/works/work-1/0.png",
     });
@@ -51,6 +55,7 @@ describe("generateExploreMetadata", () => {
     expect(metadata.name).toBe("Campaign Poster");
     expect(metadata.category).toBe("marketing");
     expect(metadata.description).toContain("campaign poster");
+    expect(metadata.useCase).toContain("marketers");
     expect(metadata.previewImageUrl).toBe("/api/generation-files/works/work-2/0.png");
   });
 });

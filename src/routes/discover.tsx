@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { hreflangLinks } from "@/lib/seo/hreflang";
 import { createPageMeta } from "@/lib/seo/meta";
+import { getWorkPath, isIndexableWork } from "@/lib/works/quality";
 
 interface WorkCard {
   id: string;
@@ -13,6 +15,7 @@ interface WorkCard {
   likeCount: number;
   remixCount: number;
   category: string | null;
+  description: string | null;
 }
 
 interface TemplateCard {
@@ -43,6 +46,68 @@ function normalizeDiscoverTab(tab: unknown): DiscoverTab {
     : "hot";
 }
 
+interface DiscoverLoaderData {
+  tab?: unknown;
+}
+
+const loadDiscover = createServerFn({ method: "GET" })
+  .inputValidator((data: DiscoverLoaderData) => ({ tab: normalizeDiscoverTab(data.tab) }))
+  .handler(async ({ data }) => {
+    const activeTab = data.tab;
+    const { and, desc, eq, gte } = await import("drizzle-orm");
+    const { getD1Binding } = await import("@/lib/cloudflare/bindings");
+    const { getDb } = await import("@/lib/db");
+    const { user } = await import("@/lib/db/schema/auth.schema");
+    const { template: templateTable, work } = await import("@/lib/db/schema");
+
+    const binding = getD1Binding();
+    if (!binding) return { works: [], templates: [] };
+    const db = getDb(binding);
+
+    try {
+      if (activeTab === "templates") {
+        const templates = await db
+          .select()
+          .from(templateTable)
+          .where(eq(templateTable.isPublic, true))
+          .orderBy(desc(templateTable.usageCount), desc(templateTable.createdAt))
+          .limit(20);
+        return { works: [], templates };
+      }
+
+      const category = ["ecommerce", "art", "social-media", "marketing"].includes(activeTab)
+        ? activeTab
+        : "";
+      const conditions = [eq(work.isPublished, 1)];
+      if (category) conditions.push(eq(work.category, category));
+      if (activeTab === "hot") {
+        const weekAgo = Math.floor(Date.now() / 1000) - 7 * 86400;
+        conditions.push(gte(work.publishedAt, weekAgo));
+      }
+
+      const rows = await db
+        .select({ w: work, author: { name: user.name } })
+        .from(work)
+        .leftJoin(user, eq(work.userId, user.id))
+        .where(and(...conditions))
+        .orderBy(desc(activeTab === "hot" ? work.likeCount : work.createdAt))
+        .limit(48);
+
+      const works = rows
+        .map((row) => ({
+          ...row.w,
+          authorName: row.author?.name || undefined,
+        }))
+        .filter((item) => isIndexableWork(item))
+        .slice(0, 20);
+
+      return { works, templates: [] };
+    } catch (error) {
+      console.warn("[discover] initial data unavailable", error);
+      return { works: [], templates: [] };
+    }
+  });
+
 const meta = createPageMeta({
   title: "Discover AI Works and Templates — BatchlyAI",
   description:
@@ -56,6 +121,8 @@ export const Route = createFileRoute("/discover")({
     const tab = normalizeDiscoverTab(search.tab);
     return tab === "hot" ? {} : { tab };
   },
+  loaderDeps: ({ search }) => ({ tab: search.tab ?? "hot" }),
+  loader: async ({ deps }) => loadDiscover({ data: deps }),
   head: () => ({
     htmlAttrs: { lang: "en" },
     meta: meta.meta,
@@ -71,41 +138,46 @@ export function DiscoverPage() {
   const { t } = useLanguage();
   const navigate = Route.useNavigate();
   const { tab } = Route.useSearch();
+  const loaderData = Route.useLoaderData();
   const activeTab = tab ?? "hot";
-  const [works, setWorks] = useState<WorkCard[]>([]);
-  const [templates, setTemplates] = useState<TemplateCard[]>([]);
-  const [hiddenWorkIds, setHiddenWorkIds] = useState<Set<string>>(() => new Set());
-  const [loading, setLoading] = useState(true);
+  const serverWorks = loaderData.works as WorkCard[];
+  const serverTemplates = loaderData.templates as TemplateCard[];
+  const [hiddenWorks, setHiddenWorks] = useState<{ tab: DiscoverTab; ids: Set<string> }>(() => ({
+    tab: activeTab,
+    ids: new Set(),
+  }));
+  const [clientFallback, setClientFallback] = useState<{
+    tab: DiscoverTab;
+    works: WorkCard[];
+    templates: TemplateCard[];
+  } | null>(null);
 
   useEffect(() => {
-    // oxlint-disable-next-line react-hooks-js/set-state-in-effect
-    setLoading(true);
+    if (activeTab !== "templates" || serverTemplates.length > 0) return;
 
-    if (activeTab === "templates") {
-      fetch("/api/templates?limit=20")
-        .then((r) => r.json() as Promise<{ templates: TemplateCard[] }>)
-        .then((d) => setTemplates(d.templates || []))
-        .catch(() => setTemplates([]))
-        .finally(() => setLoading(false));
-      return;
-    }
-
-    const type = activeTab === "hot" || activeTab === "new" ? activeTab : "";
-    const category = ["ecommerce", "art", "social-media", "marketing"].includes(activeTab)
-      ? activeTab
-      : "";
-    const params = new URLSearchParams({ type, ...(category && { category }) });
-    fetch(`/api/works?${params}`)
-      .then((r) => r.json() as Promise<{ works: WorkCard[] }>)
-      .then((d) => {
-        setHiddenWorkIds(new Set());
-        setWorks(d.works || []);
+    let cancelled = false;
+    void fetch("/api/templates?limit=20")
+      .then((r) => r.json() as Promise<{ templates: TemplateCard[] }>)
+      .then((data) => {
+        if (!cancelled) {
+          setClientFallback({ tab: activeTab, works: [], templates: data.templates || [] });
+        }
       })
-      .catch(() => setWorks([]))
-      .finally(() => setLoading(false));
-  }, [activeTab]);
+      .catch(() => {
+        if (!cancelled) setClientFallback({ tab: activeTab, works: [], templates: [] });
+      });
 
-  const visibleWorks = works.filter((w) => !hiddenWorkIds.has(w.id));
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, serverTemplates.length]);
+
+  const hiddenWorkIds = hiddenWorks.tab === activeTab ? hiddenWorks.ids : new Set<string>();
+  const fallback = clientFallback?.tab === activeTab ? clientFallback : null;
+  const visibleWorks = (fallback?.works.length ? fallback.works : serverWorks).filter(
+    (w) => !hiddenWorkIds.has(w.id),
+  );
+  const templates = fallback?.templates.length ? fallback.templates : serverTemplates;
 
   return (
     <main className="mx-auto max-w-[980px] px-4 py-8">
@@ -127,9 +199,7 @@ export function DiscoverPage() {
           </button>
         ))}
       </div>
-      {loading ? (
-        <p className="text-muted-foreground">{t("loading")}</p>
-      ) : activeTab === "templates" ? (
+      {activeTab === "templates" ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {templates.map((template) => (
             <Link
@@ -173,7 +243,7 @@ export function DiscoverPage() {
           {visibleWorks.map((w) => (
             <a
               key={w.id}
-              href={`/works/${w.id}`}
+              href={getWorkPath(w)}
               className="group rounded-xl border bg-card shadow-sm transition-shadow hover:shadow-md"
             >
               <div className="aspect-square overflow-hidden rounded-t-xl">
@@ -183,10 +253,10 @@ export function DiscoverPage() {
                   loading="lazy"
                   decoding="async"
                   onError={() =>
-                    setHiddenWorkIds((ids) => {
-                      const next = new Set(ids);
+                    setHiddenWorks((current) => {
+                      const next = new Set(current.tab === activeTab ? current.ids : []);
                       next.add(w.id);
-                      return next;
+                      return { tab: activeTab, ids: next };
                     })
                   }
                   className="h-full w-full object-cover transition-transform group-hover:scale-105"
@@ -194,6 +264,9 @@ export function DiscoverPage() {
               </div>
               <div className="p-3">
                 <p className="line-clamp-1 text-sm font-medium text-foreground">{w.title}</p>
+                {w.description && (
+                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{w.description}</p>
+                )}
                 <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                   {w.authorName && <span>{w.authorName}</span>}
                   <span>{w.likeCount} likes</span>

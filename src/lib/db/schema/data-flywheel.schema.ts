@@ -59,6 +59,7 @@ export const work = sqliteTable(
     generationId: text("generation_id").references(() => generation.id),
     title: text("title").notNull(),
     description: text("description"),
+    useCase: text("use_case"),
     category: text("category"),
     promptTemplate: text("prompt_template").notNull(),
     originalPromptTemplate: text("original_prompt_template"),
