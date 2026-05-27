@@ -11,8 +11,10 @@ import { createPageMeta } from "@/lib/seo/meta";
 import { creativeWorkLd } from "@/lib/seo/structured-data";
 import {
   buildWorkSeoDescription,
+  extractWorkIdFromPathParam,
   getCategoryDisplayName,
   getModelDisplayName,
+  getWorkPath,
   getWorkNoindexReason,
   getWorkPrimaryPrompt,
   getWorkUseCase,
@@ -21,6 +23,7 @@ import {
 } from "@/lib/works/quality";
 
 const loadWork = createServerFn({ method: "GET" }).handler(async ({ data: workId }) => {
+  const id = extractWorkIdFromPathParam(String(workId || ""));
   const { and, desc, eq, ne } = await import("drizzle-orm");
   const { getDb } = await import("@/lib/db");
   const { work } = await import("@/lib/db/schema/data-flywheel.schema");
@@ -37,10 +40,10 @@ const loadWork = createServerFn({ method: "GET" }).handler(async ({ data: workId
     .select({ w: work, author: { name: user.name } })
     .from(work)
     .leftJoin(user, eq(work.userId, user.id))
-    .where(eq(work.id, workId));
+    .where(eq(work.id, id));
   if (!row) return null;
 
-  const relatedConditions = [eq(work.isPublished, 1), ne(work.id, workId)];
+  const relatedConditions = [eq(work.isPublished, 1), ne(work.id, id)];
   if (row.w.category) relatedConditions.push(eq(work.category, row.w.category));
 
   const relatedRows = await db
@@ -56,6 +59,7 @@ const loadWork = createServerFn({ method: "GET" }).handler(async ({ data: workId
 
   const resultUrls = parseWorkResultUrls(row.w.resultUrls);
   const variableGroups = parseVariableGroups(row.w.variableGroups);
+  const path = getWorkPath(row.w);
 
   return {
     ...row.w,
@@ -64,6 +68,7 @@ const loadWork = createServerFn({ method: "GET" }).handler(async ({ data: workId
     resultUrls,
     relatedWorks,
     noindexReason: getWorkNoindexReason({ ...row.w, resultUrls }),
+    path,
   };
 });
 
@@ -89,7 +94,7 @@ export const Route = createFileRoute("/works/$workId")({
     const seo = createPageMeta({
       title: `${loaderData.title} — BatchlyAI`,
       description,
-      path: `/works/${loaderData.id}`,
+      path: loaderData.path,
       locale: "en",
       ogImage: loaderData.coverUrl,
       ogType: "article",
@@ -97,7 +102,7 @@ export const Route = createFileRoute("/works/$workId")({
       jsonLd: creativeWorkLd({
         title: loaderData.title,
         description,
-        url: `https://batchlyai.com/works/${loaderData.id}`,
+        url: `https://batchlyai.com${loaderData.path}`,
         image: loaderData.coverUrl,
         authorName: loaderData.authorName,
         datePublished: new Date((loaderData.publishedAt || 0) * 1000).toISOString(),
@@ -106,7 +111,7 @@ export const Route = createFileRoute("/works/$workId")({
     return {
       htmlAttrs: { lang: "en" },
       meta: seo.meta,
-      links: [{ rel: "canonical", href: `https://batchlyai.com/works/${loaderData.id}` }],
+      links: [{ rel: "canonical", href: `https://batchlyai.com${loaderData.path}` }],
       scripts: seo.scripts,
     };
   },
@@ -295,7 +300,7 @@ function WorkDetailPage() {
             {relatedWorks.map((work) => (
               <a
                 key={work.id}
-                href={`/works/${work.id}`}
+                href={getWorkPath(work)}
                 className="group overflow-hidden rounded-lg border bg-card"
               >
                 <img

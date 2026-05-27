@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildWorkSeoDescription,
+  extractWorkIdFromPathParam,
+  getWorkPath,
   getWorkNoindexReason,
   isIndexableWork,
   parseVariableGroups,
@@ -50,5 +52,15 @@ describe("work quality helpers", () => {
     expect(buildWorkSeoDescription({ ...baseWork, description: "Short" })).toContain(
       "anime couples",
     );
+  });
+
+  it("builds slug work paths while preserving uuid lookup compatibility", () => {
+    const id = "123e4567-e89b-12d3-a456-426614174000";
+
+    expect(getWorkPath({ id, title: "Anime Couple Portrait Variations!" })).toBe(
+      `/works/anime-couple-portrait-variations-${id}`,
+    );
+    expect(extractWorkIdFromPathParam(`anime-couple-portrait-variations-${id}`)).toBe(id);
+    expect(extractWorkIdFromPathParam(id)).toBe(id);
   });
 });

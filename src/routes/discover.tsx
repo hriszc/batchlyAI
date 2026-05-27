@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { hreflangLinks } from "@/lib/seo/hreflang";
 import { createPageMeta } from "@/lib/seo/meta";
-import { isIndexableWork } from "@/lib/works/quality";
+import { getWorkPath, isIndexableWork } from "@/lib/works/quality";
 
 interface WorkCard {
   id: string;
@@ -213,7 +213,7 @@ export function DiscoverPage() {
           {visibleWorks.map((w) => (
             <a
               key={w.id}
-              href={`/works/${w.id}`}
+              href={getWorkPath(w)}
               className="group rounded-xl border bg-card shadow-sm transition-shadow hover:shadow-md"
             >
               <div className="aspect-square overflow-hidden rounded-t-xl">

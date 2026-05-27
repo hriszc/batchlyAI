@@ -15,6 +15,9 @@ export interface VariableGroupSummary {
   values: string[];
 }
 
+const UUID_SUFFIX_PATTERN =
+  /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 const NSFW_RISK_PATTERN =
   /\b(nsfw|porn|porno|pornographic|nude|nudity|naked|erotic|explicit sex|sexual content|fetish|hentai)\b|成人|裸露|色情|成人视频|性暗示/i;
 
@@ -162,4 +165,34 @@ export function getWorkNoindexReason(work: WorkQualityInput): string | null {
 
 export function isIndexableWork(work: WorkQualityInput): boolean {
   return getWorkNoindexReason(work) === null;
+}
+
+export function slugifyWorkTitle(title: string | null | undefined): string {
+  const slug = (title || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/-{2,}/g, "-")
+    .slice(0, 72)
+    .replace(/-+$/g, "");
+
+  return slug || "ai-work";
+}
+
+export function getWorkPath(work: { id: string; title?: string | null }): string {
+  return `/works/${slugifyWorkTitle(work.title)}-${work.id}`;
+}
+
+export function extractWorkIdFromPathParam(param: string): string {
+  let decoded = param;
+  try {
+    decoded = decodeURIComponent(param);
+  } catch {
+    decoded = param;
+  }
+  const uuidMatch = decoded.match(UUID_SUFFIX_PATTERN);
+  return uuidMatch?.[0] || decoded;
 }

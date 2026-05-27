@@ -7,7 +7,7 @@ import { getDb } from "@/lib/db";
 import { template as templateTable, work } from "@/lib/db/schema";
 import { examplePages } from "@/lib/seo/geo-content";
 import { seoLandingPages } from "@/lib/seo/landing-pages";
-import { isIndexableWork } from "@/lib/works/quality";
+import { getWorkPath, isIndexableWork } from "@/lib/works/quality";
 
 interface SitemapUrl {
   loc: string;
@@ -150,11 +150,11 @@ async function createSitemapResponse(): Promise<Response> {
           : [];
       }),
       ...works.filter(isIndexableWork).flatMap((item) => {
-        const id = canonicalPathSegment(item.id);
-        return id
+        const path = getWorkPath(item);
+        return path
           ? [
               {
-                loc: `${BASE_URL}/works/${id}`,
+                loc: `${BASE_URL}${path}`,
                 changefreq: "weekly" as const,
                 priority: "0.6",
               },
