@@ -5,6 +5,7 @@ export interface WorkQualityInput {
   category?: string | null;
   promptTemplate?: string | null;
   originalPromptTemplate?: string | null;
+  variableGroups?: unknown;
   coverUrl?: string | null;
   resultUrls?: string[] | string | null;
   model?: string | null;
@@ -56,6 +57,13 @@ function stripTemplateMarkers(value: string): string {
 
 function textLength(value: string): number {
   return stripTemplateMarkers(value).replace(/\s/g, "").length;
+}
+
+function variableValueTextLength(value: unknown): number {
+  return parseVariableGroups(value).reduce(
+    (total, group) => total + group.values.reduce((sum, item) => sum + textLength(item), 0),
+    0,
+  );
 }
 
 function parseJsonArray(value: string): unknown[] {
@@ -153,13 +161,14 @@ export function getWorkNoindexReason(work: WorkQualityInput): string | null {
   const title = collapseWhitespace(work.title || "");
   const description = collapseWhitespace(work.description || "");
   const prompt = getWorkPrimaryPrompt(work);
+  const promptContentLength = textLength(prompt) + variableValueTextLength(work.variableGroups);
   const content = `${title} ${description} ${work.originalPromptTemplate || ""} ${work.promptTemplate || ""}`;
   const resultUrls = parseWorkResultUrls(work.resultUrls);
 
   if (NSFW_RISK_PATTERN.test(content)) return "content-risk";
   if (!title || title.length < 6 || LOW_VALUE_TITLE_PATTERN.test(title)) return "thin-title";
   if (!description || description.length < 30) return "thin-description";
-  if (!prompt || textLength(prompt) < 12) return "thin-prompt";
+  if (!prompt || promptContentLength < 12) return "thin-prompt";
   if (!work.category) return "missing-category";
   if (!work.coverUrl || !work.coverUrl.trim()) return "missing-cover";
   if (!resultUrls.length) return "missing-results";
